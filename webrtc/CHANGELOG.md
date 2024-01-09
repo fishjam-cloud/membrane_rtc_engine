@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.6.0-dev
+* Rename the function `is_keyframe` to `keyframe?` and `is_deficient?` to `deficient?` in order to be compliant with elixir style guide. []
 
 ## 0.5.0
 * Update to Membrane Core 1.0 [#331](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/331)
