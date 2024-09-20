@@ -173,7 +173,7 @@ jobs:
     steps:
       - checkout:
           path: ~/app
-      - run: npm install -g yarn --force && yarn set version berry
+      - run: npm install -g yarn --force && yarn set version berry && corepack enable && yarn config set -H enableImmutableInstalls false
       - run: mix test.ex_webrtc.integration
 
 workflows:

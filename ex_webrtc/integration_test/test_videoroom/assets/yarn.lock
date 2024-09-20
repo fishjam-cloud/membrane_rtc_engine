@@ -7,13 +7,13 @@ __metadata:
 
 "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=ex_webrtc_poc":
   version: 0.6.0
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=492d929daea1acb3cea07cabe35a94ea336c8a01"
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=e4dfbc8b021c40f257087fb5e8ae8ad7806b3882"
   dependencies:
     events: "npm:^3.3.0"
     protobufjs: "npm:^7.3.0"
     typed-emitter: "npm:^2.1.0"
     uuid: "npm:^10.0.0"
-  checksum: 10c0/7831c35d1b9bafa3e5f0f32240a99792457140d150239914f3c091d13291abd32e21ba61e2b1ea2e9f3283d2c166fe34508e2b0a5d02b48ecfc48a708d913b55
+  checksum: 10c0/84df5483981da6532e9bdcc96289f3bb6371e89874cb9bac11b6bff117c5aae419ac23a6340532c33ee035ce28e6830a6f73d67fc9e991a025d54c6805466530
   languageName: node
   linkType: hard
 

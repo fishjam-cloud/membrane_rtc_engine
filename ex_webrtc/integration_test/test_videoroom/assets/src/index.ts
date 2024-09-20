@@ -2,8 +2,6 @@ import { Encoding } from "@fishjam-cloud/ts-client";
 import { Room } from "./room";
 import { remoteStreamsStats, inboundSimulcastStreamStats, outboundSimulcastStreamStats } from "./stats";
 
-// const videos = document.querySelector("#videos");
-// const localVideo = document.querySelector("video#local-video");
 const data = document.querySelector("div#data") as HTMLElement;
 
 const getButtonsWithPrefix = (types: string[], prefix: string) => {

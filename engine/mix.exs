@@ -56,7 +56,6 @@ defmodule Membrane.RTC.Engine.MixProject do
       {:membrane_core, "~> 1.0"},
       {:membrane_rtp_plugin, "~> 0.28.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
-      {:ex_sdp, "~> 0.15.0"},
       {:elixir_uuid, "~> 1.2"},
       {:statistics, "~> 0.6.0"},
       # for colouring diffs in upgrade guides
@@ -204,14 +203,14 @@ defmodule Membrane.RTC.Engine.MixProject do
   end
 
   defp run_webrtc_integration_tests(_cli_args) do
-    run_integration_tests("../webrtc/integration_test/test_videoroom")
+    run_integration_tests("../webrtc/integration_test/test_videoroom", "npm")
   end
 
   defp run_ex_webrtc_integration_tests(_cli_args) do
-    run_integration_tests("../ex_webrtc/integration_test/test_videoroom")
+    run_integration_tests("../ex_webrtc/integration_test/test_videoroom", "yarn")
   end
 
-  defp run_integration_tests(path) do
+  defp run_integration_tests(path, package_manager) do
     assert_execute("mix", ["deps.get"],
       cd: path,
       log_str: "Getting mix dependencies in test_videoroom"
@@ -229,9 +228,9 @@ defmodule Membrane.RTC.Engine.MixProject do
         "Skipping installation of npm dependencies in test_videoroom: already installed"
       )
     else
-      assert_execute("yarn", ["install"],
+      assert_execute(package_manager, ["install"],
         cd: assets_path,
-        log_str: "Installing npm dependencies in test_videoroom"
+        log_str: "Installing #{package_manager} dependencies in test_videoroom"
       )
     end
 

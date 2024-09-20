@@ -6,7 +6,8 @@ defmodule TestVideoroom.Integration.BasicTest do
   @room_url "http://localhost:4001"
 
   # in miliseconds
-  @warmup_time 6_000
+  @short_warmup 15_000
+  @long_warmup 25_000
 
   @start_with_all "start-all"
   @start_with_mic "start-mic-only"
@@ -16,7 +17,7 @@ defmodule TestVideoroom.Integration.BasicTest do
   @browser_options %{count: 1, headless: true}
   @actions [
     {:get_stats, @stats, 1, 0, tag: :after_warmup},
-    {:wait, 60_000},
+    {:wait, 90_000},
     {:get_stats, @stats, 1, 0, tag: :before_leave}
   ]
 
@@ -30,7 +31,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @warmup_time,
+      warmup_time: @short_warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,
@@ -45,7 +46,7 @@ defmodule TestVideoroom.Integration.BasicTest do
           Stampede.start({TestMustang, mustang_options}, @browser_options)
         end)
 
-      Process.sleep(10_000)
+      Process.sleep(20_000)
       task
     end
     |> Task.await_many(:infinity)
@@ -82,7 +83,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @warmup_time,
+      warmup_time: @long_warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,
@@ -125,7 +126,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @warmup_time,
+      warmup_time: @short_warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,

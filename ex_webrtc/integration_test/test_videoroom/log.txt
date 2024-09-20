@@ -1,0 +1,23 @@
+➤ YN0000: · Yarn 4.5.0
+➤ YN0000: ┌ Resolution step
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Fetch step
+➤ YN0000: └ Completed
+➤ YN0000: ┌ Link step
+➤ YN0000: └ Completed
+➤ YN0000: · Done in 0s 121ms
+
+  ../priv/static/assets/index.js  87.1kb
+
+⚡ Done in 18ms
+Compiling 1 file (.ex)
+Check your digested files at "priv/static"
+10:39:13.122 [info] Running TestVideoroomWeb.Endpoint with cowboy 2.12.0 at 0.0.0.0:4001 (http)
+10:39:13.123 [info] Access TestVideoroomWeb.Endpoint at http://localhost:4001
+Excluding tags: [:containerised, :skip]
+
+...
+Finished in 403.4 seconds (0.00s async, 403.4s sync)
+3 tests, 0 failures
+
+Randomized with seed 131413

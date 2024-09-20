@@ -1,5 +1,6 @@
 defmodule TestVideoroom.Integration.SimulcastTest do
   use TestVideoroomWeb.ConnCase, async: false
+
   import TestVideoroom.Integration.Utils
 
   @room_url "http://localhost:4001"

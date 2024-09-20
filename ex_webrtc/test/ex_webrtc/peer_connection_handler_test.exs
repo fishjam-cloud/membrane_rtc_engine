@@ -42,7 +42,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, _new_mid_to_track_id}
     )
 
-    assert_pipeline_notified(pipeline, :handler, {:tracks, tracks})
+    assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
 
     [engine_track] = tracks
 
@@ -82,7 +82,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, new_mid_to_track_id}
     )
 
-    refute_pipeline_notified(pipeline, :handler, {:tracks, _tracks})
+    refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
 
     answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
@@ -116,7 +116,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, _new_mid_to_track_id}
     )
 
-    assert_pipeline_notified(pipeline, :handler, {:tracks, tracks})
+    assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
 
     assert length(tracks) == 2
     engine_audio_track = Enum.find(tracks, &(&1.type == :audio))
@@ -171,7 +171,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
-    assert_pipeline_notified(pipeline, :handler, {:tracks_removed, removed_tracks}, 20_000)
+    assert_pipeline_notified(pipeline, :handler, {:tracks_removed, removed_tracks})
     assert removed_tracks |> List.first() == engine_track.id
   end
 
@@ -195,8 +195,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   defp engine_video_track() do
     codec =
       PeerConnection.Configuration.default_video_codecs()
-      |> Enum.filter(&(&1.mime_type == "video/VP8"))
-      |> List.first()
+      |> Enum.find(&(&1.mime_type == "video/VP8"))
 
     Track.new(
       :video,
@@ -204,7 +203,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       @endpoint_id,
       :VP8,
       codec.clock_rate,
-      codec.sdp_fmtp_line
+      codec.sdp_fmtp_line,
+      id: UUID.uuid4()
     )
   end
 
@@ -221,7 +221,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     Pipeline.notify_child(pipeline, :handler, {:offer, media_event, %{}})
 
     assert_pipeline_notified(pipeline, :handler, {:answer, %{"type" => "answer"} = answer, _mids})
-    assert_pipeline_notified(pipeline, :handler, {:tracks, tracks})
+    assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
     [engine_track] = tracks
 
     assert engine_track.id == track_id
