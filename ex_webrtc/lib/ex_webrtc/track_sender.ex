@@ -21,7 +21,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
     VoiceActivityChanged
   }
 
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.Metrics
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics
   alias Membrane.RTC.Engine.Track
   alias Membrane.RTCP.SenderReportPacket
   alias Membrane.RTCPEvent

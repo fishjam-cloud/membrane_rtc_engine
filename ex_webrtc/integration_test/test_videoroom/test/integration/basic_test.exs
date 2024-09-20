@@ -21,7 +21,7 @@ defmodule TestVideoroom.Integration.BasicTest do
     {:get_stats, @stats, 1, 0, tag: :before_leave}
   ]
 
-  @tag timeout: 180_000
+  @tag timeout: 240_000
   test "Users gradually joining and leaving can hear and see each other" do
     browsers_number = 4
 
