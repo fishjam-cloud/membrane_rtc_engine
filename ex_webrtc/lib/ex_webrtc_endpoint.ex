@@ -455,6 +455,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       engine_track = state.rtc_engine |> Engine.get_tracks() |> Enum.find(&(&1.id == track_id))
 
       track = %{track | status: :subscribed, subscribe_ref: nil}
+
       {actions, track} =
         if engine_track.metadata == track.engine_track.metadata do
           {[], track}
@@ -471,8 +472,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
       {actions, %{state | outbound_tracks: outbound_tracks}}
     catch
-      :exit, err ->
-        dbg({err, :gen_server_error})
+      :exit, _err ->
         Process.send_after(self(), {:subscribe_result, subscribe_ref, :ok}, 100)
 
         {[], state}
