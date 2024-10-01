@@ -361,7 +361,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_child_notification({:tracks_removed, track_ids}, :connection_handler, ctx, state) do
     Membrane.Logger.debug("webrtc tracks removed")
 
-    tracks = Map.take(state.inbound_tracks, track_ids)
+    tracks = state.inbound_tracks |> Map.take(track_ids) |> Map.values()
     inbound_tracks = Map.drop(state.inbound_tracks, track_ids)
 
     track_senders =
