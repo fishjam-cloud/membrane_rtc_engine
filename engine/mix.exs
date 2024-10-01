@@ -221,6 +221,11 @@ defmodule Membrane.RTC.Engine.MixProject do
       log_str: "Compiling test_videoroom app"
     )
 
+    assert_execute("mix", ["playwright.install"],
+      cd: path,
+      log_str: "Installing playwright browser"
+    )
+
     assets_path = Path.join(path, "assets")
 
     if packages_installed?(assets_path) do
