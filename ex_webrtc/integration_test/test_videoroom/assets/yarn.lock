@@ -361,8 +361,8 @@ __metadata:
 
 "phoenix@file:../deps/phoenix::locator=root-workspace-0b6124%40workspace%3A.":
   version: 1.6.16
-  resolution: "phoenix@file:../deps/phoenix#../deps/phoenix::hash=611cb3&locator=root-workspace-0b6124%40workspace%3A."
-  checksum: 10c0/28722055ffdc040c355065961e91ddb7adf0ad7c66b09ac6cecc533e13a69a98c00687cb71686411349e6d6cd40903137fb45e00753a1cbc12809af014ce8559
+  resolution: "phoenix@file:../deps/phoenix#../deps/phoenix::hash=3d748d&locator=root-workspace-0b6124%40workspace%3A."
+  checksum: 10c0/c6bc75fc9639938e32e9a4b5056e94d77b942c31ea7f6441ee48b59b95d3696685fc37c5d31aab2632119e479edfbd9ec4bd5b3457f12b5696c1c54dc6be7864
   languageName: node
   linkType: hard
 
