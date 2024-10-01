@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.6.0-dev
+* Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 
 ## 0.5.0
 * Move to membrane_h26x_plugin. Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)

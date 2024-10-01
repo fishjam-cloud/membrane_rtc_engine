@@ -7,6 +7,7 @@
 * Fix handling media events regarding track variant enabling/disabling[#400](https://github.com/fishjam-dev/membrane_rtc_engine/pull/400) 
 * Add more logs about signaling [#404](https://github.com/fishjam-dev/membrane_rtc_engine/pull/404)
 * Update credo [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
+* Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 
 ## 0.8.0
 * Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)
