@@ -58,8 +58,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     %{endpoint_id: endpoint_id} = opts
 
     pc_options =
-      %{ice_port_range: opts.ice_port_range,
-        video_codecs: @video_codecs}
+      %{ice_port_range: opts.ice_port_range, video_codecs: @video_codecs}
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
       |> Keyword.merge(@opts)
 
