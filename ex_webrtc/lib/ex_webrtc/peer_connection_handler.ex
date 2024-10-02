@@ -82,7 +82,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       outbound_tracks: %{},
       # maps rtc track_id to engine track_id
       inbound_tracks: %{},
-      # TODO: update this map when mid's are reused
       mid_to_track_id: %{},
       track_id_to_metadata: %{}
     }
@@ -343,13 +342,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   defp get_tracks_removed_action(state) do
     transceivers = PeerConnection.get_transceivers(state.pc)
 
-    removed_tracks =
+    {removed_tracks, removed_mids} =
       transceivers
       |> Enum.filter(fn transceiver ->
         transceiver.current_direction == :inactive and
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
-      |> Enum.map(& &1.receiver.track.id)
+      |> Enum.reduce({[], []}, & {&1.receiver.track.id, &1.mid})
 
     if Enum.empty?(removed_tracks) do
       {[], state}
@@ -357,9 +356,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       removed_engine_track_ids = Enum.map(removed_tracks, &Map.get(state.inbound_tracks, &1))
 
       inbound_tracks = Map.drop(state.inbound_tracks, removed_tracks)
+      mid_to_track_id = Map.drop(state.mid_to_track_id, removed_mids)
 
       {[notify_parent: {:tracks_removed, removed_engine_track_ids}],
-       %{state | inbound_tracks: inbound_tracks}}
+       %{state | inbound_tracks: inbound_tracks, mid_to_track_id: mid_to_track_id}}
     end
   end
 
