@@ -71,12 +71,6 @@ async function stop() {
 
   room.leave();
 
-  // // remove children until we are left with the local video
-  // // tag which was the first one present
-  // while (videos.children.length > 1) {
-  //   videos.removeChild(videos.lastChild);
-  // }
-
   room = undefined;
 
   startButtons.forEach((button) => (button.disabled = false));

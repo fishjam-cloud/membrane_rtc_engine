@@ -43,12 +43,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     ice_servers: @ice_servers
   ]
 
+  # Currently we enforce h264 encoding, since the ExWebRTC API doesn't support selecting
+  # encoding when adding track
+  @video_codecs [
+    %ExWebRTC.RTPCodecParameters{
+      payload_type: 98,
+      mime_type: "video/H264",
+      clock_rate: 90000
+    }
+  ]
+
   @impl true
   def handle_init(_ctx, opts) do
     %{endpoint_id: endpoint_id} = opts
 
     pc_options =
-      %{ice_port_range: opts.ice_port_range}
+      %{ice_port_range: opts.ice_port_range,
+        video_codecs: @video_codecs}
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
       |> Keyword.merge(@opts)
 
