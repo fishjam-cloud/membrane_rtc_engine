@@ -348,7 +348,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         transceiver.current_direction == :inactive and
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
-      |> Enum.reduce({[], []}, & {&1.receiver.track.id, &1.mid})
+      |> Enum.reduce({[], []}, &{&1.receiver.track.id, &1.mid})
 
     if Enum.empty?(removed_tracks) do
       {[], state}
