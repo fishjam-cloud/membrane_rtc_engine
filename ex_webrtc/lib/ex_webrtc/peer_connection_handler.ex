@@ -49,7 +49,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     %ExWebRTC.RTPCodecParameters{
       payload_type: 98,
       mime_type: "video/H264",
-      clock_rate: 90000
+      clock_rate: 90_000
     }
   ]
 
@@ -348,7 +348,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         transceiver.current_direction == :inactive and
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
-      |> Enum.reduce({[], []}, &{&1.receiver.track.id, &1.mid})
+      |> Enum.reduce({[], []}, fn transceiver, {removed_tracks, removed_mids} ->
+        {[transceiver.receiver.track.id | removed_tracks], [transceiver.mid | removed_mids]}
+      end)
 
     if Enum.empty?(removed_tracks) do
       {[], state}
