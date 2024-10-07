@@ -452,7 +452,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   def keyframe?(buffer, encoding) do
     case encoding do
       :OPUS -> true
-      :H264 -> Membrane.RTP.H264.Utils.is_keyframe(buffer.payload)
+      :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
       :VP8 -> Membrane.RTP.VP8.Utils.is_keyframe(buffer.payload)
     end
   end

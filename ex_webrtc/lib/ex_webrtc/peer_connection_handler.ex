@@ -66,17 +66,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
       |> Keyword.merge(@opts)
 
+    peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
+    pc_gen_server_options = [name: peer_connection]
+
     child_spec = %{
       id: :peer_connection,
-      start: {PeerConnection, :start_link, [pc_options]}
+      start: {PeerConnection, :start_link, [pc_options, pc_gen_server_options]}
     }
 
-    {:ok, supervisor} = Supervisor.start_link([child_spec], strategy: :one_for_one)
-
-    [{_, pc, _, _}] = Supervisor.which_children(supervisor)
+    {:ok, _sup} = Supervisor.start_link([child_spec], strategy: :one_for_one)
 
     state = %{
-      pc: pc,
+      pc: peer_connection,
       endpoint_id: endpoint_id,
       # maps engine track_id to rtc track_id
       outbound_tracks: %{},
@@ -142,6 +143,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:offer, event, new_outbound_tracks}, _ctx, state) do
+    # dbg({state, PeerConnection.get_transceivers(state.pc)})
+
     %{sdp_offer: offer, mid_to_track_id: mid_to_track_id} = event
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, mid_to_track_id))
@@ -165,6 +168,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     tracks_action = if Enum.empty?(tracks), do: [], else: [notify_parent: {:new_tracks, tracks}]
     {tracks_removed_actions, state} = get_tracks_removed_action(state)
+    # dbg({state, PeerConnection.get_transceivers(state.pc)})
 
     {answer_action ++ tracks_action ++ tracks_removed_actions, state}
   end
@@ -177,13 +181,40 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {[], state}
   end
 
+  @impl true
+  def handle_parent_notification({:tracks_removed, track_ids}, _ctx, state) do
+    rtc_track_ids = Enum.map(track_ids, &Map.fetch!(state.outbound_tracks, &1))
+
+    transceivers = PeerConnection.get_transceivers(state.pc)
+
+    removed_mids =
+      Enum.map(rtc_track_ids, fn track_id ->
+        transceiver =
+          Enum.find(
+            transceivers,
+            &(not is_nil(&1.sender.track) and &1.sender.track.id == track_id)
+          )
+
+        :ok = PeerConnection.remove_track(state.pc, transceiver.sender.id)
+        transceiver.mid
+      end)
+
+    state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
+    state = update_in(state.mid_to_track_id, &Map.drop(&1, removed_mids))
+    # dbg({state, PeerConnection.get_transceivers(state.pc)})
+    # TODO: remove renegotiate event
+    {[], state}
+  end
+
+  @impl true
   def handle_parent_notification({:set_metadata, display_name}, _ctx, state) do
     Logger.metadata(peer: display_name)
     {[], state}
   end
 
   @impl true
-  def handle_parent_notification(_msg, _ctx, state) do
+  def handle_parent_notification(msg, _ctx, state) do
+    Membrane.Logger.error("Unexpected parent notification: #{inspect(msg)}")
     {[], state}
   end
 
@@ -269,7 +300,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {actions, state}
   end
 
-  defp handle_webrtc_msg(_msg, _ctx, state) do
+  defp handle_webrtc_msg(msg, _ctx, state) do
+    Membrane.Logger.debug("Unexpected message from webrtc: #{inspect(msg)}")
     {[], state}
   end
 
@@ -284,13 +316,22 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     end
   end
 
+  defp add_new_tracks_to_webrtc(state, new_outbound_tracks)
+       when map_size(new_outbound_tracks) == 0,
+       do: state
+
   defp add_new_tracks_to_webrtc(state, new_outbound_tracks) do
+    # dbg(state)
+
     outbound_transceivers =
       state.pc
       |> PeerConnection.get_transceivers()
       |> Enum.filter(fn transceiver ->
-        not Map.has_key?(state.mid_to_track_id, transceiver.mid)
+        transceiver.current_direction == nil and
+          not Map.has_key?(state.mid_to_track_id, transceiver.mid)
       end)
+
+    # |> dbg()
 
     {new_track_ids, _transceivers} =
       new_outbound_tracks
@@ -349,7 +390,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
       |> Enum.reduce({[], []}, fn transceiver, {removed_tracks, removed_mids} ->
-        {[transceiver.receiver.track.id | removed_tracks], [transceiver.mid | removed_mids]}
+        {[transceiver.receiver.track.id | removed_tracks],
+         [to_string(transceiver.mid) | removed_mids]}
       end)
 
     if Enum.empty?(removed_tracks) do
@@ -375,7 +417,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         transceiver =
           PeerConnection.get_transceivers(pc)
           |> Enum.find(fn transceiver ->
-            transceiver.receiver.track.id == track.id
+            not is_nil(transceiver.receiver.track) and
+              transceiver.receiver.track.id == track.id
           end)
 
         Membrane.Logger.info("new track #{track.id}, #{track.kind}")

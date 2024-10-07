@@ -50,7 +50,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              id: ^track_id,
              type: :video,
              origin: @endpoint_id,
-             encoding: :VP8,
+             encoding: :H264,
              variants: [:high],
              metadata: @track_metadata
            } =
@@ -126,7 +126,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              id: ^video_track_id,
              type: :video,
              origin: @endpoint_id,
-             encoding: :VP8,
+             encoding: :H264,
              variants: [:high]
            } = engine_video_track
 
@@ -195,13 +195,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   defp engine_video_track() do
     codec =
       PeerConnection.Configuration.default_video_codecs()
-      |> Enum.find(&(&1.mime_type == "video/VP8"))
+      |> Enum.find(&(&1.mime_type == "video/H264"))
 
     Track.new(
       :video,
       Track.stream_id(),
       @endpoint_id,
-      :VP8,
+      :H264,
       codec.clock_rate,
       codec.sdp_fmtp_line,
       id: UUID.uuid4()
