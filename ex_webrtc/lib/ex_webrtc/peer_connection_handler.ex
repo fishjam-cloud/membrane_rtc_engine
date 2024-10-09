@@ -160,8 +160,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:offer, event, new_outbound_tracks}, _ctx, state) do
-    # dbg({state, event})
-
     %{sdp_offer: offer, mid_to_track_id: mid_to_track_id} = event
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, mid_to_track_id))
@@ -176,8 +174,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     {:ok, answer} = PeerConnection.create_answer(state.pc)
     :ok = PeerConnection.set_local_description(state.pc, answer)
-
-    # dbg({answer, PeerConnection.get_transceivers(state.pc)})
 
     {tracks, state} = receive_new_tracks_from_webrtc(state)
 
@@ -219,8 +215,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
     state = update_in(state.mid_to_track_id, &Map.drop(&1, removed_mids))
-    # dbg({state, PeerConnection.get_transceivers(state.pc)})
-    # TODO: remove renegotiate event
     {[], state}
   end
 
@@ -339,8 +333,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
        do: state
 
   defp add_new_tracks_to_webrtc(state, new_outbound_tracks) do
-    # dbg(state)
-
     outbound_transceivers =
       state.pc
       |> PeerConnection.get_transceivers()
@@ -348,8 +340,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         transceiver.current_direction == nil and
           not Map.has_key?(state.mid_to_track_id, transceiver.mid)
       end)
-
-    # |> dbg()
 
     {new_track_ids, _transceivers} =
       new_outbound_tracks
