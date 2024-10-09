@@ -13,6 +13,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.{TrackReceiver, TrackSender}
   alias Membrane.RTC.Engine.Notifications.TrackNotification
 
+  @type video_codec :: :H264 | :VP8
+
   def_options rtc_engine: [
                 spec: pid(),
                 description: "Pid of parent Engine"
@@ -20,6 +22,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
               ice_port_range: [
                 spec: Enumerable.t(non_neg_integer()),
                 description: "Range of ports that ICE will use for gathering host candidates.",
+                default: nil
+              ],
+              video_codecs: [
+                spec: [video_codec] | nil,
+                description: "Allowed video codecs",
                 default: nil
               ],
               # TODO: metadata unused
@@ -79,7 +86,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
-        ice_port_range: state.ice_port_range
+        ice_port_range: state.ice_port_range,
+        video_codecs: opts.video_codecs
       })
     ]
 

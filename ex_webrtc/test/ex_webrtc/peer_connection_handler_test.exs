@@ -50,7 +50,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              id: ^track_id,
              type: :video,
              origin: @endpoint_id,
-             encoding: :H264,
+             encoding: :VP8,
              variants: [:high],
              metadata: @track_metadata
            } =
@@ -126,7 +126,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              id: ^video_track_id,
              type: :video,
              origin: @endpoint_id,
-             encoding: :H264,
+             encoding: :VP8,
              variants: [:high]
            } = engine_video_track
 
@@ -179,7 +179,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     [
       child(:handler, %PeerConnectionHandler{
         endpoint_id: @endpoint_id,
-        ice_port_range: 50_000..50_050
+        ice_port_range: 50_000..50_050,
+        video_codecs: nil
       })
     ]
   end

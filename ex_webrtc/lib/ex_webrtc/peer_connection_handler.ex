@@ -24,6 +24,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
               ice_port_range: [
                 spec: Enumerable.t(non_neg_integer()),
                 description: "Range of ports that ICE will use for gathering host candidates."
+              ],
+              video_codecs: [
+                spec: [EndpointExWebRTC.video_codec()] | nil,
+                description: "Allowed video codecs"
               ]
 
   def_input_pad :input,
@@ -46,12 +50,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   # Currently we enforce h264 encoding, since the ExWebRTC API doesn't support selecting
   # encoding when adding track
   @video_codecs [
-    %ExWebRTC.RTPCodecParameters{
+    H264: %ExWebRTC.RTPCodecParameters{
       payload_type: 98,
       mime_type: "video/H264",
       clock_rate: 90_000
     },
-    %ExWebRTC.RTPCodecParameters{
+    VP8: %ExWebRTC.RTPCodecParameters{
       payload_type: 96,
       mime_type: "video/VP8",
       clock_rate: 90_000,
@@ -65,14 +69,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   def handle_init(_ctx, opts) do
     %{endpoint_id: endpoint_id} = opts
 
-    allowed_codecs = Application.get_env(:membrane_rtc_engine_ex_webrtc, :allowed_codecs, [:H264])
-
     video_codecs =
-      Enum.filter(@video_codecs, fn codec ->
-        "video/" <> video_codec = codec.mime_type
-
-        String.to_atom(video_codec) in allowed_codecs
-      end)
+      if opts.video_codecs do
+        Enum.filter(@video_codecs, fn {codec, _params} ->
+          codec in opts.video_codecs
+        end)
+      else
+        @video_codecs
+      end
+      |> Enum.map(fn {_codec, params} -> params end)
 
     pc_options =
       %{
