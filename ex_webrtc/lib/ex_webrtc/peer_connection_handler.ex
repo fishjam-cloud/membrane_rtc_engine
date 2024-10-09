@@ -50,6 +50,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       payload_type: 98,
       mime_type: "video/H264",
       clock_rate: 90_000
+    },
+    %ExWebRTC.RTPCodecParameters{
+      payload_type: 96,
+      mime_type: "video/VP8",
+      clock_rate: 90_000,
+      channels: nil,
+      sdp_fmtp_line: nil,
+      rtcp_fbs: []
     }
   ]
 
@@ -57,10 +65,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   def handle_init(_ctx, opts) do
     %{endpoint_id: endpoint_id} = opts
 
+    allowed_codecs = Application.get_env(:membrane_rtc_engine_ex_webrtc, :allowed_codecs, [:H264])
+
+    video_codecs =
+      Enum.filter(@video_codecs, fn codec ->
+        "video/" <> video_codec = codec.mime_type
+
+        String.to_atom(video_codec) in allowed_codecs
+      end)
+
     pc_options =
       %{
         ice_port_range: opts.ice_port_range,
-        video_codecs: @video_codecs,
+        video_codecs: video_codecs,
         controlling_process: self()
       }
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
@@ -143,7 +160,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:offer, event, new_outbound_tracks}, _ctx, state) do
-    # dbg({state, PeerConnection.get_transceivers(state.pc)})
+    # dbg({state, event})
 
     %{sdp_offer: offer, mid_to_track_id: mid_to_track_id} = event
 
@@ -160,6 +177,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {:ok, answer} = PeerConnection.create_answer(state.pc)
     :ok = PeerConnection.set_local_description(state.pc, answer)
 
+    # dbg({answer, PeerConnection.get_transceivers(state.pc)})
+
     {tracks, state} = receive_new_tracks_from_webrtc(state)
 
     answer_action = [
@@ -167,10 +186,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     ]
 
     tracks_action = if Enum.empty?(tracks), do: [], else: [notify_parent: {:new_tracks, tracks}]
-    {tracks_removed_actions, state} = get_tracks_removed_action(state)
-    # dbg({state, PeerConnection.get_transceivers(state.pc)})
+    {tracks_removed_action, state} = get_tracks_removed_action(state)
 
-    {answer_action ++ tracks_action ++ tracks_removed_actions, state}
+    {answer_action ++ tracks_action ++ tracks_removed_action, state}
   end
 
   @impl true
