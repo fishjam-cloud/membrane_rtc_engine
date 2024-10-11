@@ -1,6 +1,7 @@
 defmodule Membrane.RTC.EngineTest do
   use ExUnit.Case
 
+  alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Message, Track}
 
@@ -134,6 +135,80 @@ defmodule Membrane.RTC.EngineTest do
 
       assert_receive {:ready, []}
       assert_receive {:new_tracks, [%Track{id: "track1"}]}
+    end
+  end
+
+  describe ":Engine.add/remove_endpoint" do
+    test "adds endpoint when old one is in terminating state", %{rtc_engine: rtc_engine} do
+      endpoint_spec = %TestEndpoint{rtc_engine: rtc_engine, owner: self(), delay_termination: 500}
+      endpoint_id = "endpoint"
+
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+
+      assert_receive %Message.EndpointAdded{}
+
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+
+      assert_receive %EndpointRemoved{}
+      refute_receive %Message.EndpointAdded{}
+      assert_receive %Message.EndpointAdded{}, 600
+
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+
+      assert_receive %EndpointRemoved{}
+      refute_receive %Message.EndpointAdded{}, 600
+    end
+
+    test "removes pending addition of endpoint when remove_endpoint is called", %{
+      rtc_engine: rtc_engine
+    } do
+      endpoint_spec = %TestEndpoint{rtc_engine: rtc_engine, owner: self(), delay_termination: 500}
+      endpoint_id = "endpoint"
+
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+
+      assert_receive %Message.EndpointAdded{}
+
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+
+      assert_receive %EndpointRemoved{}
+      assert_receive %Message.EndpointAdded{}
+      assert_receive %Message.EndpointRemoved{}
+    end
+
+    test "add the same endpoint multiple times", %{rtc_engine: rtc_engine} do
+      endpoint_spec = %TestEndpoint{rtc_engine: rtc_engine, owner: self(), delay_termination: 500}
+      endpoint_id = "endpoint"
+
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+
+      assert_receive %Message.EndpointAdded{}
+      refute_receive %Message.EndpointAdded{}
+      assert_receive %Message.EndpointRemoved{}
+      refute_receive %Message.EndpointRemoved{}
+    end
+
+    test "remove the same endpoint multiple times", %{rtc_engine: rtc_engine} do
+      endpoint_spec = %TestEndpoint{rtc_engine: rtc_engine, owner: self(), delay_termination: 500}
+      endpoint_id = "endpoint"
+
+      Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
+
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+      Engine.remove_endpoint(rtc_engine, endpoint_id)
+
+      assert_receive %Message.EndpointAdded{}
+      assert_receive %Message.EndpointRemoved{}
+      refute_receive %Message.EndpointRemoved{}
     end
   end
 
