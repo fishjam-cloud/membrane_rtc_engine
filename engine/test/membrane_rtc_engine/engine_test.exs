@@ -1,9 +1,9 @@
 defmodule Membrane.RTC.EngineTest do
   use ExUnit.Case
 
-  alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Message, Track}
+  alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
 
   alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, SinkEndpoint, TestEndpoint}
 

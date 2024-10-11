@@ -537,10 +537,10 @@ defmodule Membrane.RTC.Engine do
         Membrane.Logger.info("Endpoint #{inspect(id)} already removed")
         {[], state}
 
-      {{:pending, endpoint}, [], state} ->
+      {{:pending, endpoint}, actions, state} ->
         dispatch(%Message.EndpointAdded{endpoint_id: id, endpoint_type: endpoint.type})
         dispatch(%Message.EndpointRemoved{endpoint_id: id, endpoint_type: endpoint.type})
-        {[], state}
+        {actions, state}
 
       {{:present, endpoint}, actions, state} ->
         dispatch(%Message.EndpointRemoved{endpoint_id: id, endpoint_type: endpoint.type})
@@ -673,7 +673,7 @@ defmodule Membrane.RTC.Engine do
   @impl true
   def handle_crash_group_down(endpoint_id, ctx, state) do
     case handle_remove_endpoint(endpoint_id, ctx, state) do
-      {{:present, endpoint}, actions, state} ->
+      {{status, endpoint}, actions, state} when status in [:present, :pending] ->
         dispatch(%Message.EndpointCrashed{
           endpoint_id: endpoint_id,
           endpoint_type: endpoint.type,
