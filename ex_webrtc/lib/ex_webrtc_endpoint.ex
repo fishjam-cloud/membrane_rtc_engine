@@ -24,10 +24,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 description: "Range of ports that ICE will use for gathering host candidates.",
                 default: nil
               ],
-              video_codecs: [
-                spec: [video_codec] | nil,
-                description: "Allowed video codecs",
-                default: nil
+              video_codec: [
+                spec: video_codec,
+                description: "Allowed video codec",
+                default: :H264
               ],
               # TODO: metadata unused
               metadata: [
@@ -79,7 +79,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         inbound_tracks: %{},
         track_id_to_bitrates: %{},
         negotiation?: false,
-        queued_renegotiation?: false,
+        queued_negotiation?: false,
         removed_tracks: %{audio: 0, video: 0}
       })
 
@@ -87,7 +87,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
         ice_port_range: state.ice_port_range,
-        video_codecs: opts.video_codecs
+        video_codecs: [opts.video_codecs]
       })
     ]
 
@@ -126,7 +126,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> child({:track_receiver, track_id}, %TrackReceiver{
         track: track.engine_track,
         initial_target_variant: :h,
-        keyframe_request_interval: Membrane.Time.seconds(3)
+        keyframe_request_interval: Membrane.Time.seconds(5)
       })
       |> via_in(pad)
       |> get_child(:connection_handler)
@@ -334,7 +334,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   defp handle_media_event(:renegotiate_tracks, _data, _ctx, %{negotiation?: true} = state) do
-    {[], %{state | queued_renegotiation?: true}}
+    {[], %{state | queued_negotiation?: true}}
   end
 
   defp handle_media_event(:renegotiate_tracks, _data, _ctx, state) do
@@ -427,7 +427,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     state = update_in(state.outbound_tracks, &Map.merge(&1, negotiated_tracks))
     pending_tracks = Map.filter(state.outbound_tracks, fn {_id, t} -> t.status == :pending end)
 
-    if Enum.empty?(pending_tracks) and not state.queued_renegotiation? do
+    if Enum.empty?(pending_tracks) and not state.queued_negotiation? do
       {[], %{state | negotiation?: false}}
     else
       new_tracks =
@@ -436,7 +436,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
 
       offer_data = get_offer_data(state)
-      {offer_data, %{state | negotiation?: true, queued_renegotiation?: false}}
+      {offer_data, %{state | negotiation?: true, queued_negotiation?: false}}
     end
   end
 
@@ -447,7 +447,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{negotiation?: true} = state
       ) do
-    {[], %{state | queued_renegotiation?: true}}
+    {[], %{state | queued_negotiation?: true}}
   end
 
   @impl true

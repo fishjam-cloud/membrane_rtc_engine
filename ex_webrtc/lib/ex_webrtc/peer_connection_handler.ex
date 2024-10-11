@@ -47,8 +47,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     ice_servers: @ice_servers
   ]
 
-  # Currently we enforce h264 encoding, since the ExWebRTC API doesn't support selecting
-  # encoding when adding track
   @video_codecs [
     H264: %ExWebRTC.RTPCodecParameters{
       payload_type: 98,
@@ -202,6 +200,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:tracks_removed, track_ids}, _ctx, state) do
+    # TODO: properly remove tracks by either removing the transceiver or reusing
+    # transceivers from removed tracks
     rtc_track_ids = Enum.map(track_ids, &Map.fetch!(state.outbound_tracks, &1))
 
     transceivers = PeerConnection.get_transceivers(state.pc)
