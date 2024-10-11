@@ -57,7 +57,8 @@ defmodule TestVideoroom.Room do
 
     endpoint = %ExWebRTC{
       rtc_engine: state.rtc_engine,
-      ice_port_range: state.ice_port_range
+      ice_port_range: state.ice_port_range,
+      video_codec: :VP8
     }
 
     :ok = Engine.add_endpoint(state.rtc_engine, endpoint, id: peer_id)

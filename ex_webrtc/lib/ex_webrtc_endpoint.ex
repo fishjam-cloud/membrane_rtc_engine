@@ -87,7 +87,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
         ice_port_range: state.ice_port_range,
-        video_codecs: [opts.video_codecs]
+        video_codecs: [opts.video_codec]
       })
     ]
 
