@@ -15,6 +15,11 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
                 spec: pid(),
                 default: nil,
                 description: "Pid of owner of endpoint"
+              ],
+              delay_termination: [
+                spec: pos_integer(),
+                default: nil,
+                description: "Delay of endpoint termination in milliseconds"
               ]
 
   def_input_pad :input,
@@ -44,5 +49,19 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_parent_notification(message, _ctx, state) do
     send(state.owner, message)
     {[], state}
+  end
+
+  @impl true
+  def handle_terminate_request(_ctx, %{delay_termination: nil} = state) do
+    {[terminate: :normal], state}
+  end
+
+  @impl true
+  def handle_terminate_request(_ctx, %{delay_termination: delay} = state) do
+    # Allows to test race condtition connected to adding new endpoint
+    # while the old one with the same id is in terminating state
+    Process.sleep(delay)
+
+    {[terminate: :normal], state}
   end
 end
