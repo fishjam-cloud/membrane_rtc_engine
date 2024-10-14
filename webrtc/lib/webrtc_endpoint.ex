@@ -373,18 +373,8 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
 
     {:endpoint, endpoint_id} = ctx.name
 
-    track_subscriptions =
-      Enum.map(new_outbound_tracks, fn track ->
-        case Engine.subscribe(state.rtc_engine, endpoint_id, track.id) do
-          {:ok, updated_track} -> {true, updated_track}
-          :ignored -> {false, track}
-        end
-      end)
-
     {valid_tracks, invalid_tracks} =
-      track_subscriptions
-      |> Enum.split_with(fn {ok?, _track} -> ok? end)
-      |> Enum.map(&Enum.map(&1, fn {_ok, track} -> track end))
+      subscribe_tracks(state.rtc_engine, endpoint_id, new_outbound_tracks)
 
     {update_track_actions, state} = get_metadata_updated_actions(valid_tracks, state)
 
@@ -850,6 +840,18 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
 
     send_if_not_nil(state.display_manager, msg)
     {[], state}
+  end
+
+  defp subscribe_tracks(rtc_engine, endpoint_id, new_outbound_tracks) do
+    {valid, invalid} =
+      Enum.reduce(new_outbound_tracks, {[], []}, fn {valid, invalid}, track ->
+        case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
+          {:ok, updated_track} -> {[updated_track | valid], invalid}
+          :ignored -> {valid, [track | invalid]}
+        end
+      end)
+
+    {Enum.reverse(valid), Enum.reverse(invalid)}
   end
 
   defp get_turn_configs(turn_servers, state) do
