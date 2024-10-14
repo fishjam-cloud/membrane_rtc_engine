@@ -844,7 +844,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
 
   defp subscribe_tracks(rtc_engine, endpoint_id, new_outbound_tracks) do
     {valid, invalid} =
-      Enum.reduce(new_outbound_tracks, {[], []}, fn {valid, invalid}, track ->
+      Enum.reduce(new_outbound_tracks, {[], []}, fn track, {valid, invalid} ->
         case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
           {:ok, updated_track} -> {[updated_track | valid], invalid}
           :ignored -> {valid, [track | invalid]}
@@ -937,8 +937,6 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
   end
 
   defp get_metadata_updated_actions(valid_tracks, state) do
-    valid_tracks = Map.new(valid_tracks, &{&1.id, &1})
-
     valid_tracks
     |> Enum.filter(&(&1.metadata != get_in(state, [:outbound_tracks, &1.id, :metadata])))
     |> Enum.map_reduce(state, fn track, state -> track_updated(track, state) end)
