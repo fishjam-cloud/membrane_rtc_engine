@@ -243,8 +243,8 @@ defmodule RecordingEndpoint do
 
     Enum.reduce_while(tracks, {[], state}, fn track, {[], state} ->
       case Engine.subscribe(state.rtc_engine, endpoint_id, track.id) do
-        {:ok, _track} ->
-          {:cont, {[], update_in(state, [:tracks], &Map.put(&1, track.id, track))}}
+        {:ok, updated_track} ->
+          {:cont, {[], update_in(state, [:tracks], &Map.put(&1, track.id, updated_track))}}
 
         :ignored ->
           {:cont, {[], state}}
