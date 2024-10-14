@@ -397,15 +397,15 @@ defmodule Membrane.RTC.Engine do
           endpoint_id :: String.t(),
           track_id :: Track.id(),
           opts :: subscription_opts_t
-        ) :: :ok | :ignored
+        ) :: {:ok, Track.t()} | :ignored
   def subscribe(rtc_engine, endpoint_id, track_id, opts \\ []) do
     ref = make_ref()
 
     send(rtc_engine, {:subscribe, {self(), ref}, endpoint_id, track_id, opts})
 
     receive do
-      {^ref, :ok} ->
-        :ok
+      {^ref, :ok, track} ->
+        {:ok, track}
 
       {^ref, {:error, :invalid_track_id}} ->
         Membrane.Logger.debug("""
@@ -553,7 +553,14 @@ defmodule Membrane.RTC.Engine do
     case validate_subscription(subscription, ctx, state) do
       :ok ->
         {spec, state} = fulfill_or_postpone_subscription(subscription, ctx, state)
-        send(endpoint_pid, {ref, :ok})
+
+        track =
+          state.endpoints
+          |> Map.values()
+          |> Enum.flat_map(&Endpoint.get_tracks/1)
+          |> Enum.find(& (&1.id == track_id))
+
+        send(endpoint_pid, {ref, :ok, track})
         Membrane.Logger.debug("Subscription fulfilled by #{endpoint_id} on track: #{track_id}")
         {[spec: {spec, log_metadata: [rtc: state.id]}], state}
 

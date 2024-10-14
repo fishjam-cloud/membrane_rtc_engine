@@ -203,7 +203,7 @@ defmodule Membrane.RTC.EngineTest do
       refute_receive {:track_metadata_updated, _track}
     end
 
-    @tag :no_subscribe
+    @tag no_subscribe: true
     test "return updated track upon subscription", %{
       rtc_engine: rtc_engine,
       track: %Track{id: track_id} = track,
@@ -464,7 +464,7 @@ defmodule Membrane.RTC.EngineTest do
     )
   end
 
-  defp setup_for_metadata_tests(%{rtc_engine: rtc_engine, tags: tags}) do
+  defp setup_for_metadata_tests(%{rtc_engine: rtc_engine} = ctx) do
     track = video_track("track-endpoint", "track1", "track-metadata")
 
     endpoint = %Endpoint{
@@ -502,7 +502,7 @@ defmodule Membrane.RTC.EngineTest do
 
     assert_receive {:new_tracks, [%Track{id: "track1"}]}
 
-    if not Map.get(tags, :no_subscribe) do
+    if Map.get(ctx, :no_subscribe) == nil do
       assert {:ok, ^track} = Engine.subscribe(rtc_engine, server_endpoint_id, "track1")
     end
 
