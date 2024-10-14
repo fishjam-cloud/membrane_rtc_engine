@@ -368,20 +368,25 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
 
   @impl true
   def handle_child_notification({:negotiation_done, new_outbound_tracks}, _from, ctx, state) do
+    new_outbound_tracks =
+      Enum.map(new_outbound_tracks, &to_rtc_track(&1, Map.get(state.outbound_tracks, &1.id)))
+
     {:endpoint, endpoint_id} = ctx.name
 
-    {valid_tracks, invalid_tracks} =
-      Enum.split_with(new_outbound_tracks, fn track ->
+    track_subscriptions =
+      Enum.map(new_outbound_tracks, fn track ->
         case Engine.subscribe(state.rtc_engine, endpoint_id, track.id) do
-          {:ok, track} ->
-            track
-
-          :ignored ->
-            false
+          {:ok, updated_track} -> {true, updated_track}
+          :ignored -> {false, track}
         end
       end)
 
-    {update_track_actions, state} = maybe_update_tracks_metadata(valid_tracks, state)
+    {valid_tracks, invalid_tracks} =
+      track_subscriptions
+      |> Enum.split_with(fn {ok?, _track} -> ok? end)
+      |> Enum.map(&Enum.map(&1, fn {_ok, track} -> track end))
+
+    {update_track_actions, state} = get_metadata_updated_actions(valid_tracks, state)
 
     send_if_not_nil(state.display_manager, {:subscribe_tracks, ctx.name, valid_tracks})
 
@@ -929,7 +934,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
     WebRTC.Track.new(track.type, track.stream_id, to_keyword_list(track))
   end
 
-  defp maybe_update_tracks_metadata(valid_tracks, state) do
+  defp get_metadata_updated_actions(valid_tracks, state) do
     valid_tracks = Map.new(valid_tracks, &{&1.id, &1})
 
     valid_tracks

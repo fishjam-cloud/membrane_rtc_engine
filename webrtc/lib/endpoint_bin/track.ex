@@ -27,7 +27,8 @@ defmodule Membrane.WebRTC.Track do
                 selected_encoding_key: nil,
                 selected_encoding: nil,
                 offered_encodings: [],
-                rid_to_ssrc: %{}
+                rid_to_ssrc: %{},
+                metadata: nil
               ]
 
   @type id :: String.t()
@@ -48,7 +49,8 @@ defmodule Membrane.WebRTC.Track do
           mid: binary(),
           rids: [rid()] | nil,
           rid_to_ssrc: %{},
-          extmaps: [Extmap]
+          extmaps: [Extmap],
+          metadata: any
         }
 
   @doc """
