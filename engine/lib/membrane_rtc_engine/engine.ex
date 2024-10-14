@@ -558,7 +558,7 @@ defmodule Membrane.RTC.Engine do
           state.endpoints
           |> Map.values()
           |> Enum.flat_map(&Endpoint.get_tracks/1)
-          |> Enum.find(& (&1.id == track_id))
+          |> Enum.find(&(&1.id == track_id))
 
         send(endpoint_pid, {ref, :ok, track})
         Membrane.Logger.debug("Subscription fulfilled by #{endpoint_id} on track: #{track_id}")
