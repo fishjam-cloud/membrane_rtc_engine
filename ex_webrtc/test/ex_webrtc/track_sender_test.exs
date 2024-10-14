@@ -172,7 +172,7 @@ defmodule Membrane.RTC.Engine.ExWebRTC.TrackSenderTest do
     pipeline = build_video_pipeline(track, {nil, &Utils.generator/2}, 3)
 
     new_bitrates = %{high: 1420, medium: 689}
-    Pipeline.message_child(pipeline, :track_sender, {:variant_bitrates, new_bitrates})
+    Pipeline.notify_child(pipeline, :track_sender, {:variant_bitrates, new_bitrates})
     new_bitrates = Map.merge(@default_bitrates_video, new_bitrates)
 
     Enum.each(@variants, fn variant ->

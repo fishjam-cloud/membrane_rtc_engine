@@ -71,6 +71,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC.MixProject do
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
+      {:ex_sdp, "~> 0.15.0", override: true},
 
       # Test deps
       {:membrane_file_plugin, "~> 0.16.0"},
