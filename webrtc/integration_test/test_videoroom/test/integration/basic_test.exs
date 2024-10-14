@@ -56,16 +56,22 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == browser_id
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
+                         browsers_number - 1
+
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
+                         browsers_number - 1
               end)
             end)
 
           {:before_leave, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == browsers_number - browser_id - 1
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
+                         browsers_number - 1
+
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
+                         browsers_number - 1
               end)
             end)
         end)
@@ -105,8 +111,11 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {_browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == browsers_number - 1
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
+                         browsers_number - 1
+
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
+                         browsers_number - 1
               end)
             end)
 
@@ -149,7 +158,12 @@ defmodule TestVideoroom.Integration.BasicTest do
     end
     |> Task.await_many(:infinity)
 
-    {_button, buttons_with_id} = Map.pop!(buttons_with_id, 3)
+    browser_received_tracks = %{
+      0 => %{a: 1, v: 1},
+      1 => %{a: 2, v: 1},
+      2 => %{a: 1, v: 2},
+      3 => %{a: 2, v: 2}
+    }
 
     receive do
       {:stats, acc} ->
@@ -157,10 +171,11 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == if(browser_id == 3, do: 3, else: 2)
-                {_value, new_buttons} = Map.pop(buttons_with_id, browser_id)
-                new_buttons = Map.values(new_buttons)
-                assert_streams_playing(stats, new_buttons)
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
+                         browser_received_tracks[browser_id].a
+
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
+                         browser_received_tracks[browser_id].v
               end)
             end)
 
