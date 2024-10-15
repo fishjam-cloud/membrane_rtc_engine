@@ -57,12 +57,11 @@ defmodule Membrane.RTC.Engine.Endpoint.File.MixProject do
       {:membrane_realtimer_plugin, "~> 0.9.0"},
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_opus_plugin, "~> 0.20.0"},
-      {:membrane_ogg_plugin, "~> 0.5.0"},
+      {:membrane_ogg_plugin, "~> 0.4.0"},
       {:membrane_h26x_plugin, "~> 0.10.0"},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:bundlex, "~> 1.5.0", override: true},
 
       # Test deps,
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false}
