@@ -126,7 +126,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> child({:track_receiver, track_id}, %TrackReceiver{
         track: track.engine_track,
         initial_target_variant: :h,
-        # keyframe_request_interval: Membrane.Time.seconds(5)
         keyframe_request_interval: nil
       })
       |> via_in(pad)
