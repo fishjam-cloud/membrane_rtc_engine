@@ -66,7 +66,8 @@ defmodule Membrane.RTC.Engine.MixProject do
 
       # Test deps
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false},
-      {:membrane_fake_plugin, "~> 0.11.0", only: :test}
+      {:membrane_fake_plugin, "~> 0.11.0", only: :test},
+      {:ex_sdp, "~> 1.1"}
     ]
   end
 
