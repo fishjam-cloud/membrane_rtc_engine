@@ -478,23 +478,26 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_info({:subscribe_result, subscribe_ref, :ok}, _ctx, state) do
+  def handle_info({:subscribe_result, subscribe_ref, {:ok, engine_track}}, _ctx, state) do
     {track_id, track} =
       Enum.find(state.outbound_tracks, fn {_id, t} -> t.subscribe_ref == subscribe_ref end)
 
-    # Because of potential deadlock between the ExWebRTC Endpoint and Engine,
-    # the `get_tracks()` function may fail due to timeout.
-    # Hence the try-catch block
-    try do
-      all_tracks = Engine.get_tracks(state.rtc_engine)
-      handle_track_subscribed({track_id, track}, all_tracks, state)
-    catch
-      :exit, _err ->
-        # Try again later
-        Process.send_after(self(), {:subscribe_result, subscribe_ref, :ok}, 100)
+    track = %{track | status: :subscribed, subscribe_ref: nil}
 
-        {[], state}
-    end
+    {actions, track} =
+      if engine_track.metadata == track.engine_track.metadata do
+        {[], track}
+      else
+        event =
+          MediaEvent.track_updated(track.engine_track.origin, track_id, engine_track.metadata)
+          |> MediaEvent.to_action()
+
+        track = update_in(track.engine_track.metadata, engine_track.metadata)
+        {event, track}
+      end
+
+    state = update_in(state.outbound_tracks, &Map.put(&1, track_id, track))
+    {actions, state}
   end
 
   @impl true
@@ -576,25 +579,5 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     notify_handler = [notify_child: {:connection_handler, {:tracks_removed, track_ids}}]
 
     tracks_removed_events ++ notify_handler
-  end
-
-  defp handle_track_subscribed({track_id, track}, all_tracks, state) do
-    engine_track = all_tracks |> Enum.find(&(&1.id == track_id))
-    track = %{track | status: :subscribed, subscribe_ref: nil}
-
-    {actions, track} =
-      if engine_track.metadata == track.engine_track.metadata do
-        {[], track}
-      else
-        event =
-          MediaEvent.track_updated(track.engine_track.origin, track_id, engine_track.metadata)
-          |> MediaEvent.to_action()
-
-        track = update_in(track.engine_track.metadata, engine_track.metadata)
-        {event, track}
-      end
-
-    state = update_in(state.outbound_tracks, &Map.put(&1, track_id, track))
-    {actions, state}
   end
 end

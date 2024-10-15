@@ -65,7 +65,7 @@ defmodule Membrane.RTC.Engine.Subscriber do
     {valid_tracks, invalid_tracks} =
       Enum.split_with(tracks, fn track ->
         case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
-          :ok ->
+          {:ok, _track} ->
             true
 
           :ignored ->

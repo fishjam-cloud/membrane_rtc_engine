@@ -38,7 +38,7 @@ defmodule TestVideoroom.MixProject do
       {:membrane_rtc_engine, path: rtc_engine_path(), override: true},
       {:membrane_rtc_engine_ex_webrtc, path: Path.join(rtc_engine_path(), "../ex_webrtc/")},
       {:ex_sdp, "~> 0.17.0", override: true},
-      {:stampede, github: "membraneframework-labs/stampede-elixir", branch: "update-deps"}
+      {:stampede, github: "fishjam-dev/stampede-elixir"}
     ]
   end
 
