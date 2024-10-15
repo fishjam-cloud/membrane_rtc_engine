@@ -554,11 +554,7 @@ defmodule Membrane.RTC.Engine do
       :ok ->
         {spec, state} = fulfill_or_postpone_subscription(subscription, ctx, state)
 
-        track =
-          state.endpoints
-          |> Map.values()
-          |> Enum.flat_map(&Endpoint.get_tracks/1)
-          |> Enum.find(&(&1.id == track_id))
+        track = get_track(track_id, state.endpoints)
 
         send(endpoint_pid, {ref, :ok, track})
         Membrane.Logger.debug("Subscription fulfilled by #{endpoint_id} on track: #{track_id}")
@@ -1361,8 +1357,7 @@ defmodule Membrane.RTC.Engine do
     endpoints
     |> Map.values()
     |> Enum.flat_map(&Endpoint.get_tracks/1)
-    |> Map.new(&{&1.id, &1})
-    |> Map.get(track_id)
+    |> Enum.find(&(&1.id == track_id))
   end
 
   defp prepare_track_notifications(subscriptions, pending_subscriptions, track_id, notification) do

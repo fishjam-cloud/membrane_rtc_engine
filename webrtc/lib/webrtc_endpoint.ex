@@ -843,15 +843,12 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
   end
 
   defp subscribe_tracks(rtc_engine, endpoint_id, new_outbound_tracks) do
-    {valid, invalid} =
-      Enum.reduce(new_outbound_tracks, {[], []}, fn track, {valid, invalid} ->
-        case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
-          {:ok, updated_track} -> {[updated_track | valid], invalid}
-          :ignored -> {valid, [track | invalid]}
-        end
-      end)
-
-    {Enum.reverse(valid), Enum.reverse(invalid)}
+    Enum.reduce(new_outbound_tracks, {[], []}, fn track, {valid, invalid} ->
+      case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
+        {:ok, updated_track} -> {[updated_track | valid], invalid}
+        :ignored -> {valid, [track | invalid]}
+      end
+    end)
   end
 
   defp get_turn_configs(turn_servers, state) do

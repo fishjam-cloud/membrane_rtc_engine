@@ -56,22 +56,17 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
-                         browsers_number - 1
-
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
-                         browsers_number - 1
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() == browser_id
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() == browser_id
               end)
             end)
 
           {:before_leave, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
-                         browsers_number - 1
-
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
-                         browsers_number - 1
+                expected_tracks = browsers_number - browser_id - 1
+                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() == expected_tracks
+                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() == expected_tracks
               end)
             end)
         end)
@@ -184,30 +179,4 @@ defmodule TestVideoroom.Integration.BasicTest do
         end)
     end
   end
-
-  defp assert_streams_playing(stats, buttons) do
-    for button <- buttons do
-      case button do
-        @start_with_all ->
-          assert Enum.any?(stats, &is_stream_playing(&1))
-
-        @start_with_camera ->
-          assert Enum.any?(stats, &is_stream_playing(&1, %{audio: false, video: true}))
-
-        @start_with_mic ->
-          assert Enum.any?(stats, &is_stream_playing(&1, %{audio: true, video: false}))
-
-        @start_with_nothing ->
-          assert Enum.any?(stats, &is_stream_playing(&1, %{audio: false, video: false}))
-      end
-    end
-  end
-
-  defp is_stream_playing(stats, expected \\ %{audio: true, video: true})
-
-  defp is_stream_playing(
-         %{"streamId" => _, "isAudioPlaying" => audio, "isVideoPlaying" => video},
-         %{audio: expected_audio, video: expected_video}
-       ),
-       do: audio == expected_audio and video == expected_video
 end

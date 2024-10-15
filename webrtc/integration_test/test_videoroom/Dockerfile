@@ -1,19 +1,4 @@
-FROM elixir:1.14.3-otp-24-alpine
-
-RUN \
-  apk add --no-cache \
-  git \
-  nodejs \
-  npm \
-  gcc \
-  musl-dev \
-  pkgconfig \
-  libsrtp-dev \
-  openssl1.1-compat-dev \
-  ffmpeg-dev
-
-RUN mix local.hex --force && \
-  mix local.rebar --force
+FROM membraneframeworklabs/docker_membrane:v2.3.0
 
 WORKDIR /engine
 COPY engine/lib lib/
@@ -45,11 +30,9 @@ COPY ${APP_PATH}/config/runtime.exs config/
 COPY ${APP_PATH}/assets assets/
 RUN cd assets && npm install
 RUN mix assets.deploy
+RUN mix playwright.install
 
 # Generate self-signed cert for SSL
 RUN mix phx.gen.cert
 
-COPY ${APP_PATH}/docker-entrypoint.sh ./
-RUN chmod +x docker-entrypoint.sh
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
+CMD ["mix", "test"]
