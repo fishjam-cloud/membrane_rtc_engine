@@ -55,7 +55,7 @@ defmodule Membrane.RTC.Engine.MixProject do
     [
       {:membrane_core, "~> 1.0"},
       {:membrane_rtp_plugin, "~> 0.29.0"},
-      {:membrane_rtp_format, "~> 0.8.0"},
+      {:membrane_rtp_format, "~> 0.9.0"},
       {:elixir_uuid, "~> 1.2"},
       {:statistics, "~> 0.6.0"},
       # for colouring diffs in upgrade guides

@@ -38,12 +38,12 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
                 description: "Configuration of the track being published"
               ],
               ssrc: [
-                spec: RTP.ssrc_t(),
+                spec: RTP.ssrc(),
                 description: "SSRC of RTP packets",
                 default: nil
               ],
               payload_type: [
-                spec: RTP.payload_type_t(),
+                spec: RTP.payload_type(),
                 description: "Payload type of RTP packets"
               ],
               playback_mode: [
@@ -142,34 +142,12 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
     actions =
       if state.track.encoding == :OPUS and
            state.after_source_transformation == (&Function.identity/1) do
-        build_pipeline_ogg_demuxer(state)
+        build_pipeline_ogg_demuxer(state, pad)
       else
         build_full_pipeline(state, pad)
       end
 
     {actions, state}
-  end
-
-  @impl true
-  def handle_child_notification(
-        {:new_track, {track_id, :opus}},
-        :ogg_demuxer,
-        ctx,
-        state
-      ) do
-    [output_pad] =
-      ctx.pads
-      |> Map.keys()
-      |> Enum.filter(&match?({Membrane.Pad, :output, _pad_id}, &1))
-
-    spec = [
-      get_child(:ogg_demuxer)
-      |> via_out(Pad.ref(:output, track_id))
-      |> child(:parser, Membrane.Opus.Parser)
-      |> then(get_rest_of_pipeline(state, output_pad))
-    ]
-
-    {[spec: spec], state}
   end
 
   @impl true
@@ -247,10 +225,24 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
     ]
   end
 
-  defp build_pipeline_ogg_demuxer(state) do
+  defp build_pipeline_ogg_demuxer(state, pad) do
     spec = [
       child(:source, %Membrane.File.Source{location: state.file_path})
+      # |> child(:filter1, %Membrane.Debug.Filter{
+      #   handle_buffer: &IO.inspect(&1, label: "source buffer"),
+      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
+      # })
       |> child(:ogg_demuxer, Membrane.Ogg.Demuxer)
+      # |> child(:filter2, %Membrane.Debug.Filter{
+      #   handle_buffer: &IO.inspect(&1, label: "demuxed buffer"),
+      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
+      # })
+      |> child(:opus_parser, opus_parser())
+      # |> child(:filter3, %Membrane.Debug.Filter{
+      #   handle_buffer: &IO.inspect(&1, label: "parsed buffer"),
+      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
+      # })
+      |> then(get_rest_of_pipeline(state, pad))
     ]
 
     [spec: spec]
@@ -299,7 +291,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
 
   defp get_parser(%Track{encoding: :OPUS}) do
     fn link_builder ->
-      child(link_builder, :parser, Membrane.Opus.Parser)
+      child(link_builder, :parser, opus_parser())
     end
   end
 
@@ -313,6 +305,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
       })
     end
   end
+
+  defp opus_parser(), do: %Membrane.Opus.Parser{generate_best_effort_timestamps?: true}
 
   defp new_ssrc() do
     :crypto.strong_rand_bytes(4) |> :binary.decode_unsigned()

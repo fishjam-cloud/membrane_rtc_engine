@@ -60,7 +60,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC.MixProject do
       {:membrane_h26x_plugin, "~> 0.10.0"},
       {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_ice_plugin, "~> 0.18.0"},
-      {:membrane_rtp_format, "~> 0.8.0"},
+      {:membrane_rtp_format, "~> 0.9.0"},
       {:membrane_rtp_vp8_plugin, "~> 0.9.0"},
       {:membrane_rtp_h264_plugin, "~> 0.19.0"},
       {:membrane_rtp_opus_plugin, ">= 0.9.0"},
