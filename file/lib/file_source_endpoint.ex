@@ -228,20 +228,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   defp build_pipeline_ogg_demuxer(state, pad) do
     spec = [
       child(:source, %Membrane.File.Source{location: state.file_path})
-      # |> child(:filter1, %Membrane.Debug.Filter{
-      #   handle_buffer: &IO.inspect(&1, label: "source buffer"),
-      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
-      # })
       |> child(:ogg_demuxer, Membrane.Ogg.Demuxer)
-      # |> child(:filter2, %Membrane.Debug.Filter{
-      #   handle_buffer: &IO.inspect(&1, label: "demuxed buffer"),
-      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
-      # })
       |> child(:opus_parser, opus_parser())
-      # |> child(:filter3, %Membrane.Debug.Filter{
-      #   handle_buffer: &IO.inspect(&1, label: "parsed buffer"),
-      #   handle_stream_format: &IO.inspect(&1, label: "stream format")
-      # })
       |> then(get_rest_of_pipeline(state, pad))
     ]
 

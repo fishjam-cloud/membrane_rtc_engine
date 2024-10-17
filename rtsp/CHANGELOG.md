@@ -6,7 +6,7 @@
 ## 0.8.0
 * Update deps [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
-* Update deps []()
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 
 ## 0.7.0
 * Move to membrane_h26x_plugin. Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)
