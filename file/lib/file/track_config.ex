@@ -13,7 +13,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File.TrackConfig do
           type: :audio | :video,
           stream_id: String.t() | nil,
           encoding: Track.encoding(),
-          clock_rate: Membrane.RTP.clock_rate(),
+          clock_rate: Membrane.RTP.clock_rate_t(),
           fmtp: FMTP.t(),
           opts: Track.opts_t()
         }

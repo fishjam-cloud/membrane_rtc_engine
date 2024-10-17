@@ -60,7 +60,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_funnel_plugin, "~> 0.9.0"},
-      {:membrane_rtp_format, "~> 0.9.0"},
+      {:membrane_rtp_format, "~> 0.8.0"},
       {:membrane_udp_plugin, "~> 0.13.0"},
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_raw_audio_parser_plugin, "~> 0.4.0"},

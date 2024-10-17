@@ -60,7 +60,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File.MixProject do
       {:membrane_ogg_plugin, "~> 0.5.0"},
       {:membrane_h26x_plugin, "~> 0.10.0"},
       {:membrane_rtp_opus_plugin, "~> 0.9.0"},
-      {:membrane_rtp_format, "~> 0.9.0"},
+      {:membrane_rtp_format, "~> 0.8.0"},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},

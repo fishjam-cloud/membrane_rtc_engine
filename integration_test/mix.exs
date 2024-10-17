@@ -60,7 +60,6 @@ defmodule Membrane.RTC.Engine.Integration.MixProject do
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_raw_video_format, "~> 0.3.0"},
       {:membrane_h264_ffmpeg_plugin, "~> 0.31.0"},
-      {:membrane_rtp_format, "~> 0.9.0", override: true},
 
       # Test deps
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false},
