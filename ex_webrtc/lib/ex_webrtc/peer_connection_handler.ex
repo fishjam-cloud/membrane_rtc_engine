@@ -333,7 +333,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         [event: {pad, %Membrane.KeyframeRequestEvent{}}]
 
       nil ->
-        Membrane.Logger.warning("Received PLI for unknown track #{track_id}")
+        Membrane.Logger.error("Received PLI for unknown track #{track_id}")
         []
     end
   end
