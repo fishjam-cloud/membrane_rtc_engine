@@ -40,7 +40,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP do
     RegistrarCredentials
   }
 
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.{TrackReceiver, TrackSender}
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.{TrackReceiver, TrackSender}
   alias Membrane.RTC.Engine.Notifications.TrackNotification
   alias Membrane.RTC.Engine.Subscriber
   alias Membrane.RTC.Engine.Track

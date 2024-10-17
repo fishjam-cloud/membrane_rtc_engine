@@ -54,7 +54,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       {:membrane_rtp_format, "~> 0.8.0"},
       {:membrane_rtp_vp8_plugin, "~> 0.9.0"},
       {:membrane_rtp_h264_plugin, "0.19.3"},
-      {:ex_sdp, "~> 0.17.0", override: true},
+      {:ex_sdp, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:elixir_uuid, "~> 1.2"},
 

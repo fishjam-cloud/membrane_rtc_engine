@@ -16,8 +16,8 @@ defmodule Membrane.RTC.Engine.Endpoint.HLS do
   require Membrane.Logger
 
   alias Membrane.RTC.Engine
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Endpoint.HLS.{HLSConfig, MixerConfig}
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Subscriber
   alias Membrane.RTC.Engine.Track
   alias Membrane.Time
