@@ -25,8 +25,8 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP do
   require Membrane.Logger
 
   alias Membrane.RTC.Engine
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender
   alias Membrane.RTC.Engine.Endpoint.RTSP.ConnectionManager
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.TrackSender
   alias Membrane.RTC.Engine.Track
 
   @doc """

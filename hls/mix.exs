@@ -59,12 +59,12 @@ defmodule Membrane.RTC.Engine.Endpoint.HLS.MixProject do
     [
       # Engine deps
       {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_webrtc, path: "../webrtc"},
+      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
       {:membrane_core, "~> 1.0"},
       {:membrane_aac_plugin, "~> 0.18.0"},
-      {:membrane_opus_plugin, "~> 0.19.3"},
+      {:membrane_opus_plugin, "~> 0.20.0"},
       {:membrane_aac_fdk_plugin, "~> 0.18.5"},
       {:membrane_raw_audio_format, "~> 0.12.0"},
       {:membrane_raw_video_format, "~> 0.3.0"},
@@ -80,6 +80,7 @@ defmodule Membrane.RTC.Engine.Endpoint.HLS.MixProject do
       {:membrane_video_compositor_plugin, "~> 0.7.0", optional: true},
 
       # Test deps
+      {:castore, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false}
     ]
   end

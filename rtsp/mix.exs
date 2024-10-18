@@ -50,15 +50,15 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP.MixProject do
     [
       # Engine deps
       {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_webrtc, path: "../webrtc"},
+      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
       {:membrane_core, "~> 1.0"},
-      {:membrane_rtp_plugin, "~> 0.28.0"},
+      {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
       {:membrane_rtp_h264_plugin, "~> 0.19.0"},
       {:connection, "~> 1.1"},
-      {:membrane_rtsp, "~> 0.7.0"},
+      {:membrane_rtsp, "~> 0.10.0"},
       {:membrane_udp_plugin, "~> 0.13.0"},
       {:membrane_h26x_plugin, "~> 0.10.0"},
       {:credo, "~> 1.6", only: :dev, runtime: false},
@@ -66,6 +66,7 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP.MixProject do
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
 
       # Test deps
+      {:membrane_file_plugin, "~> 0.17.2", only: :test},
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false}
     ]
   end

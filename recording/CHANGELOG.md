@@ -6,6 +6,7 @@
 * Fix rtcp synchronization [#397](https://github.com/fishjam-dev/membrane_rtc_engine/pull/397)
 * Don't list S3 object if no files added in recording [#396](https://github.com/fishjam-dev/membrane_rtc_engine/pull/396)
 * Refactor rtcp synchronization [#399](https://github.com/fishjam-dev/membrane_rtc_engine/pull/399)
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 
 ## 0.1.0
 * Initial release [#356](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/356)

@@ -10,6 +10,7 @@
 * Update credo [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 * Update stampede dependency [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 
 ## 0.8.0
 * Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)

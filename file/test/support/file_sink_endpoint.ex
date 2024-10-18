@@ -8,7 +8,7 @@ defmodule Membrane.RTC.Engine.Support.Sink do
 
   alias Membrane.File.Sink, as: FileSink
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.TrackReceiver
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
 
   @type encoding_t() :: String.t()
