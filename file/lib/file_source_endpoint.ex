@@ -7,6 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   * immediately after initialization, if `playback_mode` is set to `:autoplay` (default),
   * after calling `playback_mode` function with proper arguments, if `playback_mode` is set to `:manual`
   * after other endpoint subscribes on this endpoint track, if `playback_mode` is set to `:wait_for_first_subscriber`
+  Currently, the File Endpoint only supports files that contain a single media track.
   """
 
   use Membrane.Bin

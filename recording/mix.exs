@@ -1,7 +1,7 @@
 defmodule Recording.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.2.0-dev"
   @engine_github_url "https://github.com/jellyfish-dev/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/recording"
   @source_ref "recording-v#{@version}"
