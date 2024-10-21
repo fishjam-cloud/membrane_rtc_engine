@@ -77,6 +77,9 @@ defmodule TestMustang do
       "uninitialized" ->
         {:error, :uninitialized}
 
+      "undefined" ->
+        {:error, :undefined}
+
       "Room error." <> reason ->
         {:error, reason}
 
