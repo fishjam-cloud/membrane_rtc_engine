@@ -288,7 +288,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
         is_keyframe: fn buffer, track ->
           case track.encoding do
             :OPUS -> true
-            :H264 -> Membrane.RTP.H264.Utils.is_keyframe(buffer.payload)
+            :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
           end
         end,
         wait_for_keyframe_request?: state.playback_mode == :wait_for_first_subscriber

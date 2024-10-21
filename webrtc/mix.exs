@@ -52,7 +52,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC.MixProject do
       {:membrane_rtc_engine, path: "../engine"},
 
       # Regular deps
-      {:membrane_core, "~> 1.0"},
+      {:membrane_core, "~> 1.1.2"},
       {:bundlex, "1.4.6"},
       {:unifex, "1.1.1"},
       {:bunch, "~> 1.5"},
@@ -96,7 +96,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC.MixProject do
       formatters: ["html"],
       groups_for_extras: groups_for_extras(),
       groups_for_modules: groups_for_modules(),
-      assets: "internal_docs/assets",
+      assets: %{"internal_docs/assets" => "assets"},
       source_ref: @source_ref,
       source_url_pattern: "#{@engine_github_url}/blob/#{@source_ref}/webrtc/%{path}#L%{line}",
       nest_modules_by_prefix: [Membrane.WebRTC, Membrane.RTC.Engine.Endpoint],

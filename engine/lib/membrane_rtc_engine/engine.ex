@@ -133,6 +133,7 @@ defmodule Membrane.RTC.Engine do
     defstruct @enforce_keys ++
                 [
                   endpoints: %{},
+                  pending_additions: %{},
                   pending_endpoints: %{},
                   pending_subscriptions: [],
                   subscriptions: %{},
@@ -146,9 +147,10 @@ defmodule Membrane.RTC.Engine do
             trace_context: map(),
             display_manager: pid() | nil,
             endpoints: %{Endpoint.id() => Endpoint.t()},
+            pending_additions: %{Endpoint.id() => any()},
             pending_endpoints: %{Endpoint.id() => Endpoint.t()},
-            subscriptions: %{Endpoint.id() => %{Track.id() => Subscription.t()}},
             pending_subscriptions: [Subscription.t()],
+            subscriptions: %{Endpoint.id() => %{Track.id() => Subscription.t()}},
             toilet_capacity: pos_integer()
           }
   end
@@ -310,7 +312,7 @@ defmodule Membrane.RTC.Engine do
           pid :: pid(),
           endpoint :: Membrane.ChildrenSpec.child_definition(),
           opts :: endpoint_options_t()
-        ) :: :ok | :error
+        ) :: :ok
   def add_endpoint(pid, endpoint, opts \\ []) do
     send(pid, {:add_endpoint, endpoint, opts})
     :ok
@@ -503,18 +505,28 @@ defmodule Membrane.RTC.Engine do
   end
 
   @impl true
-  def handle_info({:add_endpoint, endpoint, opts}, _ctx, state) do
+  def handle_info({:add_endpoint, endpoint, opts}, ctx, state) do
     endpoint_id = opts[:id] || UUID.uuid4()
     opts = Keyword.put(opts, :id, endpoint_id)
+    ctx_endpoint = Map.get(ctx.children, {:endpoint, endpoint_id})
 
-    if Map.has_key?(state.endpoints, endpoint_id) do
-      Membrane.Logger.warning(
-        "Cannot add Endpoint with id #{inspect(endpoint_id)} as it already exists"
-      )
+    cond do
+      Map.has_key?(state.endpoints, endpoint_id) or
+        Map.has_key?(state.pending_endpoints, endpoint_id) or
+          Map.has_key?(state.pending_additions, endpoint_id) ->
+        Membrane.Logger.warning(
+          "Cannot add Endpoint with id #{inspect(endpoint_id)} as it already exists"
+        )
 
-      {[], state}
-    else
-      handle_add_endpoint(endpoint, opts, state)
+        {[], state}
+
+      endpoint_terminating?(ctx_endpoint) ->
+        state = put_in(state, [:pending_additions, endpoint_id], {endpoint, opts})
+
+        {[], state}
+
+      true ->
+        handle_add_endpoint(endpoint, opts, state)
     end
   end
 
@@ -524,6 +536,11 @@ defmodule Membrane.RTC.Engine do
       {:absent, [], state} ->
         Membrane.Logger.info("Endpoint #{inspect(id)} already removed")
         {[], state}
+
+      {{:pending, endpoint}, actions, state} ->
+        dispatch(%Message.EndpointAdded{endpoint_id: id, endpoint_type: endpoint.type})
+        dispatch(%Message.EndpointRemoved{endpoint_id: id, endpoint_type: endpoint.type})
+        {actions, state}
 
       {{:present, endpoint}, actions, state} ->
         dispatch(%Message.EndpointRemoved{endpoint_id: id, endpoint_type: endpoint.type})
@@ -656,7 +673,7 @@ defmodule Membrane.RTC.Engine do
   @impl true
   def handle_crash_group_down(endpoint_id, ctx, state) do
     case handle_remove_endpoint(endpoint_id, ctx, state) do
-      {{:present, endpoint}, actions, state} ->
+      {{status, endpoint}, actions, state} when status in [:present, :pending] ->
         dispatch(%Message.EndpointCrashed{
           endpoint_id: endpoint_id,
           endpoint_type: endpoint.type,
@@ -673,6 +690,22 @@ defmodule Membrane.RTC.Engine do
 
   @impl true
   def handle_child_pad_removed(_child, _pad, _ctx, state) do
+    {[], state}
+  end
+
+  @impl true
+  def handle_child_terminated(
+        {:endpoint, endpoint_id},
+        _context,
+        %{pending_additions: pending_additions} = state
+      )
+      when is_map_key(pending_additions, endpoint_id) do
+    {{endpoint, opts}, state} = pop_in(state, [:pending_additions, endpoint_id])
+    handle_add_endpoint(endpoint, opts, state)
+  end
+
+  @impl true
+  def handle_child_terminated(_child, _context, state) do
     {[], state}
   end
 
@@ -1151,6 +1184,14 @@ defmodule Membrane.RTC.Engine do
           {{:present, pending_endpoint}, [remove_children: {:endpoint, endpoint_id}], state}
         end
 
+      Map.has_key?(state.pending_additions, endpoint_id) ->
+        {{endpoint_entry, _opts}, state} = pop_in(state, [:pending_additions, endpoint_id])
+
+        %endpoint_module{} = endpoint_entry
+        pending_endpoint = Endpoint.new(endpoint_id, endpoint_module, [])
+
+        {{:pending, pending_endpoint}, [], state}
+
       true ->
         {:absent, [], state}
     end
@@ -1395,4 +1436,7 @@ defmodule Membrane.RTC.Engine do
   defp endpoint_ready_notification?(:ready), do: true
   defp endpoint_ready_notification?({:ready, _metadata}), do: true
   defp endpoint_ready_notification?(_notification), do: false
+
+  defp endpoint_terminating?(%{terminating?: true}), do: true
+  defp endpoint_terminating?(_endpoint), do: false
 end

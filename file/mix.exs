@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File.MixProject do
       {:membrane_rtc_engine_webrtc, path: "../webrtc"},
 
       # Regular deps
-      {:membrane_core, "~> 1.0"},
+      {:membrane_core, "~> 1.1.2"},
       {:membrane_realtimer_plugin, "~> 0.9.0"},
       {:membrane_file_plugin, "~> 0.16.0"},
       {:membrane_opus_plugin, "~> 0.19.3"},
