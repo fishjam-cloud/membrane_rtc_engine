@@ -115,8 +115,6 @@ defmodule TestVideoroom.Integration.MetadataTest do
     for {actions, browser_id} <- actions_with_id, into: [] do
       specific_mustang = %{mustang_options | id: browser_id, actions: actions}
 
-      dbg(specific_mustang)
-
       Task.async(fn ->
         Stampede.start({TestMustang, specific_mustang}, @browser_options)
       end)
