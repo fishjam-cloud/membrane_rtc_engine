@@ -43,8 +43,8 @@ defmodule Membrane.RTC.EngineTest do
         {:execute_actions, [notify_parent: {:ready, "metadata"}]}
       )
 
-      assert_receive %Message.EndpointAdded{endpoint_id: ^first_endpoint}
-      assert_receive %Message.EndpointAdded{endpoint_id: ^second_endpoint}
+      assert_receive %EndpointAdded{endpoint_id: ^first_endpoint}
+      assert_receive %EndpointAdded{endpoint_id: ^second_endpoint}
       assert_receive {:new_endpoint, %Endpoint{id: ^second_endpoint, metadata: "metadata"}}
       assert_receive {:ready, []}
       refute_receive {:new_tracks, []}
@@ -145,20 +145,20 @@ defmodule Membrane.RTC.EngineTest do
 
       Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
 
-      assert_receive %Message.EndpointAdded{}
+      assert_receive %EndpointAdded{}
 
       Engine.remove_endpoint(rtc_engine, endpoint_id)
       Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
       Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
 
       assert_receive %EndpointRemoved{}
-      refute_receive %Message.EndpointAdded{}
-      assert_receive %Message.EndpointAdded{}, 600
+      refute_receive %EndpointAdded{}
+      assert_receive %EndpointAdded{}, 600
 
       Engine.remove_endpoint(rtc_engine, endpoint_id)
 
       assert_receive %EndpointRemoved{}
-      refute_receive %Message.EndpointAdded{}, 600
+      refute_receive %EndpointAdded{}, 600
     end
 
     test "removes pending addition of endpoint when remove_endpoint is called", %{
@@ -169,15 +169,15 @@ defmodule Membrane.RTC.EngineTest do
 
       Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
 
-      assert_receive %Message.EndpointAdded{}
+      assert_receive %EndpointAdded{}
 
       Engine.remove_endpoint(rtc_engine, endpoint_id)
       Engine.add_endpoint(rtc_engine, endpoint_spec, id: endpoint_id)
       Engine.remove_endpoint(rtc_engine, endpoint_id)
 
       assert_receive %EndpointRemoved{}
-      assert_receive %Message.EndpointAdded{}
-      assert_receive %Message.EndpointRemoved{}
+      assert_receive %EndpointAdded{}
+      assert_receive %EndpointRemoved{}
     end
 
     test "add the same endpoint multiple times", %{rtc_engine: rtc_engine} do
@@ -190,10 +190,10 @@ defmodule Membrane.RTC.EngineTest do
 
       Engine.remove_endpoint(rtc_engine, endpoint_id)
 
-      assert_receive %Message.EndpointAdded{}
-      refute_receive %Message.EndpointAdded{}
-      assert_receive %Message.EndpointRemoved{}
-      refute_receive %Message.EndpointRemoved{}
+      assert_receive %EndpointAdded{}
+      refute_receive %EndpointAdded{}
+      assert_receive %EndpointRemoved{}
+      refute_receive %EndpointRemoved{}
     end
 
     test "remove the same endpoint multiple times", %{rtc_engine: rtc_engine} do
@@ -206,9 +206,9 @@ defmodule Membrane.RTC.EngineTest do
       Engine.remove_endpoint(rtc_engine, endpoint_id)
       Engine.remove_endpoint(rtc_engine, endpoint_id)
 
-      assert_receive %Message.EndpointAdded{}
-      assert_receive %Message.EndpointRemoved{}
-      refute_receive %Message.EndpointRemoved{}
+      assert_receive %EndpointAdded{}
+      assert_receive %EndpointRemoved{}
+      refute_receive %EndpointRemoved{}
     end
   end
 
@@ -222,7 +222,7 @@ defmodule Membrane.RTC.EngineTest do
     } do
       :ok = Engine.add_endpoint(rtc_engine, %SinkEndpoint{owner: self(), rtc_engine: rtc_engine})
 
-      assert_receive %Message.EndpointAdded{}
+      assert_receive %EndpointAdded{}
 
       Engine.message_endpoint(
         rtc_engine,
@@ -404,7 +404,7 @@ defmodule Membrane.RTC.EngineTest do
 
       :ok = Engine.add_endpoint(rtc_engine, endpoint, id: endpoint_id)
 
-      assert_receive %Message.EndpointAdded{
+      assert_receive %EndpointAdded{
         endpoint_id: ^endpoint_id,
         endpoint_type: TestEndpoint
       }
@@ -480,7 +480,7 @@ defmodule Membrane.RTC.EngineTest do
 
       :ok = Engine.remove_endpoint(rtc_engine, endpoint_id)
 
-      assert_receive %Message.EndpointRemoved{
+      assert_receive %EndpointRemoved{
         endpoint_id: ^endpoint_id,
         endpoint_type: TestEndpoint
       }
@@ -488,7 +488,7 @@ defmodule Membrane.RTC.EngineTest do
       endpoint_id = :test_endpoint2
       :ok = Engine.add_endpoint(rtc_engine, endpoint, id: endpoint_id)
 
-      assert_receive %Message.EndpointAdded{
+      assert_receive %EndpointAdded{
         endpoint_id: ^endpoint_id,
         endpoint_type: TestEndpoint
       }
@@ -577,7 +577,7 @@ defmodule Membrane.RTC.EngineTest do
 
     :ok = Engine.add_endpoint(rtc_engine, video_endpoint, id: video_endpoint_id)
 
-    assert_receive %Message.EndpointAdded{endpoint_id: ^video_endpoint_id}
+    assert_receive %EndpointAdded{endpoint_id: ^video_endpoint_id}
 
     Engine.message_endpoint(rtc_engine, video_endpoint_id, :start)
 

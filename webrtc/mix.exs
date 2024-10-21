@@ -52,7 +52,7 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC.MixProject do
       {:membrane_rtc_engine, path: "../engine"},
 
       # Regular deps
-      {:membrane_core, "~> 1.0"},
+      {:membrane_core, "~> 1.1.2"},
       {:bundlex, "1.4.6"},
       {:unifex, "1.1.1"},
       {:bunch, "~> 1.5"},
