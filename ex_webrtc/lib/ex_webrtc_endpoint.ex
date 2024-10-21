@@ -536,7 +536,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   defp get_offer_data(state) do
     state
     |> get_media_count()
-    |> MediaEvent.offer_data([])
+    |> MediaEvent.offer_data()
     |> MediaEvent.to_action()
   end
 
