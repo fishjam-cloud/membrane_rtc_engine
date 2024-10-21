@@ -5,6 +5,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   use Membrane.Bin
 
   require Membrane.Logger
+  require Membrane.TelemetryMetrics
 
   alias __MODULE__.MediaEvent
   alias __MODULE__.PeerConnectionHandler
@@ -29,11 +30,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 description: "Allowed video codec",
                 default: :H264
               ],
-              # TODO: metadata unused
               metadata: [
                 spec: any(),
                 default: nil,
                 description: "Endpoint metadata"
+              ],
+              telemetry_label: [
+                spec: Membrane.TelemetryMetrics.label(),
+                default: [],
+                description: "Label passed to Membrane.TelemetryMetrics functions"
               ]
 
   def_input_pad :input,
@@ -66,10 +71,22 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
           }
   end
 
+  @track_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :track, :metadata, :event]
+  @endpoint_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :metadata, :event]
+
   @impl true
   def handle_init(ctx, opts) do
     {_, endpoint_id} = ctx.name
     Logger.metadata(endpoint_id: endpoint_id)
+
+    Membrane.TelemetryMetrics.register(@endpoint_metadata_event, opts.telemetry_label)
+
+    Membrane.TelemetryMetrics.execute(
+      @endpoint_metadata_event,
+      %{metadata: opts.metadata},
+      %{},
+      opts.telemetry_label
+    )
 
     state =
       opts
@@ -357,6 +374,22 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_child_notification({:new_tracks, tracks}, :connection_handler, _ctx, state) do
     Membrane.Logger.debug("new webrtc tracks: #{log_tracks(tracks)}")
+
+    Enum.each(tracks, fn track ->
+      track_telemetry_label = state.telemetry_label ++ [track_id: "#{track.id}:#{"h"}"]
+
+      Membrane.TelemetryMetrics.register(
+        @track_metadata_event,
+        track_telemetry_label
+      )
+
+      Membrane.TelemetryMetrics.execute(
+        @track_metadata_event,
+        %{metadata: track.metadata},
+        %{},
+        track_telemetry_label
+      )
+    end)
 
     tracks_ready =
       Enum.map(tracks, fn track ->
