@@ -28,7 +28,7 @@ config :logger,
     [level_lower_than: :info]
   ]
 
-config :logger, level: :debug
+config :logger, level: :info
 
 config :phoenix, :json_library, Jason
 

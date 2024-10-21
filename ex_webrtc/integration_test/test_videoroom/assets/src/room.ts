@@ -35,9 +35,12 @@ export class Room {
 
   public lastPeerMetadata: string | undefined;
   public lastTrackMetadata: string | undefined;
+  
+  private updateMetadataOnStart: boolean;
 
-  constructor(contraints: MediaStreamConstraints) {
+  constructor(contraints: MediaStreamConstraints, updateMetadata: boolean) {
     this.constraints = contraints;
+    this.updateMetadataOnStart = updateMetadata;
     this.socket = new Socket("/socket");
     this.socket.connect();
     this.displayName = "someone";
@@ -79,7 +82,10 @@ export class Room {
       this.updateParticipantsList();
 
       for (const track of this.localStream!.getTracks()) {
-        await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind });
+        const trackId = await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind });
+        if (this.updateMetadataOnStart) {
+          this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
+        }
       }
     });
     this.webrtc.on("connectionError", () => { throw `Endpoint denied.` });

@@ -491,7 +491,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
           MediaEvent.track_updated(track.engine_track.origin, track_id, engine_track.metadata)
           |> MediaEvent.to_action()
 
-        track = update_in(track.engine_track.metadata, engine_track.metadata)
+        track = put_in(track.engine_track.metadata, engine_track.metadata)
         {event, track}
       end
 
