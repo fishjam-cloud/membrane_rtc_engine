@@ -205,14 +205,14 @@ defmodule Membrane.RTC.Engine.MixProject do
   end
 
   defp run_webrtc_integration_tests(_cli_args) do
-    run_integration_tests("../webrtc/integration_test/test_videoroom", "npm")
+    run_integration_tests("../webrtc/integration_test/test_videoroom")
   end
 
   defp run_ex_webrtc_integration_tests(_cli_args) do
-    run_integration_tests("../ex_webrtc/integration_test/test_videoroom", "yarn")
+    run_integration_tests("../ex_webrtc/integration_test/test_videoroom")
   end
 
-  defp run_integration_tests(path, package_manager) do
+  defp run_integration_tests(path) do
     assert_execute("mix", ["deps.get"],
       cd: path,
       log_str: "Getting mix dependencies in test_videoroom"
@@ -235,9 +235,9 @@ defmodule Membrane.RTC.Engine.MixProject do
         "Skipping installation of npm dependencies in test_videoroom: already installed"
       )
     else
-      assert_execute(package_manager, ["install"],
+      assert_execute("yarn",
         cd: assets_path,
-        log_str: "Installing #{package_manager} dependencies in test_videoroom"
+        log_str: "Installing yarn dependencies in test_videoroom"
       )
     end
 
@@ -279,7 +279,7 @@ defmodule Membrane.RTC.Engine.MixProject do
     )
   end
 
-  defp assert_execute(cmd, args, cd: cd, log_str: log_str) do
+  defp assert_execute(cmd, args \\ [], cd: cd, log_str: log_str) do
     Mix.shell().info(log_str)
     {_io_stream, exit_status} = System.cmd(cmd, args, cd: cd, into: IO.stream())
     if exit_status != 0, do: raise("FATAL: #{log_str} failed")

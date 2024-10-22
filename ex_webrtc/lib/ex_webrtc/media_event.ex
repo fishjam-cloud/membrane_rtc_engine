@@ -16,6 +16,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
           id: &1.id,
           type: to_type_string(&1.type),
           metadata: &1.metadata,
+          # TODO: remove this field (the metadata is already in the tracks)
+          trackIdToMetadata: Endpoint.get_active_track_metadata(&1),
           tracks: &1 |> Endpoint.get_active_tracks() |> to_tracks_info()
         }
       )
@@ -40,10 +42,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @spec tracks_added(Endpoint.id(), %{Track.id() => Track.t()}) :: t()
   def tracks_added(endpoint_id, tracks) do
+    track_id_to_metadata = Map.new(tracks, &{&1.id, &1.metadata})
+
     %{
       type: "tracksAdded",
       data: %{
         endpointId: endpoint_id,
+        # TODO: remove this field (the metadata is already in the tracks)
+        trackIdToMetadata: track_id_to_metadata,
         tracks: to_tracks_info(tracks)
       }
     }
@@ -108,29 +114,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     })
   end
 
-  @spec offer_data(%{audio: non_neg_integer(), video: non_neg_integer()}, turns: [map()]) :: t()
-  def offer_data(tracks_types, turns) do
-    integrated_turn_servers =
-      Enum.map(turns, fn turn ->
-        addr =
-          if turn.relay_type == :tls and turn[:domain_name],
-            do: turn[:domain_name],
-            else: :inet.ntoa(turn.mocked_server_addr) |> to_string()
-
-        %{
-          serverAddr: addr,
-          serverPort: turn.server_port,
-          transport: turn.relay_type,
-          password: turn.password,
-          username: turn.username
-        }
-      end)
-
+  @spec offer_data(%{audio: non_neg_integer(), video: non_neg_integer()}) :: t()
+  def offer_data(tracks_types) do
     as_custom(%{
       type: "offerData",
       data: %{
         tracksTypes: tracks_types,
-        integratedTurnServers: integrated_turn_servers
+        integratedTurnServers: []
       }
     })
   end

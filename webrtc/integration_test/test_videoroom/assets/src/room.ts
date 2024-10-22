@@ -44,15 +44,12 @@ export class Room {
   public lastPeerMetadata: string | undefined;
   public lastTrackMetadata: string | undefined;
 
-  private updateMetadataOnStart: boolean;
-
   private simulcastEnabled: boolean;
   private simulcastConfig: SimulcastConfig | undefined;
   private bandwidth: TrackBandwidthLimit | undefined;
 
-  constructor(contraints: MediaStreamConstraints, updateMetadata: boolean, simulcast: boolean) {
+  constructor(contraints: MediaStreamConstraints, simulcast: boolean) {
     this.constraints = contraints;
-    this.updateMetadataOnStart = updateMetadata;
     this.simulcastEnabled = simulcast;
     this.simulcastConfig = this.simulcastEnabled ? SIMULCAST_CONFIG : undefined;
     this.bandwidth = this.simulcastEnabled ? SIMULCAST_BANDWIDTH : undefined;
@@ -93,10 +90,7 @@ export class Room {
       this.updateParticipantsList();
 
       for (const track of this.localStream!.getTracks()) {
-        const trackId = await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind }, this.simulcastConfig, this.bandwidth );
-        if (this.updateMetadataOnStart) {
-          this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
-        }
+        await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind}, this.simulcastConfig, this.bandwidth );
       }
     });
     this.webrtc.on("connectionError", () => { throw `Endpoint denied.` });

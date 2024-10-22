@@ -7,6 +7,7 @@
 * Add async subscribe [#407](https://github.com/fishjam-dev/membrane_rtc_engine/pull/407)
 * Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)
 * Return updated track upon subscription [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
+* Use yarn for both webrtc integration tests [#8](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/8)
 
 ## 0.22.0
 * Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)

@@ -63,7 +63,7 @@ async function start(media: string, simulcast = false) {
   if (stopButton)
     stopButton.disabled = false;
 
-  room = new Room(constraints, updateMetadata);
+  room = new Room(constraints, updateMetadata, simulcast);
 
   await room.join();
 }
