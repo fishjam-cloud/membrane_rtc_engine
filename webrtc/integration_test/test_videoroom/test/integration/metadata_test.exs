@@ -45,8 +45,8 @@ defmodule TestVideoroom.Integration.MetadataTest do
     ]
 
     stage_to_text = %{
-      peer_metadata: "test",
-      track_metadata: "trackMetadata"
+      peer_metadata: %{"peer" => "newMeta"},
+      track_metadata: "newTrackMeta"
     }
 
     actions_with_id = [actions1, actions2] |> Enum.with_index()
@@ -69,7 +69,7 @@ defmodule TestVideoroom.Integration.MetadataTest do
             {1, stats} ->
               assert(
                 Enum.any?(stats, &(&1 == text)),
-                "Failed on stage: #{stage} should be metadata: #{text}, but stats are #{inspect(stats)}"
+                "Failed on stage: #{stage} should be metadata: #{inspect(text)}, but stats are #{inspect(stats)}"
               )
 
             {_other, _stats} ->

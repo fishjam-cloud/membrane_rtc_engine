@@ -82,16 +82,16 @@ export async function inboundSimulcastStreamStats(room: Room) {
   const endpoints = Array.from(Object.values(room.webrtc.getRemoteEndpoints()));
 
   const stats = endpoints.map(async (peer: Endpoint<EndpointMetadata, TrackMetadata>) => {
-    const videoTrack = room.getEndpointTrack(peer.id, "video");
-    const track_stats = await peerConnection.getStats(videoTrack);
-    const inbound_rtp = track_stats.get("inbound-rtp")
+    const videoTrackCtx = room.getEndpointTrackCtx(peer.id, "video");
+    const videoStats = await peerConnection.getStats(videoTrackCtx.track);
+    const inboundVideoStats: RTCInboundRtpStreamStats = extractStatEntry(videoStats, "inbound-rtp", "video")!;
 
     return {
-      height: inbound_rtp.frameHeight,
-      width: inbound_rtp.frameWidth,
-      framesPerSecond: inbound_rtp.framesPerSecond || 0,
-      framesReceived: inbound_rtp.framesReceived,
-      encoding: room.getPeerEncoding()
+      height: inboundVideoStats.frameHeight,
+      width: inboundVideoStats.frameWidth,
+      framesPerSecond: inboundVideoStats.framesPerSecond || 0,
+      framesReceived: inboundVideoStats.framesReceived,
+      encoding: videoTrackCtx.encoding
     }
   });
 

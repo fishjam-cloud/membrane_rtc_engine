@@ -56,24 +56,23 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() == browser_id
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() == browser_id
+                assert count_playing_streams(stats, "audio") == browser_id
+                assert count_playing_streams(stats, "video") == browser_id
               end)
             end)
 
           {:before_leave, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                expected_tracks = browsers_number - browser_id - 1
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() == expected_tracks
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() == expected_tracks
+                assert count_playing_streams(stats, "audio") == browsers_number - browser_id - 1
+                assert count_playing_streams(stats, "video") == browsers_number - browser_id - 1
               end)
             end)
         end)
     end
   end
 
-  @tag timeout: 180_000
+  @tag timeout: 120_000
   test "Users joining all at once can hear and see each other" do
     browsers_number = 4
 
@@ -106,11 +105,8 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {_browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
-                         browsers_number - 1
-
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
-                         browsers_number - 1
+                assert count_playing_streams(stats, "audio") == browsers_number - 1
+                assert count_playing_streams(stats, "video") == browsers_number - 1
               end)
             end)
 
@@ -166,11 +162,8 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert stats |> Enum.filter(& &1["isAudioPlaying"]) |> length() ==
-                         browser_received_tracks[browser_id].a
-
-                assert stats |> Enum.filter(& &1["isVideoPlaying"]) |> length() ==
-                         browser_received_tracks[browser_id].v
+                assert count_playing_streams(stats, "audio") == browser_received_tracks[browser_id].a
+                assert count_playing_streams(stats, "video") == browser_received_tracks[browser_id].v
               end)
             end)
 
@@ -178,5 +171,14 @@ defmodule TestVideoroom.Integration.BasicTest do
             :ok
         end)
     end
+  end
+
+  defp count_playing_streams(streams, kind) do
+    streams
+    |> Enum.filter(fn
+      %{"kind" => ^kind, "playing" => playing} -> playing
+      _stream -> false
+    end)
+    |> Enum.count()
   end
 end

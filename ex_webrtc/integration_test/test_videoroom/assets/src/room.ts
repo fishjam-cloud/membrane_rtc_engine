@@ -9,13 +9,8 @@ import {
 
 export const LOCAL_ENDPOINT_ID = "local-endpoint";
 
-export type EndpointMetadata = {
-  displayName: string;
-};
-
-export type TrackMetadata = {
-  goodTrack: string;
-};
+export type EndpointMetadata = string;
+export type TrackMetadata = string;
 
 
 export class Room {
@@ -119,12 +114,12 @@ export class Room {
     });
 
     this.webrtcChannel.on("mediaEvent", (event: any) => {
-      // console.log("MediaEvent", event);
       this.webrtc.receiveMediaEvent(event.data);
     }
     );
 
     this.webrtc.on("endpointUpdated", (endpoint) => {
+      console.log("endpointUpdated", endpoint);
       this.lastPeerMetadata = endpoint.metadata;
     });
 
@@ -142,11 +137,11 @@ export class Room {
     }
   };
 
-  public updateMetadata = (metadata: any) => {
-    this.webrtc.updateEndpointMetadata(metadata);
+  public updateMetadata = (metadata: EndpointMetadata) => {
+    this.webrtc.updateEndpointMetadata({endpoint: null, peer: metadata});
   };
 
-  public updateTrackMetadata = (metadata: any) => {
+  public updateTrackMetadata = (metadata: TrackMetadata) => {
     const tracks = this.webrtc.getLocalEndpoint().tracks;
     const trackId = tracks.keys().next().value!;
     this.webrtc.updateTrackMetadata(trackId, metadata);

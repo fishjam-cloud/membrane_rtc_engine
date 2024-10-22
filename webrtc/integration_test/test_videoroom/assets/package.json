@@ -2,7 +2,7 @@
   "license": "MIT",
   "dependencies": {
     "@bufbuild/protobuf": "^2.2.0",
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=37cc7911f65720e243753d1ea5f1e268b44be0d3",
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2",
     "phoenix": "file:../deps/phoenix",
     "playwright": "1.18.1"
   },
