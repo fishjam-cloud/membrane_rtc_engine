@@ -1,4 +1,4 @@
-import { WebRTCEndpoint, Endpoint, TrackContext, Encoding, TrackKind } from "@fishjam-cloud/ts-client";
+import { WebRTCEndpoint, Endpoint, TrackContext, Encoding, TrackKind, SimulcastConfig, BandwidthLimit, SimulcastBandwidthLimit, TrackBandwidthLimit } from "@fishjam-cloud/ts-client";
 import { Push, Socket } from "phoenix";
 import {
   addVideoElement,
@@ -12,6 +12,19 @@ export const LOCAL_ENDPOINT_ID = "local-endpoint";
 export type EndpointMetadata = string;
 export type TrackMetadata = string;
 
+
+const SIMULCAST_CONFIG: SimulcastConfig = {
+  enabled: true,
+  activeEncodings: ["l", "m", "h"],
+  disabledEncodings: []
+}
+
+const SIMULCAST_BANDWIDTH: SimulcastBandwidthLimit = new Map(
+  [["l", 150],
+  ["m", 500],
+  ["h", 1500]
+  ]
+)
 
 export class Room {
   public endpointId: string | undefined;
@@ -30,12 +43,19 @@ export class Room {
 
   public lastPeerMetadata: string | undefined;
   public lastTrackMetadata: string | undefined;
-  
+
   private updateMetadataOnStart: boolean;
 
-  constructor(contraints: MediaStreamConstraints, updateMetadata: boolean) {
+  private simulcastEnabled: boolean;
+  private simulcastConfig: SimulcastConfig | undefined;
+  private bandwidth: TrackBandwidthLimit | undefined;
+
+  constructor(contraints: MediaStreamConstraints, updateMetadata: boolean, simulcast: boolean) {
     this.constraints = contraints;
     this.updateMetadataOnStart = updateMetadata;
+    this.simulcastEnabled = simulcast;
+    this.simulcastConfig = this.simulcastEnabled ? SIMULCAST_CONFIG : undefined;
+    this.bandwidth = this.simulcastEnabled ? SIMULCAST_BANDWIDTH : undefined;
     this.socket = new Socket("/socket");
     this.socket.connect();
     this.displayName = "someone";
@@ -77,7 +97,7 @@ export class Room {
       this.updateParticipantsList();
 
       for (const track of this.localStream!.getTracks()) {
-        const trackId = await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind });
+        const trackId = await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind }, this.simulcastConfig, this.bandwidth );
         if (this.updateMetadataOnStart) {
           this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
         }
@@ -119,7 +139,6 @@ export class Room {
     );
 
     this.webrtc.on("endpointUpdated", (endpoint) => {
-      console.log("endpointUpdated", endpoint);
       this.lastPeerMetadata = endpoint.metadata;
     });
 
@@ -137,7 +156,7 @@ export class Room {
     }
   };
 
-  public updateMetadata = (metadata: EndpointMetadata) => {
+    public updateMetadata = (metadata: EndpointMetadata) => {
     this.webrtc.updateEndpointMetadata({endpoint: null, peer: metadata});
   };
 
@@ -148,33 +167,45 @@ export class Room {
   }
 
   public selectPeerSimulcastEncoding = (encoding: Encoding) => {
-    const peer = this.endpoints[0]
-    const trackIds = Array.from(peer.tracks.keys())
+    const remoteTracks = Object.entries(this.webrtc.getRemoteTracks());
 
-    const remoteTracks = this.webrtc.getRemoteTracks();
+    console.log(remoteTracks);
 
-    const videoTrackIds = trackIds.filter(trackId => remoteTracks[trackId].track?.kind == "video")
-    videoTrackIds.forEach(trackId => this.webrtc.setTargetTrackEncoding(trackId, encoding))
+    const videoTracks = remoteTracks.filter(track => {
+      const [_, trackContext] = track;
+      console.log(trackContext);
+      return trackContext.track?.kind === "video";
+    });
+
+    console.log(videoTracks);
+
+    videoTracks.forEach(track => {
+      const [trackId, _] = track;
+      this.webrtc.setTargetTrackEncoding(trackId, encoding);
+    });
   }
 
   public disableSimulcastEncoding = (encoding: Encoding) => {
-    const trackId = Object.keys(Array.from(this.webrtc.getLocalEndpoint().tracks.values()).filter((track => track.trackKind === "video")))[0];
-
-    console.log("disableSimulcastEncoding trackID", trackId);
-
+    const [trackId, _] = Array.from(this.webrtc.getLocalEndpoint().tracks).filter((track => {
+      const [_, trackContext] = track;
+      return trackContext.track?.kind === "video"
+    }))[0];
     this.webrtc.disableTrackEncoding(trackId, encoding)
   }
 
   public enableSimulcastEncoding = (encoding: Encoding) => {
-    const trackId = Object.keys(Array.from(this.webrtc.getLocalEndpoint().tracks.values()).filter((track => track.trackKind === "video")))[0];
+    const [trackId, _] = Array.from(this.webrtc.getLocalEndpoint().tracks).filter((track => {
+      const [_, trackContext] = track;
+      return trackContext.track?.kind === "video"
+    }))[0];
 
     this.webrtc.enableTrackEncoding(trackId, encoding)
   }
 
-  public getEndpointTrack = (endpointId: string, kind: TrackKind) => {
+  public getEndpointTrackCtx = (endpointId: string, kind: TrackKind): TrackContext<EndpointMetadata, TrackMetadata> => {
     const tracksCtxs = Array.from(Object.values(this.webrtc.getRemoteTracks()));
     const trackCtx = tracksCtxs.find(trackCtx => trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind);
-    return trackCtx?.track;
+    return trackCtx!;
   }
 
   public getPeerEncoding = () => { return this.webrtc.getLocalEndpoint().tracks }
