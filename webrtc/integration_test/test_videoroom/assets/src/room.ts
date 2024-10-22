@@ -58,8 +58,6 @@ export class Room {
     this.displayName = "someone";
     this.webrtcChannel = this.socket.channel("room");
 
-    console.log(this.simulcastEnabled, this.simulcastConfig, this.bandwidth);
-
     this.webrtcChannel.onError(() => {
       this.socketOff();
       window.location.reload();
@@ -130,7 +128,6 @@ export class Room {
     });
 
     this.webrtcChannel.on("mediaEvent", (event: any) => {
-      // console.log("MediaEvent", event);
       this.webrtc.receiveMediaEvent(event.data);
     }
     );
@@ -187,9 +184,6 @@ export class Room {
       const [_, trackContext] = track;
       return trackContext.track?.kind === "video"
     }))[0];
-
-    console.log("disableSimulcastEncoding trackID", trackId);
-
     this.webrtc.disableTrackEncoding(trackId, encoding)
   }
 
@@ -199,16 +193,12 @@ export class Room {
       return trackContext.track?.kind === "video"
     }))[0];
 
-    console.log("enableSimulcastEncoding trackID", trackId);
-
     this.webrtc.enableTrackEncoding(trackId, encoding)
   }
 
   public getEndpointTrackCtx = (endpointId: string, kind: TrackKind): TrackContext<EndpointMetadata, TrackMetadata> => {
     const tracksCtxs = Array.from(Object.values(this.webrtc.getRemoteTracks()));
-    console.log("tracksCtxs", tracksCtxs);
     const trackCtx = tracksCtxs.find(trackCtx => trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind);
-    console.log("trackCtx", trackCtx);
     return trackCtx!;
   }
 
