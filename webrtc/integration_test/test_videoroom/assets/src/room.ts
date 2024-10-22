@@ -74,10 +74,6 @@ export class Room {
     this.streams = {};
     this.removedTracks = [];
 
-    setInterval(() => {
-      console.log("streams", this.streams);
-    }, 5000);
-
     this.webrtc.on("sendMediaEvent", (mediaEvent: string) => {
       this.webrtcChannel.push("mediaEvent", { data: mediaEvent });
     })
@@ -163,15 +159,10 @@ export class Room {
   public selectPeerSimulcastEncoding = (encoding: Encoding) => {
     const remoteTracks = Object.entries(this.webrtc.getRemoteTracks());
 
-    console.log(remoteTracks);
-
     const videoTracks = remoteTracks.filter(track => {
       const [_, trackContext] = track;
-      console.log(trackContext);
       return trackContext.track?.kind === "video";
     });
-
-    console.log(videoTracks);
 
     videoTracks.forEach(track => {
       const [trackId, _] = track;

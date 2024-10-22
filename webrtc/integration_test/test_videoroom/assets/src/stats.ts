@@ -26,9 +26,6 @@ async function sleep(interval: number) {
 // works only for chrome...
 const extractStatEntry = (stats: RTCStatsReport, name: string, mediaType: string) => {
   for (let [key, value] of stats.entries()) {
-    if (mediaType === "audio") {
-      console.log(value)
-    }
     if (value.type === name && value.mediaType === mediaType) {
       return value;
     }
@@ -44,16 +41,12 @@ async function isVideoPlaying(peerConnection: RTCPeerConnection, videoTrack: Med
     const videoStats = await peerConnection.getStats(track);
     const inboundVideoStats: RTCInboundRtpStreamStats = extractStatEntry(videoStats, "inbound-rtp", "video")!;
 
-    console.log("inboundVideoStats", inboundVideoStats, inboundVideoStats?.framesDecoded);
-
     return inboundVideoStats?.framesDecoded || -1;
   };
 
   const videoFramesStart = await videoFramedDecoded(videoTrack);
   await sleep(checkInterval);
   const videoFramesEnd = await videoFramedDecoded(videoTrack);
-
-  console.log("startendvideo", videoFramesStart, videoFramesEnd);
 
   return videoFramesStart >= 0 && videoFramesEnd > videoFramesStart;
 }
@@ -70,8 +63,6 @@ async function isAudioPlaying(peerConnection: RTCPeerConnection, audioTrack: Med
   const audioTotalEnergyStart = await audioTotalEnergy(audioTrack);
   await sleep(checkInterval);
   const audioTotalEnergyEnd = await audioTotalEnergy(audioTrack);
-
-  console.log("audio", audioTotalEnergyStart, audioTotalEnergyEnd);
 
   return audioTotalEnergyStart >= 0 && audioTotalEnergyEnd > audioTotalEnergyStart;
 }
@@ -122,8 +113,6 @@ export async function remoteStreamsStats(room: Room) {
   const peerConnection = room.webrtc.connectionManager?.getConnection()!;
   const streams: MediaStream[] = Object.values(room.streams);
 
-  console.log("streams stats - ", streams);
-
   const stats = streams.map(async (stream: MediaStream) => {
     const audioTracks = stream.getAudioTracks();
     const videoTracks = stream.getVideoTracks();
@@ -137,8 +126,6 @@ export async function remoteStreamsStats(room: Room) {
     else {
       playing = await isVideoPlaying(peerConnection, videoTracks[0]);
     }
-
-    console.log("audio", audioTracks, "video", videoTracks);
 
     return { streamId: stream.id, kind: kind, playing: playing }
   });
