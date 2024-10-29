@@ -1,9 +1,23 @@
 {
   "license": "MIT",
-  "dependencies": {
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=ex_webrtc_poc",
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
     "phoenix": "file:../deps/phoenix",
-    "playwright": "1.18.1"
+    "playwright": "1.18.1",
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.11.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:check": "tsc --noEmit",
+    "format": "prettier --write . --ignore-path ./.eslintignore",
+    "format:check": "prettier --check . --ignore-path ./.eslintignore",
+    "lint": "eslint . --fix",
+    "lint:check": "eslint ."
   },
   "packageManager": "yarn@4.5.0"
 }

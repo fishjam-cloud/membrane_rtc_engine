@@ -1,9 +1,11 @@
 # Changelog
 
 ## 0.10.0-dev
-Update credo [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
+* Update credo [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 * Update stampede dependency [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
+* Migrate integration tests to ts-client sdk [#8](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/8)
 
 ## 0.9.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

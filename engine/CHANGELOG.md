@@ -3,6 +3,7 @@
 ## 0.24.0-dev
 * Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)
 * Return updated track upon subscription [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
+* Use yarn for both webrtc integration tests [#8](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/8)
 
 ## 0.23.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

@@ -6,8 +6,7 @@ defmodule TestVideoroom.Integration.BasicTest do
   @room_url "http://localhost:4001"
 
   # in miliseconds
-  @short_warmup 15_000
-  @long_warmup 25_000
+  @warmup 6_000
 
   @start_with_all "start-all"
   @start_with_mic "start-mic-only"
@@ -17,11 +16,11 @@ defmodule TestVideoroom.Integration.BasicTest do
   @browser_options %{count: 1, headless: true}
   @actions [
     {:get_stats, @stats, 1, 0, tag: :after_warmup},
-    {:wait, 90_000},
+    {:wait, 60_000},
     {:get_stats, @stats, 1, 0, tag: :before_leave}
   ]
 
-  @tag timeout: 240_000
+  @tag timeout: 180_000
   test "Users gradually joining and leaving can hear and see each other" do
     browsers_number = 4
 
@@ -31,7 +30,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @short_warmup,
+      warmup_time: @warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,
@@ -57,23 +56,23 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == 2 * browser_id
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert count_playing_streams(stats, "audio") == browser_id
+                assert count_playing_streams(stats, "video") == browser_id
               end)
             end)
 
           {:before_leave, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == 2 * (browsers_number - browser_id - 1)
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert count_playing_streams(stats, "audio") == browsers_number - browser_id - 1
+                assert count_playing_streams(stats, "video") == browsers_number - browser_id - 1
               end)
             end)
         end)
     end
   end
 
-  @tag timeout: 180_000
+  @tag timeout: 120_000
   test "Users joining all at once can hear and see each other" do
     browsers_number = 4
 
@@ -83,7 +82,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @long_warmup,
+      warmup_time: @warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,
@@ -105,8 +104,8 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {_browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == 2 * (browsers_number - 1)
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert count_playing_streams(stats, "audio") == browsers_number - 1
+                assert count_playing_streams(stats, "video") == browsers_number - 1
               end)
             end)
 
@@ -126,7 +125,7 @@ defmodule TestVideoroom.Integration.BasicTest do
 
     mustang_options = %{
       target_url: @room_url,
-      warmup_time: @short_warmup,
+      warmup_time: @warmup,
       start_button: @start_with_all,
       actions: @actions,
       receiver: receiver,
@@ -149,7 +148,12 @@ defmodule TestVideoroom.Integration.BasicTest do
     end
     |> Task.await_many(:infinity)
 
-    browser_received_tracks = %{0 => 2, 1 => 3, 2 => 3, 3 => 4}
+    browser_received_tracks = %{
+      0 => %{a: 1, v: 1},
+      1 => %{a: 2, v: 1},
+      2 => %{a: 1, v: 2},
+      3 => %{a: 2, v: 2}
+    }
 
     receive do
       {:stats, acc} ->
@@ -157,8 +161,8 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert length(stats) == browser_received_tracks[browser_id]
-                assert Enum.all?(stats, &is_stream_playing(&1))
+                assert count_playing_streams(stats, "audio") == browser_received_tracks[browser_id].a
+                assert count_playing_streams(stats, "video") == browser_received_tracks[browser_id].v
               end)
             end)
 
@@ -168,7 +172,12 @@ defmodule TestVideoroom.Integration.BasicTest do
     end
   end
 
-  defp is_stream_playing(%{"streamId" => _, "playing" => playing, "kind" => _kind}) do
-    playing == true
+  defp count_playing_streams(streams, kind) do
+    streams
+    |> Enum.filter(fn
+      %{"kind" => ^kind, "playing" => playing} -> playing
+      _stream -> false
+    end)
+    |> Enum.count()
   end
 end
