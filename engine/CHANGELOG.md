@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.24.0-dev
+* Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)
 
 ## 0.23.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

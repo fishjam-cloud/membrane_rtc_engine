@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Endpoint.WebRTC.SimulcastConfig do
+defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SimulcastConfig do
   @moduledoc """
   Module representing simulcast configuration for WebRTC endpoint.
   """
