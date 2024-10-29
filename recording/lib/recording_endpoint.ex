@@ -8,8 +8,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Recording do
   require Membrane.Logger
 
   alias Membrane.RTC.Engine
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Endpoint.Recording.{EdgeTimestampSaver, Guard, Reporter, Storage}
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Subscriber
 
   @type storage_opts :: any()

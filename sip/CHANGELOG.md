@@ -1,12 +1,12 @@
 # Changelog
 
 ## 0.5.0-dev
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 
 ## 0.4.0
 * Update deps [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)
 * Lower log level for some logs [#401](https://github.com/fishjam-dev/membrane_rtc_engine/pull/401)
 * Update dependencies [#2](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/2)
-
 
 ## 0.3.0
 * Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)

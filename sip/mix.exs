@@ -52,13 +52,13 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
     [
       # Engine deps
       {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_webrtc, path: "../webrtc"},
+      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
       {:membrane_core, "~> 1.1.2"},
       {:membrane_tee_plugin, "~> 0.12.0"},
-      {:membrane_file_plugin, "~> 0.16.0"},
-      {:membrane_rtp_plugin, "~> 0.28.0"},
+      {:membrane_file_plugin, "~> 0.17.0"},
+      {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_funnel_plugin, "~> 0.9.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
       {:membrane_udp_plugin, "~> 0.13.0"},
@@ -67,16 +67,17 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
       {:membrane_g711_format, "~> 0.1.0"},
       {:membrane_g711_plugin, "~> 0.1.0"},
       {:membrane_rtp_g711_plugin, "~> 0.2.0"},
-      {:membrane_opus_plugin, "~> 0.19.3"},
-      {:membrane_ffmpeg_swresample_plugin, "~> 0.19.1"},
+      {:membrane_opus_plugin, "~> 0.20.0"},
+      {:membrane_ffmpeg_swresample_plugin, "~> 0.20.0"},
       {:membrane_audio_mix_plugin, "~> 0.16.0"},
       {:sippet, "~> 1.0.11"},
-      {:ex_sdp, "~> 0.11"},
+      {:ex_sdp, "~> 1.0"},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
 
       # Test deps
+      {:castore, "~> 1.0", only: :test},
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false}
     ]
   end

@@ -53,11 +53,13 @@ defmodule Membrane.RTC.Engine.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.1.2"},
-      {:membrane_rtp_plugin, "~> 0.28.0"},
+      {:membrane_core, "~> 1.0"},
+      {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
       {:elixir_uuid, "~> 1.2"},
       {:statistics, "~> 0.6.0"},
+      {:ex_sdp, "~> 1.1"},
+
       # for colouring diffs in upgrade guides
       {:makeup_diff, "~> 0.1", only: :dev, runtime: false},
       {:credo, "~> 1.7", only: :dev, runtime: false},

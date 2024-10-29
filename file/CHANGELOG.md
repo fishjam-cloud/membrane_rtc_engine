@@ -2,6 +2,7 @@
 
 ## 0.7.0-dev
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
+* Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 
 ## 0.6.0
 * Update engine dependency [#9](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/9)

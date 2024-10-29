@@ -98,8 +98,8 @@ defmodule Membrane.RTC.FileEndpointTest do
       Endpoint.File.start_sending(rtc_engine, @source_endpoint_id)
     end
 
-    assert_receive %Message.EndpointRemoved{endpoint_id: @source_endpoint_id}, 25_000
-    assert_receive %Message.EndpointRemoved{endpoint_id: @sink_endpoint_id}, 25_000
+    assert_receive %Message.EndpointRemoved{endpoint_id: @source_endpoint_id}, 12_500
+    assert_receive %Message.EndpointRemoved{endpoint_id: @sink_endpoint_id}, 12_500
     refute_received %Message.EndpointCrashed{endpoint_id: @sink_endpoint_id}
     refute_received %Message.EndpointCrashed{endpoint_id: @source_endpoint_id}
 
