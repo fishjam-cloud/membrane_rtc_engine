@@ -112,7 +112,7 @@ defmodule Membrane.RTC.Engine.MixProject do
       extras: extras(),
       formatters: ["html"],
       groups_for_extras: groups_for_extras(),
-      assets: "internal_docs/assets",
+      assets: %{"internal_docs/assets" => "assets"},
       source_ref: @source_ref,
       source_url_pattern: "#{@github_url}/blob/#{@source_ref}/engine/%{path}#L%{line}",
       nest_modules_by_prefix: [
