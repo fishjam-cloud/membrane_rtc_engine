@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.MixProject do
   use Mix.Project
 
-  @version "0.23.0"
+  @version "0.24.0-dev"
   @github_url "https://github.com/jellyfish-dev/membrane_rtc_engine"
   @source_ref "engine-v#{@version}"
 
@@ -112,7 +112,7 @@ defmodule Membrane.RTC.Engine.MixProject do
       extras: extras(),
       formatters: ["html"],
       groups_for_extras: groups_for_extras(),
-      assets: "internal_docs/assets",
+      assets: %{"internal_docs/assets" => "assets"},
       source_ref: @source_ref,
       source_url_pattern: "#{@github_url}/blob/#{@source_ref}/engine/%{path}#L%{line}",
       nest_modules_by_prefix: [
