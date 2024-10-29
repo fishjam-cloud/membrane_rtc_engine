@@ -12,9 +12,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2":
+"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main":
   version: 0.8.1
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2"
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=2d9db0ce7d59b215a3c43888c2ba8b4a1142baf9"
   dependencies:
     "@bufbuild/protobuf": "npm:^2.2.0"
     events: "npm:^3.3.0"
@@ -395,7 +395,7 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@bufbuild/protobuf": "npm:^2.2.0"
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2"
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main"
     phoenix: "file:../deps/phoenix"
     playwright: "npm:1.18.1"
   languageName: unknown

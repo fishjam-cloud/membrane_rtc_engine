@@ -2,7 +2,7 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=52fa1641f68dd5626e8c6e1229983185e9b07fd2",
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
     "phoenix": "file:../deps/phoenix",
