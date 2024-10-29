@@ -8,7 +8,7 @@ const getButtonsWithPrefix = (types: string[], prefix: string) => {
   return types.map((type) => document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement)
 }
 
-const startButtons = getButtonsWithPrefix(["simulcast", "all", "mic-only", "camera-only", "none"], "start");
+const startButtons = getButtonsWithPrefix(["simulcast", "all", "all-update", "mic-only", "camera-only", "none"], "start");
 
 const simulcastButtons = getButtonsWithPrefix(["local-low-encoding", "local-medium-encoding", "local-high-encoding",
   "peer-low-encoding", "peer-medium-encoding", "peer-high-encoding"], "simulcast")
@@ -17,7 +17,7 @@ const simulcastStatsButtons: HTMLButtonElement[] = getButtonsWithPrefix(["inboun
 
 const metadataButtons = getButtonsWithPrefix(["update-peer", "update-track", "peer", "track"], "metadata")
 
-const [startSimulcastButton, startAllButton, startMicOnlyButton, startCameraOnlyButton, startNoneButton] = startButtons;
+const [startSimulcastButton, startAllButton, startAllUpdateButton, startMicOnlyButton, startCameraOnlyButton, startNoneButton] = startButtons;
 const [localLowEncodingButton, localMediumEncodingButton, localHighEncodingButton,
   peerLowEncodingButton, peerMediumEncodingButton, peerHighEncodingButton] = simulcastButtons
 
@@ -46,14 +46,16 @@ const simulcastPreferences = {
 async function start(media: string, simulcast = false) {
   if (room) return;
 
-  const useVideo = ["all", "camera"].includes(media);
+  const useVideo = ["all", "camera"].some(source => media.includes(source));
+  const useAudio = ["all", "mic"].some(source => media.includes(source));
+  const updateMetadata = media.includes("update");
 
   if (simulcast) {
     simulcastButtons.map(elem => elem.disabled = false)
   }
 
   const constraints = {
-    audio: ["all", "mic"].includes(media),
+    audio: useAudio,
     video: useVideo && simulcast ? simulcastPreferences : useVideo,
   };
 
@@ -61,7 +63,7 @@ async function start(media: string, simulcast = false) {
   if (stopButton)
     stopButton.disabled = false;
 
-  room = new Room(constraints);
+  room = new Room(constraints, updateMetadata);
 
   await room.join();
 }
@@ -114,7 +116,7 @@ function toggleSimulcastEncoding(button: HTMLButtonElement, encoding: Encoding) 
 // setup all button callbacks
 startSimulcastButton.onclick = () => start("all", true);
 startAllButton.onclick = () => start("all");
-startAllButton.onclick = () => start("all");
+startAllUpdateButton.onclick = () => start("all-update");
 startMicOnlyButton.onclick = () => start("mic");
 startCameraOnlyButton.onclick = () => start("camera");
 startNoneButton.onclick = () => start("none");
