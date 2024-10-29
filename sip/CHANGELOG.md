@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-dev
+## 0.4.0
 * Update deps [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)
 * Lower log level for some logs [#401](https://github.com/fishjam-dev/membrane_rtc_engine/pull/401)
 * Update dependencies [#2](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/2)

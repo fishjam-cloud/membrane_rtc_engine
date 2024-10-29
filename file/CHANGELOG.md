@@ -1,6 +1,7 @@
 # Changelog
 
-## 0.6.0-dev
+## 0.6.0
+* Update engine dependency [#9](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/9)
 
 ## 0.5.0
 * Move to membrane_h26x_plugin. Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)
