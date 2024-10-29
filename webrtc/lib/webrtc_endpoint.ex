@@ -374,17 +374,9 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
     {:endpoint, endpoint_id} = ctx.name
 
     {valid_tracks, invalid_tracks} =
-      Enum.split_with(new_outbound_tracks, fn track ->
-        case Engine.subscribe(state.rtc_engine, endpoint_id, track.id) do
-          :ok ->
-            true
+      subscribe_tracks(state.rtc_engine, endpoint_id, new_outbound_tracks)
 
-          :ignored ->
-            false
-        end
-      end)
-
-    {update_track_actions, state} = maybe_update_tracks_metadata(valid_tracks, state)
+    {update_track_actions, state} = get_metadata_updated_actions(valid_tracks, state)
 
     send_if_not_nil(state.display_manager, {:subscribe_tracks, ctx.name, valid_tracks})
 
@@ -850,6 +842,15 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
     {[], state}
   end
 
+  defp subscribe_tracks(rtc_engine, endpoint_id, new_outbound_tracks) do
+    Enum.reduce(new_outbound_tracks, {[], []}, fn track, {valid, invalid} ->
+      case Engine.subscribe(rtc_engine, endpoint_id, track.id) do
+        {:ok, updated_track} -> {[updated_track | valid], invalid}
+        :ignored -> {valid, [track | invalid]}
+      end
+    end)
+  end
+
   defp get_turn_configs(turn_servers, state) do
     Enum.map(turn_servers, fn
       %{secret: secret} = turn_server ->
@@ -932,12 +933,9 @@ defmodule Membrane.RTC.Engine.Endpoint.WebRTC do
     WebRTC.Track.new(track.type, track.stream_id, to_keyword_list(track))
   end
 
-  defp maybe_update_tracks_metadata(valid_tracks, state) do
-    valid_tracks = Map.new(valid_tracks, &{&1.id, &1})
-    valid_tracks_id = Map.keys(valid_tracks)
-
-    Engine.get_tracks(state.rtc_engine)
-    |> Enum.filter(&(&1.id in valid_tracks_id and &1.metadata != valid_tracks[&1.id].metadata))
+  defp get_metadata_updated_actions(valid_tracks, state) do
+    valid_tracks
+    |> Enum.filter(&(&1.metadata != get_in(state, [:outbound_tracks, &1.id, :metadata])))
     |> Enum.map_reduce(state, fn track, state -> track_updated(track, state) end)
   end
 

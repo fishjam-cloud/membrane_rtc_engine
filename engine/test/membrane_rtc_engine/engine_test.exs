@@ -277,6 +277,30 @@ defmodule Membrane.RTC.EngineTest do
 
       refute_receive {:track_metadata_updated, _track}
     end
+
+    @tag no_subscribe: true
+    test "return updated track upon subscription", %{
+      rtc_engine: rtc_engine,
+      track: %Track{id: track_id} = track,
+      endpoint: %{id: endpoint_id},
+      server_endpoint_id: server_endpoint_id
+    } do
+      new_metadata = "new-metadata"
+
+      Engine.message_endpoint(
+        rtc_engine,
+        endpoint_id,
+        {:execute_actions, [notify_parent: {:update_track_metadata, track_id, new_metadata}]}
+      )
+
+      refute_receive {:track_metadata_updated, _track}
+
+      assert {:ok, %Track{} = updated_track} =
+               Engine.subscribe(rtc_engine, server_endpoint_id, track_id)
+
+      track = %{track | metadata: new_metadata}
+      assert track == updated_track
+    end
   end
 
   describe ":update_endpoint_metadata" do
@@ -515,7 +539,7 @@ defmodule Membrane.RTC.EngineTest do
     )
   end
 
-  defp setup_for_metadata_tests(%{rtc_engine: rtc_engine}) do
+  defp setup_for_metadata_tests(%{rtc_engine: rtc_engine} = ctx) do
     track = video_track("track-endpoint", "track1", "track-metadata")
 
     endpoint = %Endpoint{
@@ -541,16 +565,21 @@ defmodule Membrane.RTC.EngineTest do
        notify_parent: {:publish, {:new_tracks, [track]}}}
     )
 
-    Engine.add_endpoint(rtc_engine, server_endpoint, id: "server-endpoint")
+    server_endpoint_id = "server-endpoint"
+
+    Engine.add_endpoint(rtc_engine, server_endpoint, id: server_endpoint_id)
 
     Engine.message_endpoint(
       rtc_engine,
-      "server-endpoint",
+      server_endpoint_id,
       {:execute_actions, [notify_parent: {:ready, nil}]}
     )
 
     assert_receive {:new_tracks, [%Track{id: "track1"}]}
-    assert :ok = Engine.subscribe(rtc_engine, "server-endpoint", "track1")
+
+    if Map.get(ctx, :no_subscribe) == nil do
+      assert {:ok, ^track} = Engine.subscribe(rtc_engine, server_endpoint_id, "track1")
+    end
 
     Engine.message_endpoint(
       rtc_engine,
@@ -562,6 +591,7 @@ defmodule Membrane.RTC.EngineTest do
     [
       track: track,
       track_endpoint: track_endpoint,
+      server_endpoint_id: server_endpoint_id,
       endpoint: endpoint
     ]
   end

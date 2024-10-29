@@ -19,7 +19,7 @@ defmodule Membrane.RTC.SubscriberTest do
 
     @impl true
     def handle_info({:subscribe, {endpoint_pid, ref}, _endpoint_id, _track_id, _opts}, state) do
-      send(endpoint_pid, {ref, :ok})
+      send(endpoint_pid, {ref, :ok, nil})
       {:noreply, state}
     end
 

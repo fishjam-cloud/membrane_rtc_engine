@@ -74,7 +74,7 @@ defmodule Membrane.RTC.Engine.Support.SinkEndpoint do
 
   @impl true
   def handle_info({:subscribe_result, subscribe_ref, result}, _ctx, state) do
-    :ok = result
+    {:ok, _track} = result
     {endpoint_id, subscribing_tracks} = Map.pop(state.subscribing_tracks, subscribe_ref)
 
     send(state.owner, endpoint_id)

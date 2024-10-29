@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.9.0-dev
+* Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 
 ## 0.8.0
 * Update deps [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

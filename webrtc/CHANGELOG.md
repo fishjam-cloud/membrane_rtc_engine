@@ -3,7 +3,8 @@
 ## 0.10.0-dev
 * Update credo [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
-* 
+* Update stampede dependency [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
+
 ## 0.9.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)
 * Allow for muting a track without renegotiation [#392](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/392)
