@@ -1,13 +1,13 @@
 # Changelog
 
 ## 0.8.0
+* Update engine dependency [#9](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/9)
 
 ## 0.7.0
 * Move to membrane_h26x_plugin. Update deps [#374](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/374)
 * Update the use of Engine.subscribe [#381](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/381)
 * Use engine manual and auto subscribe mode. [#383](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/383)
 * Update dependencies [#2](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/2)
-
 
 ## 0.6.0
 * Update deps [#363](https://github.com/jellyfish-dev/membrane_rtc_engine/pull/363)

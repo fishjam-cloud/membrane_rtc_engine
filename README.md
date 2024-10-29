@@ -1,4 +1,4 @@
-****# Membrane RTC Engine
+# Membrane RTC Engine
 
 Customizable Real-time Communication Engine/SFU library focused on WebRTC.
 
