@@ -1,4 +1,4 @@
-# Membrane RTC Engine
+****# Membrane RTC Engine
 
 Customizable Real-time Communication Engine/SFU library focused on WebRTC.
 
@@ -37,8 +37,8 @@ the Engine), e.g.
 ```elixir
 def deps do
   [
-    {:membrane_rtc_engine, "~> 0.22.0"},
-    {:membrane_rtc_engine_webrtc, "~> 0.8.0"}
+    {:membrane_rtc_engine, "~> 0.23.0"},
+    {:membrane_rtc_engine_webrtc, "~> 0.9.0"}
   ]
 end
 ```
