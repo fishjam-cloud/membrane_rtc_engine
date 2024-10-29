@@ -323,13 +323,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp pli_event(track_id, state) do
-    Membrane.Logger.debug("pli event for #{track_id}")
+    outbound_track =
+      Enum.find(state.outbound_tracks, fn {_id, rtc_track_id} -> track_id == rtc_track_id end)
 
-    with {:ok, engine_track_id} <- Map.fetch(state.inbound_tracks, track_id) do
-      pad = Pad.ref(:input, {engine_track_id, :high})
-      [event: {pad, %Membrane.KeyframeRequestEvent{}}]
-    else
-      :error -> []
+    case outbound_track do
+      {engine_track_id, _rtc_track_id} ->
+        Membrane.Logger.debug("PLI event for track: #{engine_track_id}")
+        pad = Pad.ref(:input, engine_track_id)
+        [event: {pad, %Membrane.KeyframeRequestEvent{}}]
+
+      nil ->
+        Membrane.Logger.error("Received PLI for unknown track #{track_id}")
+        []
     end
   end
 
