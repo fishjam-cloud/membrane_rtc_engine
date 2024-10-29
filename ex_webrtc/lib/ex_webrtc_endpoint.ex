@@ -79,6 +79,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {_, endpoint_id} = ctx.name
     Logger.metadata(endpoint_id: endpoint_id)
 
+    opts = Map.update!(opts, :telemetry_label, &(&1 ++ [endpoint_id: endpoint_id]))
+
     Membrane.TelemetryMetrics.register(@endpoint_metadata_event, opts.telemetry_label)
 
     Membrane.TelemetryMetrics.execute(
