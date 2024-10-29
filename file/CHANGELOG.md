@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.7.0-dev
+
 ## 0.6.0
 * Update engine dependency [#9](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/9)
 
