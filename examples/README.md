@@ -6,6 +6,6 @@ You can find some examples of using the Membrane RTC Engine here:
 
 Receiving a WebRTC stream from a webcam and converting it into an HLS playlist
 
-## WebRTC Videoroom
+## ExWebRTC Videoroom
 
 A simple WebRTC video conference app supporting different rooms

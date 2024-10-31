@@ -142,23 +142,6 @@ jobs:
             git rebase master && [[ "$(git branch --show-current)" == "master" ]] ||
             git diff-tree --no-commit-id --name-only -r HEAD master . | grep -q "CHANGELOG.md"
 
-  test_webrtc_integration:
-    resource_class: large
-    docker:
-      - image: membraneframeworklabs/docker_membrane:v2.4.0
-        environment:
-          MIX_ENV: test
-          NODE_ENV: development
-        user: root
-
-    working_directory: ~/app/engine
-
-    steps:
-      - checkout:
-          path: ~/app
-      - run: npm install -g yarn --force && yarn set version berry && corepack enable && yarn config set -H enableImmutableInstalls false
-      - run: mix test.webrtc.integration
-
   test_ex_webrtc_integration:
     resource_class: large
     docker:
@@ -187,19 +170,6 @@ workflows:
           name: test_engine
           workdir: ~/app/engine
           codecov_flag: engine
-
-  test-webrtc:
-    when:
-      or:
-        - << pipeline.parameters.repo-root-changed >>
-        - << pipeline.parameters.engine-changed >>
-        - << pipeline.parameters.webrtc-changed >>
-    jobs:
-      - test_package:
-          name: test_webrtc
-          workdir: ~/app/webrtc
-          codecov_flag: webrtc
-      - test_webrtc_integration
 
   test-ex-webrtc:
     when:
