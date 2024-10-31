@@ -2,7 +2,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
   use Mix.Project
 
   @version "0.1.0-dev"
-  @engine_github_url "https://github.com/jellyfish-dev/membrane_rtc_engine"
+  @engine_github_url "https://github.com/jellyfish-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/ex_webrtc"
   @source_ref "exwebrtc-v#{@version}"
 
@@ -16,11 +16,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       deps: deps(),
 
       # hex
-      description: "WebRTC Endpoint for Membrane RTC Engine",
+      description: "ExWebRTC Endpoint for Membrane RTC Engine",
       package: package(),
 
       # docs
-      name: "Membrane RTC Engine WebRTC Endpoint",
+      name: "Membrane RTC Engine ExWebRTC Endpoint",
       source_url: @github_url,
       homepage_url: "https://membrane.stream",
       docs: docs(),

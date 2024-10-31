@@ -37,7 +37,7 @@ parameters:
   webrtc-to-hls-changed:
     type: boolean
     default: false
-  webrtc-videoroom-changed:
+  ex-webrtc-videoroom-changed:
     type: boolean
     default: false
 
@@ -283,16 +283,6 @@ workflows:
           name: check_changelog_update_engine
           workdir: ~/app/engine
 
-  lint-webrtc:
-    when: << pipeline.parameters.webrtc-changed >>
-    jobs:
-      - lint_package:
-          name: lint_webrtc
-          workdir: ~/app/webrtc
-      - check_changelog_update:
-          name: check_changelog_update_webrtc
-          workdir: ~/app/webrtc
-
   lint-ex-webrtc:
     when: << pipeline.parameters.ex-webrtc-changed >>
     jobs:
@@ -360,18 +350,10 @@ workflows:
           workdir: ~/app/integration_test
           disable_dev_checks: true
 
-  lint-example-webrtc-to-hls:
-    when: << pipeline.parameters.webrtc-to-hls-changed >>
+  lint-ex-webrtc-videoroom:
+    when: << pipeline.parameters.ex-webrtc-videoroom-changed >>
     jobs:
       - lint_package:
-          name: lint_webrtc_to_hls
-          workdir: ~/app/examples/webrtc_to_hls
-          disable_dev_checks: true
-
-  lint-webrtc-videoroom:
-    when: << pipeline.parameters.webrtc-videoroom-changed >>
-    jobs:
-      - lint_package:
-          name: lint_example_webrtc_videoroom
-          workdir: ~/app/examples/webrtc_videoroom
+          name: lint_example_ex_webrtc_videoroom
+          workdir: ~/app/examples/ex_webrtc_videoroom
           disable_dev_checks: true

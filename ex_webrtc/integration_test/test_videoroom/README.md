@@ -1,5 +1,5 @@
 # TestVideoroom
-Test application for running integration against `membrane_rtc_engine` - specifically, the WebRTC
+Test application for running integration against `membrane_rtc_engine` - specifically, the ExWebRTC
 Endpoint.
 
 ## Testing environment
@@ -67,11 +67,6 @@ There are currently 3 testing scenarios of basic functionalities:
 * clients joining all at once (4 clients)
 * clients joining with: camera and mic, camera only, mic only, without any media sources (a single client for each of the cases, all in a single room at once)
 
-There are currently 3 testing scenarios of simulcast functionalities:
-* client disables medium encoding and then enables it again
-* client changes received encoding to low and then changes to medium
-* client gradually disables all encodings and then gradually enables them again
-
 There is one test of updating metadata functionalities:
 * client updates peer metadata and then updates track metadata
 
@@ -79,7 +74,7 @@ There is one test of updating metadata functionalities:
 
 To start integration command simply run in root of the `membrane_rtc_engine` package:
 ```bash
-mix test.webrtc.integration
+mix test.ex_webrtc.integration
 ```
 
 Alternatively, you can run the following commands in the current directory:

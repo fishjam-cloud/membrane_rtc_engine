@@ -195,13 +195,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification({:track_variant_enabled, _track, _encoding}, _ctx, state) do
-    # TODO: implement
+    # TODO: add simulcast support
     {[], state}
   end
 
   @impl true
   def handle_parent_notification({:track_variant_disabled, _track, _encoding}, _ctx, state) do
-    # TODO: implement
+    # TODO: add simulcast support
     {[], state}
   end
 

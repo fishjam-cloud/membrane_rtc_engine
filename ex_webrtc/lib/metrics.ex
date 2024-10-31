@@ -18,7 +18,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
   @rtp_packet_arrival_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :packet, :arrival]
   @variant_switched_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :variant, :switched]
   @paddings_sent_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :paddings, :sent]
-  @bandwidth_event [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :bandwidth]
 
   @spec metrics() :: [Telemetry.Metrics.t()]
   def metrics() do
@@ -61,11 +60,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
         measurement: :bytes
       ),
       Telemetry.Metrics.last_value(
-        "endpoint.bandwidth",
-        event_name: @bandwidth_event,
-        measurement: :bandwidth
-      ),
-      Telemetry.Metrics.last_value(
         "endpoint.metadata",
         event_name: [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :metadata, :event],
         measurement: :metadata
@@ -82,13 +76,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
   @spec telemetry_register(Membrane.TelemetryMetrics.label()) :: :ok
   def telemetry_register(telemetry_label) do
     Membrane.TelemetryMetrics.register(@rtp_packet_arrival_event, telemetry_label)
-    :ok
-  end
-
-  @doc false
-  @spec register_bandwidth_event(Membrane.TelemetryMetrics.label()) :: :ok
-  def register_bandwidth_event(telemetry_label) do
-    Membrane.TelemetryMetrics.register(@bandwidth_event, telemetry_label)
     :ok
   end
 
@@ -116,19 +103,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
     Membrane.TelemetryMetrics.execute(
       @rtp_packet_arrival_event,
       packet_measurements(payload, codec),
-      %{},
-      telemetry_label
-    )
-
-    :ok
-  end
-
-  @doc false
-  @spec emit_bandwidth_event(float(), Membrane.TelemetryMetrics.label()) :: :ok
-  def emit_bandwidth_event(bandwidth, telemetry_label) do
-    Membrane.TelemetryMetrics.execute(
-      @bandwidth_event,
-      %{bandwidth: bandwidth},
       %{},
       telemetry_label
     )
