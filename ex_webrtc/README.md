@@ -1,8 +1,8 @@
 # Membrane RTC Engine ExWebRTC Endpoint
 
-[![CircleCI](https://circleci.com/gh/fishjam-dev/membrane_rtc_engine.svg?style=svg)](https://circleci.com/gh/fishjam-dev/membrane_rtc_engine)
+[![CircleCI](https://circleci.com/gh/fishjam-cloud/membrane_rtc_engine.svg?style=svg)](https://circleci.com/gh/fishjam-cloud/membrane_rtc_engine)
 
-ExWebRTC Endpoint for the [Membrane RTC Engine](https://github.com/jellyfish-dev/membrane_rtc_engine)
+ExWebRTC Endpoint for the [Membrane RTC Engine](https://github.com/jellyfish-cloud/membrane_rtc_engine)
 
 ## Client SDKs
 
@@ -18,7 +18,7 @@ The package can be installed by adding `membrane_rtc_engine_ex_webrtc` to your l
 ```elixir
 def deps do
   [
-    {:membrane_rtc_engine_ex_webrtc, github: "fishjam-dev/membrane_rtc_engine", sparse: "ex_webrtc"}
+    {:membrane_rtc_engine_ex_webrtc, github: "fishjam-cloud/membrane_rtc_engine", sparse: "ex_webrtc"}
   ]
 end
 ```
