@@ -3,17 +3,29 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent
 
+  alias Fishjam.MediaEvents.Peer
+
+  alias Fishjam.MediaEvents.Peer.MediaEvent.{
+    Connect,
+    SdpOffer,
+    TrackBitrate,
+    TrackIdToBitrates,
+    TrackIdToMetadata
+  }
+
+  alias Fishjam.MediaEvents.{Metadata, MidToTrackId}
+
   describe "deserializing `connect` media event" do
     test "creates proper map when event is valid" do
       raw_media_event =
-        %{
-          "type" => "connect",
-          "data" => %{
-            "receiveMedia" => true,
-            "metadata" => %{"displayName" => "Bob"}
-          }
+        %Peer.MediaEvent{
+          content:
+            {:connect,
+             %Connect{
+               metadata: %Metadata{json: Jason.encode!(%{"displayName" => "Bob"})}
+             }}
         }
-        |> Jason.encode!()
+        |> Peer.MediaEvent.encode()
 
       expected_media_event = %{
         type: :connect,
@@ -25,16 +37,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
     end
 
-    test "returns error when event misses key" do
+    test "returns error when metadata is not a valid json" do
       raw_media_event =
-        %{
-          "type" => "join",
-          "data" =>
-            %{
-              # missing metadata field
-            }
-        }
-        |> Jason.encode!()
+        %Connect{metadata: %Metadata{json: nil}} |> Peer.MediaEvent.encode()
 
       assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
     end
@@ -42,29 +47,44 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   describe "deserializing sdpOffer media event" do
     test "creates proper map when event is valid" do
-      metadata = %{"track_id" => %{"abc" => "cba"}}
-      bitrates = %{"track_id" => %{"m" => 200, "h" => 500, "l" => 100}}
-      decoded_bitrates = %{"track_id" => %{medium: 200, high: 500, low: 100}}
-      mids = %{"5" => "track_id"}
+      metadata = [
+        %TrackIdToMetadata{
+          track_id: "track_id",
+          metadata: %Metadata{json: Jason.encode!(%{"abc" => "cba"})}
+        }
+      ]
+
+      decoded_metadata = %{"track_id" => %{"abc" => "cba"}}
+
+      bitrates = [
+        %TrackIdToBitrates{
+          tracks: {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: 500}}
+        }
+      ]
+
+      decoded_bitrates = %{"track_id" => 500}
+
+      mids = [%MidToTrackId{track_id: "track_id", mid: "5"}]
+      decoded_mids = %{"5" => "track_id"}
+
       sdp = "mock_sdp"
 
       raw_media_event =
-        %{
-          "type" => "custom",
-          "data" => %{
-            "type" => "sdpOffer",
-            "data" => %{
-              "sdpOffer" => %{
-                "type" => "offer",
-                "sdp" => sdp
-              },
-              "trackIdToTrackMetadata" => metadata,
-              "trackIdToTrackBitrates" => bitrates,
-              "midToTrackId" => mids
-            }
-          }
+        %Peer.MediaEvent{
+          content:
+            {:sdp_offer,
+             %SdpOffer{
+               sdp_offer:
+                 Jason.encode!(%{
+                   "type" => "offer",
+                   "sdp" => sdp
+                 }),
+               track_id_to_metadata: metadata,
+               track_id_to_bitrates: bitrates,
+               mid_to_track_id: mids
+             }}
         }
-        |> Jason.encode!()
+        |> Peer.MediaEvent.encode()
 
       expected_media_event = %{
         type: :custom,
@@ -75,9 +95,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
               "type" => "offer",
               "sdp" => sdp
             },
-            track_id_to_track_metadata: metadata,
+            track_id_to_track_metadata: decoded_metadata,
             track_id_to_track_bitrates: decoded_bitrates,
-            mid_to_track_id: mids
+            mid_to_track_id: decoded_mids
           }
         }
       }
@@ -85,73 +105,36 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
     end
 
-    test "returns error when event misses key" do
-      raw_media_event =
-        %{
-          "type" => "custom",
-          "data" => %{
-            "type" => "sdpOffer",
-            "data" => %{
-              "sdpOffer" => %{
-                "type" => "offer",
-                "sdp" => "mock_sdp"
-              }
-            }
-          }
-        }
-        |> Jason.encode!()
-
-      assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
-    end
-  end
-
-  describe "deserializing trackVariantBitrates media event" do
-    test "creates proper map when event is valid" do
-      track_id = "track_id"
-      bitrates = %{"h" => 1000, "m" => 500, "l" => 100}
-      decoded_bitrates = %{high: 1000, medium: 500, low: 100}
+    test "is ok when event misses key" do
+      sdp = %{
+        "type" => "offer",
+        "sdp" => "mock_sdp"
+      }
 
       raw_media_event =
-        %{
-          "type" => "custom",
-          "data" => %{
-            "type" => "trackVariantBitrates",
-            "data" => %{
-              "trackId" => track_id,
-              "variantBitrates" => bitrates
-            }
-          }
+        %Peer.MediaEvent{
+          content:
+            {:sdp_offer,
+             %SdpOffer{
+               sdp_offer: Jason.encode!(sdp)
+             }}
         }
-        |> Jason.encode!()
+        |> Peer.MediaEvent.encode()
 
       expected_media_event = %{
         type: :custom,
         data: %{
-          type: :track_variant_bitrates,
+          type: :sdp_offer,
           data: %{
-            track_id: track_id,
-            variant_bitrates: decoded_bitrates
+            sdp_offer: sdp,
+            track_id_to_track_metadata: %{},
+            track_id_to_track_bitrates: %{},
+            mid_to_track_id: %{}
           }
         }
       }
 
-      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
-    end
-
-    test "returns error when event misses key" do
-      raw_media_event =
-        %{
-          "type" => "custom",
-          "data" => %{
-            "type" => "trackVariantBitrates",
-            "data" => %{
-              "trackId" => "track_id"
-            }
-          }
-        }
-        |> Jason.encode!()
-
-      assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
+      assert expected_media_event == MediaEvent.decode(raw_media_event)
     end
   end
 end

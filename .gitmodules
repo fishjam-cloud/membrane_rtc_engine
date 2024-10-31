@@ -1,0 +1,4 @@
+[submodule "ex_webrtc/protos"]
+	path = ex_webrtc/protos
+	url = https://github.com/fishjam-cloud/protos.git
+	branch = media-events-no-simulcast
