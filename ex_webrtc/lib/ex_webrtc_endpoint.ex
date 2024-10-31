@@ -7,11 +7,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   require Membrane.Logger
   require Membrane.TelemetryMetrics
 
-  alias __MODULE__.MediaEvent
   alias __MODULE__.PeerConnectionHandler
 
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.{TrackReceiver, TrackSender}
+
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.{
+    MediaEvent,
+    MediaEventJson,
+    TrackReceiver,
+    TrackSender
+  }
+
   alias Membrane.RTC.Engine.Notifications.TrackNotification
 
   @type video_codec :: :H264 | :VP8
@@ -39,6 +45,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: Membrane.TelemetryMetrics.label(),
                 default: [],
                 description: "Label passed to Membrane.TelemetryMetrics functions"
+              ],
+              event_serializer: [
+                spec: MediaEvent.t() | MediaEventJson.t(),
+                description: "Module used for encoding and decoding media events"
               ]
 
   def_input_pad :input,
@@ -163,32 +173,48 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_parent_notification({:ready, endpoints}, ctx, state) do
+  def handle_parent_notification(
+        {:ready, endpoints},
+        ctx,
+        %{event_serializer: serializer} = state
+      ) do
     {:endpoint, endpoint_id} = ctx.name
 
     Membrane.Logger.info("endpoint ready, endpoints: #{inspect(endpoints)}")
 
-    action = endpoint_id |> MediaEvent.connected(endpoints) |> MediaEvent.to_action()
+    action = endpoint_id |> serializer.connected(endpoints) |> serializer.to_action()
     {action, state}
   end
 
   @impl true
-  def handle_parent_notification({:new_endpoint, endpoint}, _ctx, state) do
-    action = endpoint |> MediaEvent.endpoint_added() |> MediaEvent.to_action()
+  def handle_parent_notification(
+        {:new_endpoint, endpoint},
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
+    action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
     Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
     {action, state}
   end
 
   @impl true
-  def handle_parent_notification({:endpoint_removed, endpoint_id}, _ctx, state) do
-    action = endpoint_id |> MediaEvent.endpoint_removed() |> MediaEvent.to_action()
+  def handle_parent_notification(
+        {:endpoint_removed, endpoint_id},
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
+    action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
     {action, state}
   end
 
   @impl true
-  def handle_parent_notification({:track_metadata_updated, track}, _ctx, state) do
+  def handle_parent_notification(
+        {:track_metadata_updated, track},
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
     event =
-      track.origin |> MediaEvent.track_updated(track.id, track.metadata) |> MediaEvent.to_action()
+      track.origin |> serializer.track_updated(track.id, track.metadata) |> serializer.to_action()
 
     {event, state}
   end
@@ -206,8 +232,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_parent_notification({:endpoint_metadata_updated, endpoint}, _ctx, state) do
-    event = endpoint |> MediaEvent.endpoint_updated() |> MediaEvent.to_action()
+  def handle_parent_notification(
+        {:endpoint_metadata_updated, endpoint},
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
+    event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
     {event, state}
   end
 
@@ -218,7 +248,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     new_tracks = Map.new(new_tracks, &{&1.id, %Track{status: :pending, engine_track: &1}})
     outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
 
-    tracks_added = get_new_tracks_actions(new_tracks)
+    tracks_added = get_new_tracks_actions(new_tracks, state)
     {tracks_added, %{state | outbound_tracks: outbound_tracks}}
   end
 
@@ -236,7 +266,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
 
-    tracks_added = get_new_tracks_actions(new_tracks)
+    tracks_added = get_new_tracks_actions(new_tracks, state)
     offer_data = get_offer_data(state)
 
     {tracks_added ++ offer_data, %{state | negotiation?: true}}
@@ -255,14 +285,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     Membrane.Logger.debug("remove tracks event for #{inspect(tracks)}")
 
-    actions = build_track_removed_actions(tracks)
+    actions = build_track_removed_actions(tracks, state)
 
     {actions, state}
   end
 
   @impl true
   def handle_parent_notification({:media_event, event}, ctx, state) do
-    case deserialize(event) do
+    case deserialize(event, state) do
       {:ok, type, data} ->
         handle_media_event(type, data, ctx, state)
 
@@ -430,16 +460,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         {:answer, answer, mid_to_track_id},
         :connection_handler,
         _ctx,
-        state
+        %{event_serializer: serializer} = state
       ) do
-    actions = answer |> MediaEvent.sdp_answer(mid_to_track_id) |> MediaEvent.to_action()
+    actions = answer |> serializer.sdp_answer(mid_to_track_id) |> serializer.to_action()
 
     {actions, state}
   end
 
   @impl true
-  def handle_child_notification({:candidate, candidate}, :connection_handler, _ctx, state) do
-    actions = candidate |> MediaEvent.candidate() |> MediaEvent.to_action()
+  def handle_child_notification(
+        {:candidate, candidate},
+        :connection_handler,
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
+    actions = candidate |> serializer.candidate() |> serializer.to_action()
     {actions, state}
   end
 
@@ -512,7 +547,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_info({:subscribe_result, subscribe_ref, {:ok, engine_track}}, _ctx, state) do
+  def handle_info(
+        {:subscribe_result, subscribe_ref, {:ok, engine_track}},
+        _ctx,
+        %{event_serializer: serializer} = state
+      ) do
     {track_id, track} =
       Enum.find(state.outbound_tracks, fn {_id, t} -> t.subscribe_ref == subscribe_ref end)
 
@@ -523,8 +562,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         {[], track}
       else
         event =
-          MediaEvent.track_updated(track.engine_track.origin, track_id, engine_track.metadata)
-          |> MediaEvent.to_action()
+          serializer.track_updated(track.engine_track.origin, track_id, engine_track.metadata)
+          |> serializer.to_action()
 
         track = put_in(track.engine_track.metadata, engine_track.metadata)
         {event, track}
@@ -542,7 +581,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     # TODO: add to removed tracks
 
     state = update_in(state.outbound_tracks, &Map.delete(&1, track_id))
-    actions = build_track_removed_actions([track.engine_track])
+    actions = build_track_removed_actions([track.engine_track], state)
 
     {actions, state}
   end
@@ -568,21 +607,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     }
   end
 
-  defp get_offer_data(state) do
+  defp get_offer_data(%{event_serializer: serializer} = state) do
     state
     |> get_media_count()
-    |> MediaEvent.offer_data()
-    |> MediaEvent.to_action()
+    |> serializer.offer_data()
+    |> serializer.to_action()
   end
 
-  defp get_new_tracks_actions(new_tracks) do
+  defp get_new_tracks_actions(new_tracks, %{event_serializer: serializer}) do
     new_tracks
     |> Map.values()
     |> Enum.map(& &1.engine_track)
     |> Enum.group_by(& &1.origin)
     |> Enum.flat_map(fn {origin, tracks} ->
-      MediaEvent.tracks_added(origin, tracks)
-      |> MediaEvent.to_action()
+      serializer.tracks_added(origin, tracks)
+      |> serializer.to_action()
     end)
   end
 
@@ -590,23 +629,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {:bitrate_estimation, estimation}
   end
 
-  defp deserialize(event) when is_binary(event) do
-    case MediaEvent.decode(event) do
+  defp deserialize(event, state) when is_binary(event) do
+    case state.event_serializer.decode(event) do
       {:ok, %{type: :custom, data: %{type: type} = event}} -> {:ok, type, Map.get(event, :data)}
       {:ok, %{type: type} = event} -> {:ok, type, Map.get(event, :data)}
       {:error, _reason} = error -> error
     end
   end
 
-  defp build_track_removed_actions([]), do: []
+  defp build_track_removed_actions([], _state), do: []
 
-  defp build_track_removed_actions(tracks) do
+  defp build_track_removed_actions(tracks, %{event_serializer: serializer}) do
     tracks_removed_events =
       tracks
       |> Enum.group_by(& &1.origin)
       |> Enum.flat_map(fn {endpoint_id, tracks} ->
         track_ids = Enum.map(tracks, & &1.id)
-        endpoint_id |> MediaEvent.tracks_removed(track_ids) |> MediaEvent.to_action()
+        endpoint_id |> serializer.tracks_removed(track_ids) |> serializer.to_action()
       end)
 
     track_ids = Enum.map(tracks, & &1.id)
