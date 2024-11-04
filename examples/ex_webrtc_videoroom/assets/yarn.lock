@@ -34,15 +34,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=ex_webrtc_poc":
-  version: 0.6.0
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=492d929daea1acb3cea07cabe35a94ea336c8a01"
+"@bufbuild/protobuf@npm:^2.2.0":
+  version: 2.2.2
+  resolution: "@bufbuild/protobuf@npm:2.2.2"
+  checksum: 10c0/17687c36c85b2e489c7ffd676479c54e12437270eb5a724775cb880b09948cad205b79e5822a4d10cefde0eef433b781350d73bb649d8de9e84d7745871ee719
+  languageName: node
+  linkType: hard
+
+"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main":
+  version: 0.8.1
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=2d9db0ce7d59b215a3c43888c2ba8b4a1142baf9"
   dependencies:
+    "@bufbuild/protobuf": "npm:^2.2.0"
     events: "npm:^3.3.0"
-    protobufjs: "npm:^7.3.0"
     typed-emitter: "npm:^2.1.0"
     uuid: "npm:^10.0.0"
-  checksum: 10c0/7831c35d1b9bafa3e5f0f32240a99792457140d150239914f3c091d13291abd32e21ba61e2b1ea2e9f3283d2c166fe34508e2b0a5d02b48ecfc48a708d913b55
+  checksum: 10c0/781773968173e8f820311bd5e330714df0fd21cf0a83ebcd7f7f53a650f988846ce6f9c3eb1ddf730e2a526a64d3521d90f485b325ed95d60452b6e0cbe505e0
   languageName: node
   linkType: hard
 
@@ -116,94 +123,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@protobufjs/aspromise@npm:1.1.2"
-  checksum: 10c0/a83343a468ff5b5ec6bff36fd788a64c839e48a07ff9f4f813564f58caf44d011cd6504ed2147bf34835bd7a7dd2107052af755961c6b098fd8902b4f6500d0f
-  languageName: node
-  linkType: hard
-
-"@protobufjs/base64@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@protobufjs/base64@npm:1.1.2"
-  checksum: 10c0/eec925e681081af190b8ee231f9bad3101e189abbc182ff279da6b531e7dbd2a56f1f306f37a80b1be9e00aa2d271690d08dcc5f326f71c9eed8546675c8caf6
-  languageName: node
-  linkType: hard
-
-"@protobufjs/codegen@npm:^2.0.4":
-  version: 2.0.4
-  resolution: "@protobufjs/codegen@npm:2.0.4"
-  checksum: 10c0/26ae337c5659e41f091606d16465bbcc1df1f37cc1ed462438b1f67be0c1e28dfb2ca9f294f39100c52161aef82edf758c95d6d75650a1ddf31f7ddee1440b43
-  languageName: node
-  linkType: hard
-
-"@protobufjs/eventemitter@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@protobufjs/eventemitter@npm:1.1.0"
-  checksum: 10c0/1eb0a75180e5206d1033e4138212a8c7089a3d418c6dfa5a6ce42e593a4ae2e5892c4ef7421f38092badba4040ea6a45f0928869989411001d8c1018ea9a6e70
-  languageName: node
-  linkType: hard
-
-"@protobufjs/fetch@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@protobufjs/fetch@npm:1.1.0"
-  dependencies:
-    "@protobufjs/aspromise": "npm:^1.1.1"
-    "@protobufjs/inquire": "npm:^1.1.0"
-  checksum: 10c0/cda6a3dc2d50a182c5865b160f72077aac197046600091dbb005dd0a66db9cce3c5eaed6d470ac8ed49d7bcbeef6ee5f0bc288db5ff9a70cbd003e5909065233
-  languageName: node
-  linkType: hard
-
-"@protobufjs/float@npm:^1.0.2":
-  version: 1.0.2
-  resolution: "@protobufjs/float@npm:1.0.2"
-  checksum: 10c0/18f2bdede76ffcf0170708af15c9c9db6259b771e6b84c51b06df34a9c339dbbeec267d14ce0bddd20acc142b1d980d983d31434398df7f98eb0c94a0eb79069
-  languageName: node
-  linkType: hard
-
-"@protobufjs/inquire@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@protobufjs/inquire@npm:1.1.0"
-  checksum: 10c0/64372482efcba1fb4d166a2664a6395fa978b557803857c9c03500e0ac1013eb4b1aacc9ed851dd5fc22f81583670b4f4431bae186f3373fedcfde863ef5921a
-  languageName: node
-  linkType: hard
-
-"@protobufjs/path@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@protobufjs/path@npm:1.1.2"
-  checksum: 10c0/cece0a938e7f5dfd2fa03f8c14f2f1cf8b0d6e13ac7326ff4c96ea311effd5fb7ae0bba754fbf505312af2e38500250c90e68506b97c02360a43793d88a0d8b4
-  languageName: node
-  linkType: hard
-
-"@protobufjs/pool@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@protobufjs/pool@npm:1.1.0"
-  checksum: 10c0/eda2718b7f222ac6e6ad36f758a92ef90d26526026a19f4f17f668f45e0306a5bd734def3f48f51f8134ae0978b6262a5c517c08b115a551756d1a3aadfcf038
-  languageName: node
-  linkType: hard
-
-"@protobufjs/utf8@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@protobufjs/utf8@npm:1.1.0"
-  checksum: 10c0/a3fe31fe3fa29aa3349e2e04ee13dc170cc6af7c23d92ad49e3eeaf79b9766264544d3da824dba93b7855bd6a2982fb40032ef40693da98a136d835752beb487
-  languageName: node
-  linkType: hard
-
 "@tailwindcss/aspect-ratio@npm:^0.3.0":
   version: 0.3.0
   resolution: "@tailwindcss/aspect-ratio@npm:0.3.0"
   peerDependencies:
     tailwindcss: ">=2.0.0 || >=3.0.0-alpha.1"
   checksum: 10c0/e852edbb3a1ea4a6e4b4cdec507969f50c1a01507e79c7edaf2b22d2dbc2c4f26c227cd075f1093f43ef55f50a3af3fc5c7231d61611b25cfca6a4110b8d89a6
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:>=13.7.0":
-  version: 22.5.1
-  resolution: "@types/node@npm:22.5.1"
-  dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10c0/35373176d8a1d4e16004a1ed303e68d39e4c6341024dc056f2577982df98c1a045a6b677f12ed557796f09bbf7d621f428f6874cc37ed28f7b336fa604b5f6a6
   languageName: node
   linkType: hard
 
@@ -1242,13 +1167,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"long@npm:^5.0.0":
-  version: 5.2.3
-  resolution: "long@npm:5.2.3"
-  checksum: 10c0/6a0da658f5ef683b90330b1af76f06790c623e148222da9d75b60e266bbf88f803232dd21464575681638894a84091616e7f89557aa087fd14116c0f4e0e43d9
-  languageName: node
-  linkType: hard
-
 "lru-cache@npm:^10.0.1, lru-cache@npm:^10.2.0":
   version: 10.4.3
   resolution: "lru-cache@npm:10.4.3"
@@ -1595,15 +1513,15 @@ __metadata:
 
 "phoenix@file:../deps/phoenix::locator=root-workspace-0b6124%40workspace%3A.":
   version: 1.6.16
-  resolution: "phoenix@file:../deps/phoenix#../deps/phoenix::hash=3d748d&locator=root-workspace-0b6124%40workspace%3A."
-  checksum: 10c0/c6bc75fc9639938e32e9a4b5056e94d77b942c31ea7f6441ee48b59b95d3696685fc37c5d31aab2632119e479edfbd9ec4bd5b3457f12b5696c1c54dc6be7864
+  resolution: "phoenix@file:../deps/phoenix#../deps/phoenix::hash=611cb3&locator=root-workspace-0b6124%40workspace%3A."
+  checksum: 10c0/28722055ffdc040c355065961e91ddb7adf0ad7c66b09ac6cecc533e13a69a98c00687cb71686411349e6d6cd40903137fb45e00753a1cbc12809af014ce8559
   languageName: node
   linkType: hard
 
 "phoenix_html@file:../deps/phoenix_html::locator=root-workspace-0b6124%40workspace%3A.":
   version: 3.3.4
-  resolution: "phoenix_html@file:../deps/phoenix_html#../deps/phoenix_html::hash=630260&locator=root-workspace-0b6124%40workspace%3A."
-  checksum: 10c0/e6ea56b069634bf6e9bd6b49f1553b08e98d40764604edc8f694916740f64fbedf81df10a5decdc49fefac710d1206d4fc4c287544c9e212397d5a9efccc7e48
+  resolution: "phoenix_html@file:../deps/phoenix_html#../deps/phoenix_html::hash=266ca5&locator=root-workspace-0b6124%40workspace%3A."
+  checksum: 10c0/2e9b2023a254a3c8c5def417d87f2746e71ad8a662ddeddcf2b5d8b71c6087f890c41d8f7e2b1bd95f580bc9eb541dc1434ffba568bd8db2b3197ca2324ac2ef
   languageName: node
   linkType: hard
 
@@ -1748,26 +1666,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^7.3.0":
-  version: 7.4.0
-  resolution: "protobufjs@npm:7.4.0"
-  dependencies:
-    "@protobufjs/aspromise": "npm:^1.1.2"
-    "@protobufjs/base64": "npm:^1.1.2"
-    "@protobufjs/codegen": "npm:^2.0.4"
-    "@protobufjs/eventemitter": "npm:^1.1.0"
-    "@protobufjs/fetch": "npm:^1.1.0"
-    "@protobufjs/float": "npm:^1.0.2"
-    "@protobufjs/inquire": "npm:^1.1.0"
-    "@protobufjs/path": "npm:^1.1.2"
-    "@protobufjs/pool": "npm:^1.1.0"
-    "@protobufjs/utf8": "npm:^1.1.0"
-    "@types/node": "npm:>=13.7.0"
-    long: "npm:^5.0.0"
-  checksum: 10c0/a5460a63fe596523b9a067cbce39a6b310d1a71750fda261f076535662aada97c24450e18c5bc98a27784f70500615904ff1227e1742183509f0db4fdede669b
-  languageName: node
-  linkType: hard
-
 "purgecss@npm:^4.0.3":
   version: 4.1.3
   resolution: "purgecss@npm:4.1.3"
@@ -1901,7 +1799,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=ex_webrtc_poc"
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main"
     "@tailwindcss/aspect-ratio": "npm:^0.3.0"
     "@types/phoenix": "npm:^1.6.4"
     autoprefixer: "npm:^10.2.0"
@@ -2204,13 +2102,6 @@ __metadata:
     rxjs:
       optional: true
   checksum: 10c0/01fc354ba8e87bd39b1bf4fe1c96fe7ecff7fde83161003b0f8c7f4b285a368052e185ba655dd8c102c4445301b7a1e032c8972f181b440fc95bd810450f1314
-  languageName: node
-  linkType: hard
-
-"undici-types@npm:~6.19.2":
-  version: 6.19.8
-  resolution: "undici-types@npm:6.19.8"
-  checksum: 10c0/078afa5990fba110f6824823ace86073b4638f1d5112ee26e790155f481f2a868cc3e0615505b6f4282bdf74a3d8caad715fd809e870c2bb0704e3ea6082f344
   languageName: node
   linkType: hard
 
