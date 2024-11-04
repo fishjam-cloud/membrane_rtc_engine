@@ -99,10 +99,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       "LICENSE",
 
       # internal docs
-      "internal_docs/webrtc_media_events.md",
       "internal_docs/protocol.md",
-      "internal_docs/ex_webrtc_endpoint.md",
-      "internal_docs/simulcast.md": [filename: "internal_simulcast"]
+      "internal_docs/ex_webrtc_endpoint.md"
     ]
   end
 
