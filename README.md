@@ -8,7 +8,7 @@ For usage examples, please refer to:
 
 - [the `examples/` directory](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/examples/) of this repository,
 - our [membrane\_videoroom](https://github.com/membraneframework/membrane_videoroom) repository,
-- our [jellyfish](https://github.com/fishjam-cloud/jellyfish) repository.
+- our [fishjam](https://github.com/fishjam-cloud/fishjam) repository.
 
 ## Repository structure
 
