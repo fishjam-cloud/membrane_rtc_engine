@@ -13,16 +13,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
 
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
+  alias Membrane.RTP.PayloadFormatResolver
 
-  @rtp_packet_arrival_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :packet, :arrival]
-  @variant_switched_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :variant, :switched]
-  @paddings_sent_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :paddings, :sent]
+  @rtp_packet_arrival_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :packet, :arrival]
+  @variant_switched_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :variant, :switched]
+  @paddings_sent_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :paddings, :sent]
 
   @spec metrics() :: [Telemetry.Metrics.t()]
   def metrics() do
-    Enum.concat([
-      endpoint_metrics(),
-    ])
+    endpoint_metrics()
   end
 
   defp endpoint_metrics() do
