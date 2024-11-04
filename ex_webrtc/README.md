@@ -1,15 +1,16 @@
 # Membrane RTC Engine ExWebRTC Endpoint
 
-[![CircleCI](https://circleci.com/gh/fishjam-cloud/membrane_rtc_engine.svg?style=svg)](https://circleci.com/gh/fishjam-cloud/membrane_rtc_engine)
+[![codecov](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine/graph/badge.svg?token=ZPHQVR6WXB)](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine)
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master)
 
 ExWebRTC Endpoint for the [Membrane RTC Engine](https://github.com/jellyfish-cloud/membrane_rtc_engine)
 
 ## Client SDKs
 
-- [JS/TS](https://github.com/jellyfish-dev/membrane-webrtc-js)
-- [Android](https://github.com/jellyfish-dev/membrane-webrtc-android)
-- [iOS](https://github.com/jellyfish-dev/membrane-webrtc-ios)
-- [React Native](https://github.com/jellyfish-dev/react-native-membrane-webrtc)
+- [JS/TS](https://github.com/fishjam-cloud/membrane-webrtc-js)
+- [Android](https://github.com/fishjam-cloud/membrane-webrtc-android)
+- [iOS](https://github.com/fishjam-cloud/membrane-webrtc-ios)
+- [React Native](https://github.com/fishjam-cloud/react-native-membrane-webrtc)
 
 ## Installation
 

@@ -13,7 +13,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
 
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
-  alias Membrane.RTP.PayloadFormatResolver
 
   @rtp_packet_arrival_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :packet, :arrival]
   @variant_switched_event [Membrane.RTC.Engine.Endpoint.WebRTC, :RTP, :variant, :switched]
@@ -23,7 +22,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
   def metrics() do
     Enum.concat([
       endpoint_metrics(),
-      Membrane.RTP.Metrics.metrics()
     ])
   end
 

@@ -2,7 +2,7 @@ defmodule Membrane.RTC.Engine.MixProject do
   use Mix.Project
 
   @version "0.24.0-dev"
-  @github_url "https://github.com/jellyfish-dev/membrane_rtc_engine"
+  @github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @source_ref "engine-v#{@version}"
 
   def project do
@@ -85,7 +85,7 @@ defmodule Membrane.RTC.Engine.MixProject do
         "test.integration"
       ],
       "test.engine": ["test"],
-      "test.webrtc": fn _args -> test_package("webrtc") end,
+      "test.ex_webrtc": fn _args -> test_package("ex_webrtc") end,
       "test.ex_webrtc.integration": &run_ex_webrtc_integration_tests/1,
       "test.hls": fn _args -> test_package("hls") end,
       "test.rtsp": fn _args -> test_package("rtsp") end,

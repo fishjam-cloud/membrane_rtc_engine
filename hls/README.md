@@ -2,10 +2,10 @@
 
 [![Hex.pm](https://img.shields.io/hexpm/v/membrane_rtc_engine_hls.svg)](https://hex.pm/packages/membrane_rtc_engine_hls)
 [![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_rtc_engine_hls)
-[![codecov](https://codecov.io/gh/jellyfish-dev/membrane_rtc_engine/branch/master/graph/badge.svg?token=9F1XHHUY2B)](https://codecov.io/gh/jellyfish-dev/membrane_rtc_engine)
-[![CircleCI](https://circleci.com/gh/jellyfish-dev/membrane_rtc_engine.svg?style=svg)](https://circleci.com/gh/jellyfish-dev/membrane_rtc_engine)
+[![codecov](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine/graph/badge.svg?token=ZPHQVR6WXB)](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine)
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master)
 
-HLS Endpoint for the [Membrane RTC Engine](https://github.com/jellyfish-dev/membrane_rtc_engine)
+HLS Endpoint for the [Membrane RTC Engine](https://github.com/fishjam-cloud/membrane_rtc_engine)
 
 ## Installation
 

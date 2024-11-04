@@ -1,6 +1,5 @@
 # TestVideoroom
-Test application for running integration against `membrane_rtc_engine` - specifically, the ExWebRTC
-Endpoint.
+Test application for running integration against `membrane_rtc_engine` - specifically, the ExWebRTC Endpoint.
 
 ## Testing environment
 All tests are performed against a very simple, one view, Phoenix application.
