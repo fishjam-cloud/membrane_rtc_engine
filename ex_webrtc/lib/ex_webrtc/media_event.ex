@@ -33,6 +33,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @type t() :: struct()
 
+  @err_invalid_event {:error, :invalid_media_event}
+
   @spec connected(Engine.Endpoint.id(), [Engine.Endpoint.t()]) :: t()
   def connected(endpoint_id, other_endpoints) do
     other_endpoints =
@@ -136,16 +138,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     try do
       case Peer.MediaEvent.decode(encoded_message) do
         %{content: {_name, media_event}} -> do_decode(media_event)
-        _other -> {:error, :invalid_media_event}
+        _other -> @err_invalid_event
       end
     rescue
       _error in Protobuf.DecodeError ->
-        {:error, :invalid_media_event}
+        @err_invalid_event
 
       _error in Jason.DecodeError ->
-        {:error, :invalid_media_event}
+        @err_invalid_event
     end
   end
+
+  defp do_decode(%Connect{metadata: nil}),
+    do: @err_invalid_event
 
   defp do_decode(%Connect{metadata: metadata}),
     do: {:ok, %{type: :connect, data: %{metadata: Jason.decode!(metadata.json)}}}
@@ -196,7 +201,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     })
   end
 
-  defp do_decode(_event), do: {:error, :invalid_media_event}
+  defp do_decode(_event), do: @err_invalid_event
 
   defp to_custom(msg) do
     {:ok, %{type: :custom, data: msg}}

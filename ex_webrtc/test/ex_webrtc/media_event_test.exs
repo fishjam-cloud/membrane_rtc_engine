@@ -134,7 +134,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         }
       }
 
-      assert expected_media_event == MediaEvent.decode(raw_media_event)
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
     end
   end
 end

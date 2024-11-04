@@ -7,20 +7,6 @@ defmodule Fishjam.MediaEvents.Peer.MediaEvent.VariantBitrate do
   field(:bitrate, 2, type: :int32)
 end
 
-defmodule Fishjam.MediaEvents.Peer.MediaEvent.TrackVariantBitrates do
-  @moduledoc false
-
-  use Protobuf, syntax: :proto3, protoc_gen_elixir_version: "0.12.0"
-
-  field(:track_id, 1, type: :string, json_name: "trackId")
-
-  field(:variant_bitrates, 2,
-    repeated: true,
-    type: Fishjam.MediaEvents.Peer.MediaEvent.VariantBitrate,
-    json_name: "variantBitrates"
-  )
-end
-
 defmodule Fishjam.MediaEvents.Peer.MediaEvent.TrackIdToMetadata do
   @moduledoc false
 
@@ -40,12 +26,6 @@ defmodule Fishjam.MediaEvents.Peer.MediaEvent.TrackIdToBitrates do
   field(:track_bitrate, 1,
     type: Fishjam.MediaEvents.Peer.MediaEvent.TrackBitrate,
     json_name: "trackBitrate",
-    oneof: 0
-  )
-
-  field(:track_variant_bitrates, 2,
-    type: Fishjam.MediaEvents.Peer.MediaEvent.TrackVariantBitrates,
-    json_name: "trackVariantBitrates",
     oneof: 0
   )
 end
