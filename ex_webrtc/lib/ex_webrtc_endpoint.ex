@@ -46,9 +46,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 default: [],
                 description: "Label passed to Membrane.TelemetryMetrics functions"
               ],
-              event_serializer: [
-                spec: MediaEvent.t() | MediaEventJson.t(),
-                description: "Module used for encoding and decoding media events"
+              event_serialization: [
+                spec: :json | :protobuf,
+                description: "Serialization method for encoding and decoding Media Events"
               ]
 
   def_input_pad :input,
@@ -109,8 +109,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         track_id_to_bitrates: %{},
         negotiation?: false,
         queued_negotiation?: false,
-        removed_tracks: %{audio: 0, video: 0}
+        removed_tracks: %{audio: 0, video: 0},
+        event_serializer: get_event_serializer(opts.event_serialization)
       })
+      |> Map.delete(:event_serialization)
 
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
@@ -653,4 +655,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     tracks_removed_events ++ notify_handler
   end
+
+  defp get_event_serializer(:protobuf), do: MediaEvent
+  defp get_event_serializer(:json), do: MediaEventJson
 end
