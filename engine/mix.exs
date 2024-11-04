@@ -2,7 +2,7 @@ defmodule Membrane.RTC.Engine.MixProject do
   use Mix.Project
 
   @version "0.24.0-dev"
-  @github_url "https://github.com/jellyfish-dev/membrane_rtc_engine"
+  @github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @source_ref "engine-v#{@version}"
 
   def project do
@@ -54,14 +54,15 @@ defmodule Membrane.RTC.Engine.MixProject do
   defp deps do
     [
       {:membrane_core, "~> 1.1.2"},
-      {:membrane_rtp_plugin, "~> 0.28.0"},
+      {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
-      {:ex_sdp, "~> 0.15.0"},
       {:elixir_uuid, "~> 1.2"},
       {:statistics, "~> 0.6.0"},
+      {:ex_sdp, "~> 1.1"},
+
       # for colouring diffs in upgrade guides
       {:makeup_diff, "~> 0.1", only: :dev, runtime: false},
-      {:credo, "~> 1.6", only: :dev, runtime: false},
+      {:credo, "~> 1.7", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
 
@@ -84,8 +85,8 @@ defmodule Membrane.RTC.Engine.MixProject do
         "test.integration"
       ],
       "test.engine": ["test"],
-      "test.webrtc": fn _args -> test_package("webrtc") end,
-      "test.webrtc.integration": &run_webrtc_integration_tests/1,
+      "test.ex_webrtc": fn _args -> test_package("ex_webrtc") end,
+      "test.ex_webrtc.integration": &run_ex_webrtc_integration_tests/1,
       "test.hls": fn _args -> test_package("hls") end,
       "test.rtsp": fn _args -> test_package("rtsp") end,
       "test.file": fn _args -> test_package("file") end,
@@ -202,8 +203,8 @@ defmodule Membrane.RTC.Engine.MixProject do
     """
   end
 
-  defp run_webrtc_integration_tests(_cli_args) do
-    path = "../webrtc/integration_test/test_videoroom"
+  defp run_ex_webrtc_integration_tests(_cli_args) do
+    path = "../ex_webrtc/integration_test/test_videoroom"
 
     assert_execute("mix", ["deps.get"],
       cd: path,
@@ -215,6 +216,11 @@ defmodule Membrane.RTC.Engine.MixProject do
       log_str: "Compiling test_videoroom app"
     )
 
+    assert_execute("mix", ["playwright.install"],
+      cd: path,
+      log_str: "Installing playwright browser"
+    )
+
     assets_path = Path.join(path, "assets")
 
     if packages_installed?(assets_path) do
@@ -222,9 +228,9 @@ defmodule Membrane.RTC.Engine.MixProject do
         "Skipping installation of npm dependencies in test_videoroom: already installed"
       )
     else
-      assert_execute("npm", ["ci"],
+      assert_execute("yarn",
         cd: assets_path,
-        log_str: "Installing npm dependencies in test_videoroom"
+        log_str: "Installing yarn dependencies in test_videoroom"
       )
     end
 
@@ -266,7 +272,7 @@ defmodule Membrane.RTC.Engine.MixProject do
     )
   end
 
-  defp assert_execute(cmd, args, cd: cd, log_str: log_str) do
+  defp assert_execute(cmd, args \\ [], cd: cd, log_str: log_str) do
     Mix.shell().info(log_str)
     {_io_stream, exit_status} = System.cmd(cmd, args, cd: cd, into: IO.stream())
     if exit_status != 0, do: raise("FATAL: #{log_str} failed")

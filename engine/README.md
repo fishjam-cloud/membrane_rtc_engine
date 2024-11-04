@@ -2,8 +2,8 @@
 
 [![Hex.pm](https://img.shields.io/hexpm/v/membrane_rtc_engine.svg)](https://hex.pm/packages/membrane_rtc_engine)
 [![API Docs](https://img.shields.io/badge/api-docs-yellow.svg?style=flat)](https://hexdocs.pm/membrane_rtc_engine)
-[![codecov](https://codecov.io/gh/jellyfish-dev/membrane_rtc_engine/branch/master/graph/badge.svg?token=9F1XHHUY2B)](https://codecov.io/gh/jellyfish-dev/membrane_rtc_engine)
-[![CircleCI](https://circleci.com/gh/jellyfish-dev/membrane_rtc_engine.svg?style=svg)](https://circleci.com/gh/jellyfish-dev/membrane_rtc_engine)
+[![codecov](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine/graph/badge.svg?token=ZPHQVR6WXB)](https://codecov.io/gh/fishjam-cloud/membrane_rtc_engine)
+[![CircleCI](https://dl.circleci.com/status-badge/img/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/circleci/GYdMJX3ERMbXTmauvqgRKE/7B94kqtbCjtAfbnStg3PLn/tree/master)
 
 Customizable Real-time Communication Engine/SFU library focused on WebRTC.
 
@@ -39,9 +39,9 @@ For usage examples, please refer to our [membrane_demo](https://github.com/membr
 To make development a little easier, we have added several tasks:
 - `mix test.all`, which runs unit tests from the engine, unit tests from each endpoint, and
   endpoint integration tests,
-- `mix test.webrtc.integration`, which runs WebRTC Endpoint integration tests
-  (present [here](https://github.com/jellyfish-dev/membrane_rtc_engine/tree/master/webrtc/integration_test/test_videoroom)),
-- To test a given Endpoint, you can use the alias `mix test.ENDPOINT`, e.g. `mix test.webrtc`,
+- `mix test.ex_webrtc.integration`, which runs WebRTC Endpoint integration tests
+  (present [here](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/webrtc/integration_test/test_videoroom)),
+- To test a given Endpoint, you can use the alias `mix test.ENDPOINT`, e.g. `mix test.ex_webrtc`,
 - To run the endpoint integration test suite, execute `mix test.integration`.
 
 ## Copyright and License

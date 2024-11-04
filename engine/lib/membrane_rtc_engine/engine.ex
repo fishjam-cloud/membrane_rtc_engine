@@ -399,15 +399,15 @@ defmodule Membrane.RTC.Engine do
           endpoint_id :: String.t(),
           track_id :: Track.id(),
           opts :: subscription_opts_t
-        ) :: :ok | :ignored
+        ) :: {:ok, Track.t()} | :ignored
   def subscribe(rtc_engine, endpoint_id, track_id, opts \\ []) do
     ref = make_ref()
 
     send(rtc_engine, {:subscribe, {self(), ref}, endpoint_id, track_id, opts})
 
     receive do
-      {^ref, :ok} ->
-        :ok
+      {^ref, :ok, track} ->
+        {:ok, track}
 
       {^ref, {:error, :invalid_track_id}} ->
         Membrane.Logger.debug("""
@@ -424,20 +424,15 @@ defmodule Membrane.RTC.Engine do
         :ignored
 
       {^ref, {:error, :endpoint_not_exist}} ->
-        Membrane.Logger.error(%{
+        Membrane.Logger.error("Couldn't subscribe to track",
           error: :endpoint_not_exist,
-          message: "Couldn't subscribe to track",
           track_id: track_id
-        })
+        )
 
         raise "Couldn't subscribe to the track: #{inspect(track_id)}, because endpoint #{endpoint_id} doesn't exist."
     after
       5_000 ->
-        Membrane.Logger.error(%{
-          error: :timeout,
-          message: "Couldn't subscribe to track",
-          track_id: track_id
-        })
+        Membrane.Logger.error("Couldn't subscribe to track", error: :timeout, track_id: track_id)
 
         raise "Couldn't subscribe to the track: #{inspect(track_id)}, because of timeout."
     end
@@ -575,7 +570,10 @@ defmodule Membrane.RTC.Engine do
     case validate_subscription(subscription, ctx, state) do
       :ok ->
         {spec, state} = fulfill_or_postpone_subscription(subscription, ctx, state)
-        send(endpoint_pid, {ref, :ok})
+
+        track = get_track(track_id, state.endpoints)
+
+        send(endpoint_pid, {ref, :ok, track})
         Membrane.Logger.debug("Subscription fulfilled by #{endpoint_id} on track: #{track_id}")
         {[spec: {spec, log_metadata: [rtc: state.id]}], state}
 
@@ -1400,8 +1398,7 @@ defmodule Membrane.RTC.Engine do
     endpoints
     |> Map.values()
     |> Enum.flat_map(&Endpoint.get_tracks/1)
-    |> Map.new(&{&1.id, &1})
-    |> Map.get(track_id)
+    |> Enum.find(&(&1.id == track_id))
   end
 
   defp prepare_track_notifications(subscriptions, pending_subscriptions, track_id, notification) do

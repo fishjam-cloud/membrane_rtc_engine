@@ -7,6 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   * immediately after initialization, if `playback_mode` is set to `:autoplay` (default),
   * after calling `playback_mode` function with proper arguments, if `playback_mode` is set to `:manual`
   * after other endpoint subscribes on this endpoint track, if `playback_mode` is set to `:wait_for_first_subscriber`
+  Currently, the File Endpoint only supports files that contain a single media track.
   """
 
   use Membrane.Bin
@@ -142,34 +143,12 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
     actions =
       if state.track.encoding == :OPUS and
            state.after_source_transformation == (&Function.identity/1) do
-        build_pipeline_ogg_demuxer(state)
+        build_pipeline_ogg_demuxer(state, pad)
       else
         build_full_pipeline(state, pad)
       end
 
     {actions, state}
-  end
-
-  @impl true
-  def handle_child_notification(
-        {:new_track, {track_id, :opus}},
-        :ogg_demuxer,
-        ctx,
-        state
-      ) do
-    [output_pad] =
-      ctx.pads
-      |> Map.keys()
-      |> Enum.filter(&match?({Membrane.Pad, :output, _pad_id}, &1))
-
-    spec = [
-      get_child(:ogg_demuxer)
-      |> via_out(Pad.ref(:output, track_id))
-      |> child(:parser, Membrane.Opus.Parser)
-      |> then(get_rest_of_pipeline(state, output_pad))
-    ]
-
-    {[spec: spec], state}
   end
 
   @impl true
@@ -247,10 +226,12 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
     ]
   end
 
-  defp build_pipeline_ogg_demuxer(state) do
+  defp build_pipeline_ogg_demuxer(state, pad) do
     spec = [
       child(:source, %Membrane.File.Source{location: state.file_path})
       |> child(:ogg_demuxer, Membrane.Ogg.Demuxer)
+      |> child(:opus_parser, opus_parser())
+      |> then(get_rest_of_pipeline(state, pad))
     ]
 
     [spec: spec]
@@ -299,7 +280,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
 
   defp get_parser(%Track{encoding: :OPUS}) do
     fn link_builder ->
-      child(link_builder, :parser, Membrane.Opus.Parser)
+      child(link_builder, :parser, opus_parser())
     end
   end
 
@@ -313,6 +294,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
       })
     end
   end
+
+  defp opus_parser(), do: %Membrane.Opus.Parser{generate_best_effort_timestamps?: true}
 
   defp new_ssrc() do
     :crypto.strong_rand_bytes(4) |> :binary.decode_unsigned()

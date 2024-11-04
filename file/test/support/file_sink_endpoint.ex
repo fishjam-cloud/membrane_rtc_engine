@@ -8,7 +8,7 @@ defmodule Membrane.RTC.Engine.Support.Sink do
 
   alias Membrane.File.Sink, as: FileSink
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Endpoint.WebRTC.TrackReceiver
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
 
   @type encoding_t() :: String.t()
@@ -80,7 +80,7 @@ defmodule Membrane.RTC.Engine.Support.Sink do
     state =
       Enum.reduce(tracks, state, fn track, state ->
         case Engine.subscribe(state.rtc_engine, endpoint_id, track.id) do
-          :ok ->
+          {:ok, _track} ->
             put_in(state, [:tracks, track.id], track)
 
           {:error, :invalid_track_id} ->
