@@ -4,7 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Track
 
-  alias Fishjam.MediaEvents.{Candidate, MidToTrackId, Peer, Server}
+  alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer, Server}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
@@ -29,7 +29,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     VadNotification
   }
 
-  @type t() :: struct()
+  @type t() :: {atom(), struct()}
 
   @err_invalid_event {:error, :invalid_media_event}
 
@@ -41,93 +41,113 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         &%Server.MediaEvent.Endpoint{
           endpoint_id: &1.id,
           endpoint_type: to_type_string(&1.type),
-          metadata: Jason.encode!(&1.metadata),
+          metadata: %Metadata{json: Jason.encode!(&1.metadata)},
           tracks: &1 |> Engine.Endpoint.get_active_tracks() |> to_tracks_info()
         }
       )
 
-    %Connected{
-      endpoint_id: endpoint_id,
-      endpoints: other_endpoints
-    }
+    {:connected,
+     %Connected{
+       endpoint_id: endpoint_id,
+       endpoints: other_endpoints
+     }}
   end
 
   @spec endpoint_added(Engine.Endpoint.t()) :: t()
   def endpoint_added(%Engine.Endpoint{id: id, metadata: metadata}) do
-    %EndpointAdded{
-      endpoint_id: id,
-      metadata: Jason.encode!(metadata)
-    }
+    {:endpoint_added,
+     %EndpointAdded{
+       endpoint_id: id,
+       metadata: %Metadata{json: Jason.encode!(metadata)}
+     }}
   end
 
   @spec endpoint_removed(Engine.Endpoint.id()) :: t()
   def endpoint_removed(endpoint_id) do
-    %EndpointRemoved{
-      endpoint_id: endpoint_id
-    }
+    {:endpoint_removed,
+     %EndpointRemoved{
+       endpoint_id: endpoint_id
+     }}
   end
 
   @spec endpoint_updated(Engine.Endpoint.t()) :: t()
   def endpoint_updated(%Engine.Endpoint{id: endpoint_id, metadata: metadata}) do
-    %EndpointUpdated{
-      endpoint_id: endpoint_id,
-      metadata: Jason.encode!(metadata)
-    }
+    {:endpoint_updated,
+     %EndpointUpdated{
+       endpoint_id: endpoint_id,
+       metadata: %Metadata{json: Jason.encode!(metadata)}
+     }}
   end
 
   @spec tracks_added(Engine.Endpoint.id(), %{Track.id() => Track.t()}) :: t()
   def tracks_added(endpoint_id, tracks) do
-    %TracksAdded{
-      endpoint_id: endpoint_id,
-      tracks: to_tracks_info(tracks)
-    }
+    {:tracks_added,
+     %TracksAdded{
+       endpoint_id: endpoint_id,
+       tracks: tracks |> Map.values() |> to_tracks_info()
+     }}
   end
 
   @spec tracks_removed(Engine.Endpoint.id(), [String.t()]) :: t()
   def tracks_removed(endpoint_id, track_ids) do
-    %TracksRemoved{
-      endpoint_id: endpoint_id,
-      track_ids: track_ids
-    }
+    {:tracks_removed,
+     %TracksRemoved{
+       endpoint_id: endpoint_id,
+       track_ids: track_ids
+     }}
   end
 
   @spec track_updated(Engine.Endpoint.id(), String.t(), map()) :: t()
   def track_updated(endpoint_id, track_id, metadata) do
-    %TrackUpdated{
-      endpoint_id: endpoint_id,
-      track_id: track_id,
-      metadata: Jason.encode!(metadata)
-    }
+    {:track_updated,
+     %TrackUpdated{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       metadata: %Metadata{json: Jason.encode!(metadata)}
+     }}
   end
 
   @spec sdp_answer(ExWebRTC.SessionDescription.t(), %{String.t() => non_neg_integer()}) :: t()
   def sdp_answer(answer, mid_to_track_id) do
-    %SdpAnswer{
-      sdp_answer: Map.fetch!(answer, "sdp"),
-      mid_to_track_id: to_mid_to_track_id(mid_to_track_id)
-    }
+    {:sdp_answer,
+     %SdpAnswer{
+       sdp_answer: answer.sdp,
+       mid_to_track_id: to_mid_to_track_id(mid_to_track_id)
+     }}
   end
 
   @spec offer_data(%{audio: non_neg_integer(), video: non_neg_integer()}) :: t()
   def offer_data(%{audio: audio, video: video}) do
-    %OfferData{
-      tracks_types: %OfferData.TrackTypes{audio: audio, video: video}
-    }
+    {:offer_data,
+     %OfferData{
+       tracks_types: %OfferData.TrackTypes{audio: audio, video: video}
+     }}
   end
 
   @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
-  def candidate(candidate), do: struct!(Candidate, candidate)
+  def candidate(candidate) do
+    candidate = %Candidate{
+      candidate: candidate.candidate,
+      sdp_m_line_index: candidate.sdp_m_line_index,
+      sdp_mid: to_string(candidate.sdp_mid),
+      username_fragment: candidate.username_fragment
+    }
+
+    {:candidate, candidate}
+  end
 
   @spec voice_activity(Track.id(), :speech | :silence) :: t()
   def voice_activity(track_id, vad) do
-    %VadNotification{
-      track_id: track_id,
-      status: to_proto_vad_status(vad)
-    }
+    {:vad_notification,
+     %VadNotification{
+       track_id: track_id,
+       status: to_proto_vad_status(vad)
+     }}
   end
 
   @spec to_action(t()) :: [notify_parent: {:forward_to_parent, {:media_event, binary()}}]
   def to_action(event) do
+    event = %Server.MediaEvent{content: event}
     [notify_parent: {:forward_to_parent, {:media_event, Server.MediaEvent.encode(event)}}]
   end
 
@@ -209,7 +229,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
       tracks,
       &%Server.MediaEvent.Track{
         track_id: &1.id,
-        metadata: &1.metadata
+        metadata: %Metadata{json: Jason.encode!(&1.metadata)}
       }
     )
   end
