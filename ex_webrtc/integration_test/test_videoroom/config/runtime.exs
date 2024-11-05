@@ -46,7 +46,7 @@ config :test_videoroom,
   ice_port_range:
     System.get_env("ICE_PORT_RANGE", "50000-50100")
     |> ConfigParser.parse_integrated_turn_port_range(),
-  event_serialization: (if System.get_env("USE_PROTOBUF") == "true", do: :protobuf, else: :json)
+  event_serialization: if(System.get_env("USE_PROTOBUF") == "true", do: :protobuf, else: :json)
 
 protocol = if System.get_env("USE_TLS") == "true", do: :https, else: :http
 

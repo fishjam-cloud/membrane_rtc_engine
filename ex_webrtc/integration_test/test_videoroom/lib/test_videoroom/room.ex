@@ -59,7 +59,7 @@ defmodule TestVideoroom.Room do
       rtc_engine: state.rtc_engine,
       ice_port_range: state.ice_port_range,
       video_codec: :VP8,
-      event_serialization: Application.fetch_env!(TestVideoroom, :event_serialization)
+      event_serialization: Application.fetch_env!(:test_videoroom, :event_serialization)
     }
 
     :ok = Engine.add_endpoint(state.rtc_engine, endpoint, id: peer_id)
