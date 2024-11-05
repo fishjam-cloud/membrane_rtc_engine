@@ -3,14 +3,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent
 
-  alias Fishjam.MediaEvents.Peer
+  alias Fishjam.MediaEvents.{Candidate, Peer}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
     SdpOffer,
     TrackBitrate,
     TrackIdToBitrates,
-    TrackIdToMetadata
+    TrackIdToMetadata,
+    UpdateEndpointMetadata
   }
 
   alias Fishjam.MediaEvents.{Metadata, MidToTrackId}
@@ -131,6 +132,55 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
             track_id_to_track_bitrates: %{},
             mid_to_track_id: %{}
           }
+        }
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
+  describe "deserializing invalid media event" do
+    test "invalid protobuf" do
+      raw_media_event = "this is not a real event"
+
+      assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "invalid metadata" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:update_endpoint_metadata,
+             %UpdateEndpointMetadata{
+               metadata: %Metadata{json: "{this is not a valid json]"}
+             }}
+        }
+        |> Peer.MediaEvent.encode()
+
+      assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
+  describe "deserializing ICE candidate" do
+    test "deserializing correct event" do
+      candidate = %{
+        candidate: "ICE candidate",
+        sdp_m_line_index: 4,
+        sdp_mid: "2",
+        username_fragment: "user fragment"
+      }
+
+      raw_media_event =
+        %Peer.MediaEvent{
+          content: {:candidate, struct!(Candidate, candidate)}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :custom,
+        data: %{
+          type: :candidate,
+          data: candidate
         }
       }
 

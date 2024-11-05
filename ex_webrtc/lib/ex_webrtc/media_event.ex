@@ -4,7 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Track
 
-  alias Fishjam.MediaEvents.{Candidate, MidToTrackId, Peer}
+  alias Fishjam.MediaEvents.{Candidate, MidToTrackId, Peer, Server}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
@@ -14,8 +14,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     UpdateEndpointMetadata,
     UpdateTrackMetadata
   }
-
-  alias Fishjam.MediaEvents.Server
 
   alias Fishjam.MediaEvents.Server.MediaEvent.{
     Connected,
@@ -141,10 +139,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         _other -> @err_invalid_event
       end
     rescue
-      _error in Protobuf.DecodeError ->
-        @err_invalid_event
-
-      _error in Jason.DecodeError ->
+      _error in [Protobuf.DecodeError, Jason.DecodeError] ->
         @err_invalid_event
     end
   end
@@ -178,7 +173,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   defp do_decode(%Candidate{} = event) do
     to_custom(%{
       type: :candidate,
-      data: Map.from_struct(event)
+      data: event |> Map.from_struct() |> Map.delete(:__unknown_fields__)
     })
   end
 
