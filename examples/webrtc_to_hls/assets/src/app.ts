@@ -1,6 +1,6 @@
 import { Push, Socket } from "phoenix";
 import { setErrorMessage, setPlayerInfo, setPreview } from "./ui";
-import { WebRTCEndpoint } from "@fishjam-dev/ts-client";
+import { WebRTCEndpoint } from "@fishjam-cloud/ts-client";
 
 const awaitPhoenixPush = async (push: Push): Promise<any> => {
   return new Promise((resolve, reject) => {

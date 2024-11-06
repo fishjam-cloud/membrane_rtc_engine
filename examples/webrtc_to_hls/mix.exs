@@ -33,9 +33,9 @@ defmodule WebRTCToHLS.MixProject do
       {:cowlib, "~> 2.11.0", override: true},
 
       # rtc engine dependencies
-      {:membrane_rtc_engine, "~> 0.22.0"},
-      {:membrane_rtc_engine_hls, "~> 0.7.0"},
-      {:membrane_rtc_engine_webrtc, "~> 0.8.0"},
+      {:membrane_rtc_engine, path: "../../engine"},
+      {:membrane_rtc_engine_ex_webrtc, path: "../../ex_webrtc"},
+      {:membrane_rtc_engine_hls, path: "../../hls"},
 
       # hls dependencies
       {:membrane_audio_mix_plugin, "~> 0.16.0", optional: true},
