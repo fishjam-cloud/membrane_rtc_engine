@@ -8,6 +8,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
+    RenegotiateTracks,
     SdpOffer,
     TrackBitrate,
     TrackIdToBitrates,
@@ -195,6 +196,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
           type: :candidate,
           data: candidate
         }
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
+  describe "deserializing renegotiate tracks" do
+    test "deserializing correct event" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content: {:renegotiate_tracks, %RenegotiateTracks{}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :custom,
+        data: %{type: :renegotiate_tracks}
       }
 
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
