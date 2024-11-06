@@ -6,7 +6,7 @@ defmodule Mix.Tasks.UseSerializer do
 
   def run(args) do
     serializer = get_serializer(args)
-    Application.put_env(:test_videoroom, :event_serialization, serializer) |> dbg()
+    Application.put_env(:test_videoroom, :event_serialization, serializer)
 
     ts_client = "@fishjam-cloud/ts-client@" <> Application.fetch_env!(:ts_client, serializer)
 

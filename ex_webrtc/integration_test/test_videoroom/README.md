@@ -81,7 +81,7 @@ mix test.ex_webrtc.integration
 
 Alternatively, you can run the following commands in the current directory:
 ```bash
-mix deps.get; cd assets; npm ci; cd ..; mix test.json
+mix deps.get; cd assets; yarn; cd ..; mix test.json
 ```
 
 ## Building a container
