@@ -197,7 +197,7 @@ defmodule Membrane.RTC.Engine.ExWebRTC.TrackSenderTest do
       metadata: %{is_keyframe: ^expected_is_keyframe_value}
     })
 
-    Pipeline.terminate(pipeline)
+    Pipeline.terminate(pipeline, timeout: 5_000)
   end
 
   defp test_keyframe?(track, expected_is_keyframe_value) do
