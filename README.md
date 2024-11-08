@@ -16,8 +16,8 @@ This repository currently holds the following packages:
 
 - [`engine`](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/engine) -
   RTC Engine, the main package responsible for exchanging media tracks between Endpoints,
-- [`webrtc`](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/webrtc) -
-  WebRTC Endpoint, responsible for establishing a connection with some WebRTC client (mainly browser) and exchanging media with it,
+- [`ex_webrtc`](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/ex_webrtc) -
+  ExWebRTC Endpoint, responsible for establishing a connection with some WebRTC client (mainly browser) and exchanging media with it,
 - [`hls`](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/hls) -
   HLS Endpoint, responsible for receiving media tracks from all other Endpoints and saving them to files by creating HLS playlists,
 - [`rtsp`](https://github.com/fishjam-cloud/membrane_rtc_engine/tree/master/rtsp) -
@@ -38,7 +38,7 @@ the Engine), e.g.
 def deps do
   [
     {:membrane_rtc_engine, "~> 0.23.0"},
-    {:membrane_rtc_engine_webrtc, "~> 0.9.0"}
+    {:membrane_rtc_engine_ex_webrtc, github: "fishjam-cloud/membrane_rtc_engine", sparse: "ex_webrtc"}
   ]
 end
 ```

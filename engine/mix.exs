@@ -234,7 +234,7 @@ defmodule Membrane.RTC.Engine.MixProject do
       )
     end
 
-    assert_execute("mix", ["test"],
+    assert_execute("mix", ["test.json"],
       cd: path,
       log_str: "Running integration tests"
     )

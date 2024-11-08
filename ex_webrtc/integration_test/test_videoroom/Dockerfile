@@ -39,6 +39,6 @@ RUN mix playwright.install
 # COPY ${APP_PATH}/docker-entrypoint.sh ./
 # RUN chmod +x docker-entrypoint.sh
 
-CMD ["mix", "test"]
+CMD ["mix", "test.json"]
 
 # ENTRYPOINT ["./docker-entrypoint.sh"]

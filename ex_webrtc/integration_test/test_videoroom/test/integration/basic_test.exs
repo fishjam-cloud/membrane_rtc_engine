@@ -161,8 +161,11 @@ defmodule TestVideoroom.Integration.BasicTest do
           {:after_warmup, browsers} ->
             Enum.each(browsers, fn {browser_id, stats_list} ->
               Enum.each(stats_list, fn stats ->
-                assert count_playing_streams(stats, "audio") == browser_received_tracks[browser_id].a
-                assert count_playing_streams(stats, "video") == browser_received_tracks[browser_id].v
+                assert count_playing_streams(stats, "audio") ==
+                         browser_received_tracks[browser_id].a
+
+                assert count_playing_streams(stats, "video") ==
+                         browser_received_tracks[browser_id].v
               end)
             end)
 
