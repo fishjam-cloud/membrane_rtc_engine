@@ -46,7 +46,7 @@ defmodule Membrane.RTC.EngineTest do
       assert_receive %EndpointAdded{endpoint_id: ^first_endpoint}
       assert_receive %EndpointAdded{endpoint_id: ^second_endpoint}
       assert_receive {:new_endpoint, %Endpoint{id: ^second_endpoint, metadata: "metadata"}}
-      assert_receive {:ready, []}
+      assert_receive {:ready, [%Endpoint{id: "endpoint1", metadata: nil, type: TestEndpoint}]}
       refute_receive {:new_tracks, []}
     end
 
@@ -67,7 +67,14 @@ defmodule Membrane.RTC.EngineTest do
          ]}
       )
 
-      assert_receive {:ready, []}
+      assert_receive {:ready,
+                      [
+                        %Endpoint{
+                          id: "endpoint1",
+                          metadata: "endpoint1-metadata",
+                          type: TestEndpoint
+                        }
+                      ]}
 
       Engine.add_endpoint(rtc_engine, endpoint2_spec, id: "endpoint2")
 
@@ -80,6 +87,11 @@ defmodule Membrane.RTC.EngineTest do
       assert_receive {:ready, endpoints_in_room}
 
       assert [
+               %Membrane.RTC.Engine.Endpoint{
+                 id: "endpoint2",
+                 metadata: "endpoint2-metadata",
+                 type: TestEndpoint
+               },
                %Endpoint{
                  id: "endpoint1",
                  metadata: "endpoint1-metadata",
@@ -112,7 +124,15 @@ defmodule Membrane.RTC.EngineTest do
         {:execute_actions, [notify_parent: {:publish, {:new_tracks, [endpoint1_track]}}]}
       )
 
-      refute_receive {:ready, []}
+      refute_receive {:ready,
+                      [
+                        %Endpoint{
+                          id: "endpoint1",
+                          metadata: "endpoint1-metadata",
+                          type: TestEndpoint
+                        }
+                      ]}
+
       refute_receive {:new_tracks, []}
 
       Engine.message_endpoint(
@@ -133,7 +153,29 @@ defmodule Membrane.RTC.EngineTest do
         {:execute_actions, [notify_parent: {:ready, "endpoint2-metadata"}]}
       )
 
-      assert_receive {:ready, []}
+      assert_receive {:ready,
+                      [
+                        %Endpoint{
+                          id: "endpoint1",
+                          metadata: "endpoint1-metadata",
+                          type: TestEndpoint
+                        }
+                      ]}
+
+      assert_receive {:ready,
+                      [
+                        %Endpoint{
+                          id: "endpoint2",
+                          metadata: "endpoint2-metadata",
+                          type: TestEndpoint
+                        },
+                        %Endpoint{
+                          id: "endpoint1",
+                          metadata: "endpoint1-metadata",
+                          type: TestEndpoint
+                        }
+                      ]}
+
       assert_receive {:new_tracks, [%Track{id: "track1"}]}
     end
   end
