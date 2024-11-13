@@ -5,7 +5,7 @@
 * Return updated track upon subscription [#3](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/3)
 * Use yarn for both webrtc integration tests [#8](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/8)
 * Split ex_webrtc integration tests to JSON and protobuf [#13](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/13)
-* Sent all endpoints metadata on ready notification [#14](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/14)
+* Send all endpoints metadata on ready notification [#14](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/14)
 
 ## 0.23.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

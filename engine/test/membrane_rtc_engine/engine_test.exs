@@ -87,7 +87,7 @@ defmodule Membrane.RTC.EngineTest do
       assert_receive {:ready, endpoints_in_room}
 
       assert [
-               %Membrane.RTC.Engine.Endpoint{
+               %Endpoint{
                  id: "endpoint2",
                  metadata: "endpoint2-metadata",
                  type: TestEndpoint
