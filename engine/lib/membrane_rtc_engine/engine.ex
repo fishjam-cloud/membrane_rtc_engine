@@ -762,7 +762,7 @@ defmodule Membrane.RTC.Engine do
 
       actions =
         [
-          notify_child: {{:endpoint, endpoint_id}, {:ready, other_endpoints}}
+          notify_child: {{:endpoint, endpoint_id}, {:ready, [new_endpoint | other_endpoints]}}
         ] ++ new_tracks_notification ++ new_endpoint_notifications
 
       state =
