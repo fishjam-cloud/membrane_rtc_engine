@@ -1,6 +1,8 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
   use ExUnit.Case, async: true
 
+  alias Membrane.RTC.Engine.Endpoint
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson, as: MediaEvent
 
   describe "deserializing `connect` media event" do
@@ -152,6 +154,25 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
         |> Jason.encode!()
 
       assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
+  describe "serializing connected media event" do
+    test "removes endpoint with the same id as endpoint_id" do
+      endpoint_id = "endpoint_id"
+
+      other_endpoints = [
+        Endpoint.new(endpoint_id, ExWebRTC, []),
+        Endpoint.new("other_endpoint", ExWebRTC, [])
+      ]
+
+      assert %{
+               type: "connected",
+               data: %{
+                 id: ^endpoint_id,
+                 otherEndpoints: [%{id: "other_endpoint"}]
+               }
+             } = MediaEvent.connected(endpoint_id, other_endpoints)
     end
   end
 end

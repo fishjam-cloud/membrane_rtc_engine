@@ -11,6 +11,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   def connected(endpoint_id, other_endpoints) do
     other_endpoints =
       other_endpoints
+      # backward compatibility
+      |> Enum.filter(&(&1.id != endpoint_id))
       |> Enum.map(
         &%{
           id: &1.id,
