@@ -4,6 +4,12 @@ priv/certs/*.pem
 priv/static/assets
 priv/static/js
 priv/static/cache_manifest.json
+priv/static/favicon-*
+priv/static/robots-*
+priv/static/robots.txt.gz
+priv/static/css/app-*
+priv/static/css/app.css.gz
+priv/static/images/logo-*
 
 # The directory Mix will write compiled artifacts to.
 /_build/

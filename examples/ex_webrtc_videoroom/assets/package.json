@@ -6,7 +6,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main",
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=785d238f928c42296b95b5c8b177a54b67fe8285",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "query-string": "^7.0.0",

@@ -34,22 +34,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@bufbuild/protobuf@npm:^2.2.0":
+"@bufbuild/protobuf@npm:^2.2.2":
   version: 2.2.2
   resolution: "@bufbuild/protobuf@npm:2.2.2"
   checksum: 10c0/17687c36c85b2e489c7ffd676479c54e12437270eb5a724775cb880b09948cad205b79e5822a4d10cefde0eef433b781350d73bb649d8de9e84d7745871ee719
   languageName: node
   linkType: hard
 
-"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main":
-  version: 0.8.1
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=2d9db0ce7d59b215a3c43888c2ba8b4a1142baf9"
+"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=785d238f928c42296b95b5c8b177a54b67fe8285":
+  version: 0.9.0
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=785d238f928c42296b95b5c8b177a54b67fe8285"
   dependencies:
-    "@bufbuild/protobuf": "npm:^2.2.0"
+    "@bufbuild/protobuf": "npm:^2.2.2"
     events: "npm:^3.3.0"
     typed-emitter: "npm:^2.1.0"
-    uuid: "npm:^10.0.0"
-  checksum: 10c0/781773968173e8f820311bd5e330714df0fd21cf0a83ebcd7f7f53a650f988846ce6f9c3eb1ddf730e2a526a64d3521d90f485b325ed95d60452b6e0cbe505e0
+    uuid: "npm:^11.0.2"
+  checksum: 10c0/f65d00d25cd946c7ed5e9c7aab35516aae14d15d56653a1d52dc761955fb380911df9a6fea230d4b9033acb5439a0122c9cdfebfcd5cf2d60beb0a20d4aa28d2
   languageName: node
   linkType: hard
 
@@ -1799,7 +1799,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main"
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=785d238f928c42296b95b5c8b177a54b67fe8285"
     "@tailwindcss/aspect-ratio": "npm:^0.3.0"
     "@types/phoenix": "npm:^1.6.4"
     autoprefixer: "npm:^10.2.0"
@@ -2151,12 +2151,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "uuid@npm:10.0.0"
+"uuid@npm:^11.0.2":
+  version: 11.0.3
+  resolution: "uuid@npm:11.0.3"
   bin:
-    uuid: dist/bin/uuid
-  checksum: 10c0/eab18c27fe4ab9fb9709a5d5f40119b45f2ec8314f8d4cf12ce27e4c6f4ffa4a6321dc7db6c515068fa373c075b49691ba969f0010bf37f44c37ca40cd6bf7fe
+    uuid: dist/esm/bin/uuid
+  checksum: 10c0/cee762fc76d949a2ff9205770334699e0043d52bb766472593a25f150077c9deed821230251ea3d6ab3943a5ea137d2826678797f1d5f6754c7ce5ce27e9f7a6
   languageName: node
   linkType: hard
 
