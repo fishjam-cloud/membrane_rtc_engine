@@ -39,7 +39,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(
       pipeline,
       :handler,
-      {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, _new_mid_to_track_id}
+      {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
     )
 
     assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
@@ -56,7 +56,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
            } =
              engine_track
 
-    answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
@@ -79,12 +78,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(
       pipeline,
       :handler,
-      {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, new_mid_to_track_id}
+      {:answer, %{type: :answer, sdp: _sdp} = answer, new_mid_to_track_id}
     )
 
     refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
 
-    answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
@@ -113,7 +111,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(
       pipeline,
       :handler,
-      {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, _new_mid_to_track_id}
+      {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
     )
 
     assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
@@ -138,7 +136,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              variants: [:high]
            } = engine_audio_track
 
-    answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
@@ -163,10 +160,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(
       pipeline,
       :handler,
-      {:answer, %{"type" => "answer", "sdp" => _sdp} = answer, _new_mid_to_track_id}
+      {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
     )
 
-    answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
@@ -187,7 +183,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
 
   defp sdp_offer(offer, mid_to_track_id \\ %{}, track_id_to_metadata \\ %{}) do
     %{
-      sdp_offer: SessionDescription.to_json(offer),
+      sdp_offer: offer,
       mid_to_track_id: mid_to_track_id,
       track_id_to_track_metadata: track_id_to_metadata
     }
@@ -221,13 +217,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
 
     Pipeline.notify_child(pipeline, :handler, {:offer, media_event, %{}})
 
-    assert_pipeline_notified(pipeline, :handler, {:answer, %{"type" => "answer"} = answer, _mids})
+    assert_pipeline_notified(
+      pipeline,
+      :handler,
+      {:answer, %SessionDescription{type: :answer} = answer, _mids}
+    )
+
     assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
     [engine_track] = tracks
 
     assert engine_track.id == track_id
 
-    answer = SessionDescription.from_json(answer)
     PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)

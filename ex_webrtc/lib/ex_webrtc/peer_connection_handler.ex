@@ -8,13 +8,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
   alias Membrane.RTC.Engine.Track
 
-  alias ExWebRTC.{
-    MediaStreamTrack,
-    PeerConnection,
-    RTPReceiver,
-    RTPTransceiver,
-    SessionDescription
-  }
+  alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
 
   def_options endpoint_id: [
                 spec: String.t(),
@@ -169,7 +163,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     track_id_to_metadata = Map.get(event, :track_id_to_track_metadata, %{})
     state = Map.put(state, :track_id_to_metadata, track_id_to_metadata)
 
-    offer = SessionDescription.from_json(offer)
     :ok = PeerConnection.set_remote_description(state.pc, offer)
 
     state = add_new_tracks_to_webrtc(state, new_outbound_tracks)
@@ -180,7 +173,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {tracks, state} = receive_new_tracks_from_webrtc(state)
 
     answer_action = [
-      notify_parent: {:answer, SessionDescription.to_json(answer), state.mid_to_track_id}
+      notify_parent: {:answer, answer, state.mid_to_track_id}
     ]
 
     tracks_action = if Enum.empty?(tracks), do: [], else: [notify_parent: {:new_tracks, tracks}]

@@ -4,6 +4,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent
 
+  alias ExWebRTC.SessionDescription
+
   alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
@@ -106,9 +108,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         data: %{
           type: :sdp_offer,
           data: %{
-            sdp_offer: %{
-              "type" => "offer",
-              "sdp" => sdp
+            sdp_offer: %SessionDescription{
+              type: :offer,
+              sdp: sdp
             },
             track_id_to_track_metadata: decoded_metadata,
             track_id_to_track_bitrates: decoded_bitrates,
@@ -141,7 +143,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         data: %{
           type: :sdp_offer,
           data: %{
-            sdp_offer: sdp,
+            sdp_offer: %SessionDescription{type: :offer, sdp: "mock_sdp"},
             track_id_to_track_metadata: %{},
             track_id_to_track_bitrates: %{},
             mid_to_track_id: %{}
@@ -288,14 +290,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
     test "sdp_answer" do
       sdp =
-        ExWebRTC.SessionDescription.to_json(%ExWebRTC.SessionDescription{
+        SessionDescription.to_json(%SessionDescription{
           sdp: "sdp",
           type: :answer
         })
 
       assert {:sdp_answer, %SdpAnswer{}} =
                event =
-               MediaEvent.sdp_answer(%{"sdp" => sdp, "type" => "answer"}, %{"mid" => "track_id"})
+               MediaEvent.sdp_answer(%SessionDescription{sdp: sdp, type: :answer}, %{
+                 "mid" => "track_id"
+               })
 
       assert_action(event)
     end

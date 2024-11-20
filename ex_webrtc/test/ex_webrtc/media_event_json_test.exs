@@ -1,6 +1,8 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
   use ExUnit.Case, async: true
 
+  alias ExWebRTC.SessionDescription
+
   alias Membrane.RTC.Engine.Endpoint
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson, as: MediaEvent
@@ -73,10 +75,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
         data: %{
           type: :sdp_offer,
           data: %{
-            sdp_offer: %{
-              "type" => "offer",
-              "sdp" => sdp
-            },
+            sdp_offer: %SessionDescription{type: :offer, sdp: sdp},
             track_id_to_track_metadata: metadata,
             track_id_to_track_bitrates: decoded_bitrates,
             mid_to_track_id: mids
@@ -209,6 +208,27 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
                  otherEndpoints: [%{id: "other_endpoint"}]
                }
              } = MediaEvent.connected(endpoint_id, other_endpoints)
+    end
+  end
+
+  describe "serializing sdpAnswer media event" do
+    test "parses valid event" do
+      answer = %SessionDescription{type: :answer, sdp: "mock_sdp"}
+      mid_to_track_id = %{"2" => "track_id"}
+
+      expected_media_event = %{
+        type: "custom",
+        data: %{
+          type: "sdpAnswer",
+          data: %{
+            "type" => "answer",
+            "sdp" => "mock_sdp",
+            "midToTrackId" => %{"2" => "track_id"}
+          }
+        }
+      }
+
+      assert expected_media_event == MediaEvent.sdp_answer(answer, mid_to_track_id)
     end
   end
 end
