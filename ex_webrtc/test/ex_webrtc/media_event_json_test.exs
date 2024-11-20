@@ -157,6 +157,42 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
     end
   end
 
+  describe "deserializing ICE candidate" do
+    test "deserializing correct event" do
+      raw_media_event =
+        %{
+          "type" => "custom",
+          "data" => %{
+            "type" => "candidate",
+            "data" => %{
+              "candidate" => "ICE candidate",
+              "sdpMLineIndex" => 4,
+              "sdpMid" => "2",
+              "usernameFragment" => "user fragment"
+            }
+          }
+        }
+        |> Jason.encode!()
+
+      expected_candidate = %ExWebRTC.ICECandidate{
+        candidate: "ICE candidate",
+        sdp_m_line_index: 4,
+        sdp_mid: 2,
+        username_fragment: "user fragment"
+      }
+
+      expected_media_event = %{
+        type: :custom,
+        data: %{
+          type: :candidate,
+          data: expected_candidate
+        }
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
   describe "serializing connected media event" do
     test "removes endpoint with the same id as endpoint_id" do
       endpoint_id = "endpoint_id"

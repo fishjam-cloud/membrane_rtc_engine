@@ -9,7 +9,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{
-    ICECandidate,
     MediaStreamTrack,
     PeerConnection,
     RTPReceiver,
@@ -192,7 +191,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:candidate, candidate}, _ctx, state) do
-    candidate = ICECandidate.from_json(candidate)
     :ok = PeerConnection.add_ice_candidate(state.pc, candidate)
 
     {[], state}
@@ -259,7 +257,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do
-    msg = {:candidate, ICECandidate.to_json(candidate)}
+    msg = {:candidate, candidate}
     {[notify_parent: msg], state}
   end
 
