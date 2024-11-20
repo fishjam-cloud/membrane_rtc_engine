@@ -75,11 +75,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
       bitrates = [
         %TrackIdToBitrates{
-          tracks: {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: 500}}
+          tracks: {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: 500_000}}
         }
       ]
 
-      decoded_bitrates = %{"track_id" => %{}}
+      decoded_bitrates = %{"track_id" => %{high: 500_000}}
 
       mids = [%MidToTrackId{track_id: "track_id", mid: "5"}]
       decoded_mids = %{"5" => "track_id"}
@@ -313,7 +313,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       candidate = %ExWebRTC.ICECandidate{
         candidate: "ICE candidate",
         sdp_m_line_index: 4,
-        sdp_mid: 2,
+        sdp_mid: "2",
         username_fragment: "user fragment"
       }
 

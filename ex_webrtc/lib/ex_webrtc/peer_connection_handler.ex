@@ -437,6 +437,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
             "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
             This is likely caused by incompatible codecs"
           )
+
           do_receive_new_tracks(acc)
         else
           PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)

@@ -15,13 +15,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   @track_metadata %{"server" => %{"displayName" => "mrwebrtc"}, "peer" => %{}}
 
   @vp8_codec %ExWebRTC.RTPCodecParameters{
-      payload_type: 96,
-      mime_type: "video/VP8",
-      clock_rate: 90_000,
-      channels: nil,
-      sdp_fmtp_line: nil,
-      rtcp_fbs: []
-    }
+    payload_type: 96,
+    mime_type: "video/VP8",
+    clock_rate: 90_000,
+    channels: nil,
+    sdp_fmtp_line: nil,
+    rtcp_fbs: []
+  }
 
   setup do
     {:ok, pc} = PeerConnection.start_link()

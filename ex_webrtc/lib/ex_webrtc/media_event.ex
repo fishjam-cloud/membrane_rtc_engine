@@ -128,12 +128,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
   def candidate(candidate) do
-    candidate = %Candidate{
-      candidate: candidate.candidate,
-      sdp_m_line_index: candidate.sdp_m_line_index,
-      sdp_mid: to_string(candidate.sdp_mid),
-      username_fragment: candidate.username_fragment
-    }
+    candidate = candidate |> Map.from_struct() |> then(&struct!(Candidate, &1))
 
     {:candidate, candidate}
   end
@@ -193,15 +188,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   end
 
   defp do_decode(%Candidate{} = event) do
-    candidate_json =
-      event
-      |> Map.from_struct()
-      |> then(&struct(ExWebRTC.ICECandidate, &1))
+    candidate = event |> Map.from_struct() |> then(&struct(ExWebRTC.ICECandidate, &1))
 
-    to_custom(%{
-      type: :candidate,
-      data: candidate_json
-    })
+    to_custom(%{type: :candidate, data: candidate})
   end
 
   defp do_decode(%SdpOffer{} = event) do
@@ -249,7 +238,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   defp parse_track_id_to_bitrates(bitrates) do
     Map.new(bitrates, fn %{tracks: {:track_bitrate, track_bitrate}} ->
-      {track_bitrate.track_id, %{}}
+      {track_bitrate.track_id, %{high: track_bitrate.bitrate}}
     end)
   end
 

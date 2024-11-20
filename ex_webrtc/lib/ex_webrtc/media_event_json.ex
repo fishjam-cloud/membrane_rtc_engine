@@ -5,7 +5,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
 
-  alias ExWebRTC.SessionDescription
+  alias ExWebRTC.{ICECandidate, SessionDescription}
 
   @type t() :: map()
 
@@ -125,16 +125,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
     })
   end
 
-  @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
+  @spec candidate(ICECandidate.t()) :: t()
   def candidate(candidate) do
-    data = %{
-      "candidate" => candidate.candidate,
-      "sdpMid" => to_string(candidate.sdp_mid),
-      "sdpMLineIndex" => candidate.sdp_m_line_index,
-      "usernameFragment" => candidate.username_fragment
-    }
-
-    as_custom(%{type: "candidate", data: data})
+    as_custom(%{type: "candidate", data: ICECandidate.to_json(candidate)})
   end
 
   @spec voice_activity(Track.id(), :speech | :silence) :: t()
@@ -274,7 +267,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
         {:ok,
          %{
            type: :candidate,
-           data: ExWebRTC.ICECandidate.from_json(candidate)
+           data: ICECandidate.from_json(candidate)
          }}
 
       _other ->
