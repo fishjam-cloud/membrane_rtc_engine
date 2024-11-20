@@ -191,9 +191,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   end
 
   defp do_decode(%Candidate{} = event) do
+    candidate_json =
+      event
+      |> Map.from_struct()
+      |> Map.update!(:sdp_mid, &String.to_integer/1)
+      |> then(&struct(ExWebRTC.ICECandidate, &1))
+      |> ExWebRTC.ICECandidate.to_json()
+
     to_custom(%{
       type: :candidate,
-      data: event |> Map.from_struct() |> Map.delete(:__unknown_fields__)
+      data: candidate_json
     })
   end
 

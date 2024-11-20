@@ -190,11 +190,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         }
         |> Peer.MediaEvent.encode()
 
+      expected_candidate = %{
+        "candidate" => "ICE candidate",
+        "sdpMLineIndex" => 4,
+        "sdpMid" => 2,
+        "usernameFragment" => "user fragment"
+      }
+
       expected_media_event = %{
         type: :custom,
         data: %{
           type: :candidate,
-          data: candidate
+          data: expected_candidate
         }
       }
 
