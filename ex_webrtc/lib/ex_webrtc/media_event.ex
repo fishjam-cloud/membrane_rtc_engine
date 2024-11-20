@@ -111,7 +111,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   def sdp_answer(answer, mid_to_track_id) do
     {:sdp_answer,
      %SdpAnswer{
-       sdp_answer: answer.sdp,
+       sdp_answer: Jason.encode!(answer),
        mid_to_track_id: to_mid_to_track_id(mid_to_track_id)
      }}
   end

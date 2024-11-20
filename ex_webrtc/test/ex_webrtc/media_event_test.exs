@@ -287,13 +287,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     end
 
     test "sdp_answer" do
-      sdp = %ExWebRTC.SessionDescription{
-        sdp: "sdp",
-        type: :answer
-      }
+      sdp =
+        ExWebRTC.SessionDescription.to_json(%ExWebRTC.SessionDescription{
+          sdp: "sdp",
+          type: :answer
+        })
 
       assert {:sdp_answer, %SdpAnswer{}} =
-               event = MediaEvent.sdp_answer(sdp, %{"mid" => "track_id"})
+               event =
+               MediaEvent.sdp_answer(%{"sdp" => sdp, "type" => "answer"}, %{"mid" => "track_id"})
 
       assert_action(event)
     end
