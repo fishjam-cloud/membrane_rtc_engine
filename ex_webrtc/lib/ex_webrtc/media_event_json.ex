@@ -42,7 +42,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
     %{type: "endpointUpdated", data: %{id: id, metadata: metadata}}
   end
 
-  @spec tracks_added(Endpoint.id(), %{Track.id() => Track.t()}) :: t()
+  @spec tracks_added(Endpoint.id(), [Track.t()]) :: t()
   def tracks_added(endpoint_id, tracks) do
     track_id_to_metadata = Map.new(tracks, &{&1.id, &1.metadata})
 

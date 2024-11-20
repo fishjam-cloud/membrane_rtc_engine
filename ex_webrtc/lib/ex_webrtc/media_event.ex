@@ -79,12 +79,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
      }}
   end
 
-  @spec tracks_added(Engine.Endpoint.id(), %{Track.id() => Track.t()}) :: t()
+  @spec tracks_added(Engine.Endpoint.id(), [Track.t()]) :: t()
   def tracks_added(endpoint_id, tracks) do
     {:tracks_added,
      %TracksAdded{
        endpoint_id: endpoint_id,
-       tracks: tracks |> Map.values() |> to_tracks_info()
+       tracks: to_tracks_info(tracks)
      }}
   end
 

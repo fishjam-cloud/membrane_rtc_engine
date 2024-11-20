@@ -267,7 +267,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       track = Engine.Track.new(:audio, "strem_id", "origin", "H264", 16_000, nil)
 
       assert {:tracks_added, %TracksAdded{}} =
-               event = MediaEvent.tracks_added("endpoint_id", %{"track_id" => track})
+               event = MediaEvent.tracks_added("endpoint_id", [track])
 
       assert_action(event)
     end
