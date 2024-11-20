@@ -361,8 +361,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {new_mid_to_track_id, new_outbound_tracks} =
       new_track_ids
       |> Enum.reduce({%{}, %{}}, fn {engine_track_id, track_id, mid}, {mids, tracks} ->
-        {Map.put(mids, to_string(mid), engine_track_id),
-         Map.put(tracks, engine_track_id, track_id)}
+        {Map.put(mids, mid, engine_track_id), Map.put(tracks, engine_track_id, track_id)}
       end)
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, new_mid_to_track_id))
@@ -406,8 +405,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
       |> Enum.reduce({[], []}, fn transceiver, {removed_tracks, removed_mids} ->
-        {[transceiver.receiver.track.id | removed_tracks],
-         [to_string(transceiver.mid) | removed_mids]}
+        {[transceiver.receiver.track.id | removed_tracks], [transceiver.mid | removed_mids]}
       end)
 
     if Enum.empty?(removed_tracks) do

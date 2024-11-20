@@ -129,7 +129,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
 
   @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
   def candidate(candidate) do
-    as_custom(%{type: "candidate", data: ExWebRTC.ICECandidate.to_json(candidate)})
+    data = %{
+      "candidate" => candidate.candidate,
+      "sdpMid" => to_string(candidate.sdp_mid),
+      "sdpMLineIndex" => candidate.sdp_m_line_index,
+      "usernameFragment" => candidate.username_fragment
+    }
+
+    as_custom(%{type: "candidate", data: data})
   end
 
   @spec voice_activity(Track.id(), :speech | :silence) :: t()
@@ -264,28 +271,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
     case event do
       %{
         "type" => "candidate",
-        "data" => %{
-          "candidate" => candidate,
-          "sdpMid" => mid_str,
-          "sdpMLineIndex" => mline_idx,
-          "usernameFragment" => ufrag
-        }
+        "data" => candidate
       } ->
-        with {mid, ""} <- Integer.parse(mid_str) do
-          {:ok,
-           %{
-             type: :candidate,
-             data: %ExWebRTC.ICECandidate{
-               candidate: candidate,
-               sdp_mid: mid,
-               sdp_m_line_index: mline_idx,
-               username_fragment: ufrag
-             }
-           }}
-        else
-          _err ->
-            {:error, :invalid_media_event}
-        end
+        {:ok,
+         %{
+           type: :candidate,
+           data: ExWebRTC.ICECandidate.from_json(candidate)
+         }}
 
       _other ->
         {:error, :invalid_media_event}

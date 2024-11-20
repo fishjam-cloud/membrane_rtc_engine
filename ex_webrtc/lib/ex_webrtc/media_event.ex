@@ -194,7 +194,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     candidate_json =
       event
       |> Map.from_struct()
-      |> Map.update!(:sdp_mid, &String.to_integer/1)
       |> then(&struct(ExWebRTC.ICECandidate, &1))
 
     to_custom(%{

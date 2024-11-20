@@ -193,7 +193,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       expected_candidate = %ExWebRTC.ICECandidate{
         candidate: "ICE candidate",
         sdp_m_line_index: 4,
-        sdp_mid: 2,
+        sdp_mid: "2",
         username_fragment: "user fragment"
       }
 
