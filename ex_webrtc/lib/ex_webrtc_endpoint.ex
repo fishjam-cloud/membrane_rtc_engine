@@ -299,7 +299,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         handle_media_event(type, data, ctx, state)
 
       {:error, :invalid_media_event} ->
-        Membrane.Logger.warning("Invalid media event #{inspect(event)}. Ignoring.")
+        Membrane.Logger.error("Invalid media event #{inspect(event)}. Ignoring.")
         {[], state}
     end
   end
