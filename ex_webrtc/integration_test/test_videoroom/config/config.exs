@@ -4,7 +4,7 @@ config :test_videoroom,
   ecto_repos: [TestVideoroom.Repo],
   # Configure serialization of media events - either JSON or protobuf
   # This variable is set during tests using the `use_serializer` task
-  event_serialization: nil
+  event_serialization: :json
 
 # Defines the sources for typescript client
 config :ts_client,

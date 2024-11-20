@@ -437,9 +437,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
         Membrane.Logger.info("new track #{track.id}, #{track.kind}")
 
-        PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)
-        PeerConnection.replace_track(pc, transceiver.sender.id, MediaStreamTrack.new(track.kind))
-        PeerConnection.set_transceiver_direction(pc, transceiver.id, :recvonly)
+        if is_nil(transceiver) do
+          transceivers = PeerConnection.get_transceivers(pc)
+
+          Logger.error(
+            "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}"
+          )
+        else
+          PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)
+
+          PeerConnection.replace_track(
+            pc,
+            transceiver.sender.id,
+            MediaStreamTrack.new(track.kind)
+          )
+
+          PeerConnection.set_transceiver_direction(pc, transceiver.id, :recvonly)
+        end
 
         do_receive_new_tracks([track | acc])
     after
