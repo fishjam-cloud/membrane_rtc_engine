@@ -77,7 +77,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         }
       ]
 
-      decoded_bitrates = %{"track_id" => 500}
+      decoded_bitrates = %{"track_id" => %{}}
 
       mids = [%MidToTrackId{track_id: "track_id", mid: "5"}]
       decoded_mids = %{"5" => "track_id"}

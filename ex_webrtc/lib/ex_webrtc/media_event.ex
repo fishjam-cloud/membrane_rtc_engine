@@ -248,7 +248,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   defp parse_track_id_to_bitrates(bitrates) do
     Map.new(bitrates, fn %{tracks: {:track_bitrate, track_bitrate}} ->
-      {track_bitrate.track_id, track_bitrate.bitrate}
+      {track_bitrate.track_id, %{}}
     end)
   end
 
