@@ -4,6 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Track
 
+  alias ExWebRTC.PeerConnection.Configuration
   alias ExWebRTC.SessionDescription
 
   alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer, Server}
@@ -23,6 +24,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     EndpointRemoved,
     EndpointUpdated,
     EndpointUpdated,
+    IceServer,
     OfferData,
     SdpAnswer,
     TracksAdded,
@@ -35,10 +37,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @err_invalid_event {:error, :invalid_media_event}
 
-  @spec connected(Engine.Endpoint.id(), [Engine.Endpoint.t()]) :: t()
-  def connected(endpoint_id, other_endpoints) do
-    other_endpoints =
-      other_endpoints
+  @spec connected(Engine.Endpoint.id(), [Engine.Endpoint.t()], [Configuration.ice_server()]) ::
+          t()
+  def connected(endpoint_id, endpoints, ice_servers) do
+    endpoints =
+      endpoints
       |> Enum.map(
         &%Server.MediaEvent.Endpoint{
           endpoint_id: &1.id,
@@ -48,10 +51,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         }
       )
 
+    ice_servers = parse_ice_servers(ice_servers)
+
     {:connected,
      %Connected{
        endpoint_id: endpoint_id,
-       endpoints: other_endpoints
+       endpoints: endpoints,
+       ice_servers: ice_servers
      }}
   end
 
@@ -250,6 +256,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     Enum.map(mid_to_track_id, fn {mid, track_id} ->
       %MidToTrackId{mid: mid, track_id: track_id}
     end)
+  end
+
+  defp parse_ice_servers(ice_servers) do
+    Enum.map(ice_servers, fn server ->
+      server |> Map.update!(:urls, &update_ice_server_urls/1) |> then(&struct(IceServer, &1))
+    end)
+  end
+
+  defp update_ice_server_urls(server_urls) do
+    case server_urls do
+      urls when is_list(urls) -> urls
+      url when is_binary(url) -> [url]
+    end
   end
 
   defp to_proto_vad_status(:silence), do: :STATUS_SILENCE

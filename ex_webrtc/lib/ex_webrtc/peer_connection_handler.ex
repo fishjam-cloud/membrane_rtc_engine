@@ -21,6 +21,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
               video_codecs: [
                 spec: [EndpointExWebRTC.video_codec()] | nil,
                 description: "Allowed video codecs"
+              ],
+              ice_servers: [
+                spec: [PeerConnection.Configuration.ice_server()],
+                description: "List of servers that may be used by ICE agent",
+                default: []
               ]
 
   def_input_pad :input,
@@ -31,14 +36,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     accepted_format: _any,
     availability: :on_request,
     flow_control: :push
-
-  @ice_servers [
-    %{urls: "stun:stun.l.google.com:19302"}
-  ]
-
-  @opts [
-    ice_servers: @ice_servers
-  ]
 
   @video_codecs [
     H264: %ExWebRTC.RTPCodecParameters{
@@ -73,11 +70,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     pc_options =
       %{
         ice_port_range: opts.ice_port_range,
+        ice_servers: opts.ice_servers,
         video_codecs: video_codecs,
         controlling_process: self()
       }
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
-      |> Keyword.merge(@opts)
 
     peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
     pc_gen_server_options = [name: peer_connection]
