@@ -4,6 +4,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent
 
+  alias ExWebRTC.SessionDescription
+
   alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
@@ -73,11 +75,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
       bitrates = [
         %TrackIdToBitrates{
-          tracks: {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: 500}}
+          tracks: {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: 500_000}}
         }
       ]
 
-      decoded_bitrates = %{"track_id" => 500}
+      decoded_bitrates = %{"track_id" => %{high: 500_000}}
 
       mids = [%MidToTrackId{track_id: "track_id", mid: "5"}]
       decoded_mids = %{"5" => "track_id"}
@@ -106,9 +108,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         data: %{
           type: :sdp_offer,
           data: %{
-            sdp_offer: %{
-              "type" => "offer",
-              "sdp" => sdp
+            sdp_offer: %SessionDescription{
+              type: :offer,
+              sdp: sdp
             },
             track_id_to_track_metadata: decoded_metadata,
             track_id_to_track_bitrates: decoded_bitrates,
@@ -141,7 +143,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         data: %{
           type: :sdp_offer,
           data: %{
-            sdp_offer: sdp,
+            sdp_offer: %SessionDescription{type: :offer, sdp: "mock_sdp"},
             track_id_to_track_metadata: %{},
             track_id_to_track_bitrates: %{},
             mid_to_track_id: %{}
@@ -190,11 +192,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         }
         |> Peer.MediaEvent.encode()
 
+      expected_candidate = %ExWebRTC.ICECandidate{
+        candidate: "ICE candidate",
+        sdp_m_line_index: 4,
+        sdp_mid: "2",
+        username_fragment: "user fragment"
+      }
+
       expected_media_event = %{
         type: :custom,
         data: %{
           type: :candidate,
-          data: candidate
+          data: expected_candidate
         }
       }
 
@@ -260,7 +269,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       track = Engine.Track.new(:audio, "strem_id", "origin", "H264", 16_000, nil)
 
       assert {:tracks_added, %TracksAdded{}} =
-               event = MediaEvent.tracks_added("endpoint_id", %{"track_id" => track})
+               event = MediaEvent.tracks_added("endpoint_id", [track])
 
       assert_action(event)
     end
@@ -280,13 +289,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     end
 
     test "sdp_answer" do
-      sdp = %ExWebRTC.SessionDescription{
-        sdp: "sdp",
-        type: :answer
-      }
+      sdp =
+        SessionDescription.to_json(%SessionDescription{
+          sdp: "sdp",
+          type: :answer
+        })
 
       assert {:sdp_answer, %SdpAnswer{}} =
-               event = MediaEvent.sdp_answer(sdp, %{"mid" => "track_id"})
+               event =
+               MediaEvent.sdp_answer(%SessionDescription{sdp: sdp, type: :answer}, %{
+                 "mid" => "track_id"
+               })
 
       assert_action(event)
     end
@@ -300,7 +313,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       candidate = %ExWebRTC.ICECandidate{
         candidate: "ICE candidate",
         sdp_m_line_index: 4,
-        sdp_mid: 2,
+        sdp_mid: "2",
         username_fragment: "user fragment"
       }
 

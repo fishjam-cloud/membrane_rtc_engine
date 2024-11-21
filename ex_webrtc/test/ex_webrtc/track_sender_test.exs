@@ -184,7 +184,7 @@ defmodule Membrane.RTC.Engine.ExWebRTC.TrackSenderTest do
       })
     end)
 
-    Pipeline.terminate(pipeline)
+    Pipeline.terminate(pipeline, timeout: 10_000)
   end
 
   defp test_keyframe?(%Track{type: :audio} = track, expected_is_keyframe_value) do

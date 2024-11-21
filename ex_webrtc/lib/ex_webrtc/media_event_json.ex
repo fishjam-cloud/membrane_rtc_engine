@@ -5,6 +5,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
 
+  alias ExWebRTC.{ICECandidate, SessionDescription}
+
   @type t() :: map()
 
   @spec connected(Endpoint.id(), list()) :: t()
@@ -42,7 +44,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
     %{type: "endpointUpdated", data: %{id: id, metadata: metadata}}
   end
 
-  @spec tracks_added(Endpoint.id(), %{Track.id() => Track.t()}) :: t()
+  @spec tracks_added(Endpoint.id(), [Track.t()]) :: t()
   def tracks_added(endpoint_id, tracks) do
     track_id_to_metadata = Map.new(tracks, &{&1.id, &1.metadata})
 
@@ -108,11 +110,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   def sdp_answer(answer, mid_to_track_id) do
     as_custom(%{
       type: "sdpAnswer",
-      data: %{
-        type: "answer",
-        sdp: Map.fetch!(answer, "sdp"),
-        midToTrackId: mid_to_track_id
-      }
+      data: answer |> SessionDescription.to_json() |> Map.put("midToTrackId", mid_to_track_id)
     })
   end
 
@@ -127,9 +125,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
     })
   end
 
-  @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
+  @spec candidate(ICECandidate.t()) :: t()
   def candidate(candidate) do
-    as_custom(%{type: "candidate", data: candidate})
+    as_custom(%{type: "candidate", data: ICECandidate.to_json(candidate)})
   end
 
   @spec voice_activity(Track.id(), :speech | :silence) :: t()
@@ -269,7 +267,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
         {:ok,
          %{
            type: :candidate,
-           data: candidate
+           data: ICECandidate.from_json(candidate)
          }}
 
       _other ->
@@ -324,7 +322,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
          %{
            type: :sdp_offer,
            data: %{
-             sdp_offer: offer,
+             sdp_offer: SessionDescription.from_json(offer),
              track_id_to_track_metadata: track_id_to_track_metadata,
              track_id_to_track_bitrates: track_id_to_track_bitrate,
              mid_to_track_id: mid_to_track_id

@@ -4,6 +4,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Track
 
+  alias ExWebRTC.SessionDescription
+
   alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer, Server}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
@@ -79,12 +81,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
      }}
   end
 
-  @spec tracks_added(Engine.Endpoint.id(), %{Track.id() => Track.t()}) :: t()
+  @spec tracks_added(Engine.Endpoint.id(), [Track.t()]) :: t()
   def tracks_added(endpoint_id, tracks) do
     {:tracks_added,
      %TracksAdded{
        endpoint_id: endpoint_id,
-       tracks: tracks |> Map.values() |> to_tracks_info()
+       tracks: to_tracks_info(tracks)
      }}
   end
 
@@ -107,11 +109,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
      }}
   end
 
-  @spec sdp_answer(ExWebRTC.SessionDescription.t(), %{String.t() => non_neg_integer()}) :: t()
+  @spec sdp_answer(SessionDescription.t(), %{String.t() => non_neg_integer()}) :: t()
   def sdp_answer(answer, mid_to_track_id) do
     {:sdp_answer,
      %SdpAnswer{
-       sdp_answer: answer.sdp,
+       sdp_answer: answer |> SessionDescription.to_json() |> Jason.encode!(),
        mid_to_track_id: to_mid_to_track_id(mid_to_track_id)
      }}
   end
@@ -126,12 +128,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @spec candidate(ExWebRTC.ICECandidate.t()) :: t()
   def candidate(candidate) do
-    candidate = %Candidate{
-      candidate: candidate.candidate,
-      sdp_m_line_index: candidate.sdp_m_line_index,
-      sdp_mid: to_string(candidate.sdp_mid),
-      username_fragment: candidate.username_fragment
-    }
+    candidate = candidate |> Map.from_struct() |> then(&struct!(Candidate, &1))
 
     {:candidate, candidate}
   end
@@ -159,7 +156,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         _other -> @err_invalid_event
       end
     rescue
-      _error in [Protobuf.DecodeError, Jason.DecodeError] ->
+      _error in [Protobuf.DecodeError, Jason.DecodeError, FunctionClauseError] ->
         @err_invalid_event
     end
   end
@@ -191,10 +188,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   end
 
   defp do_decode(%Candidate{} = event) do
-    to_custom(%{
-      type: :candidate,
-      data: event |> Map.from_struct() |> Map.delete(:__unknown_fields__)
-    })
+    candidate = event |> Map.from_struct() |> then(&struct(ExWebRTC.ICECandidate, &1))
+
+    to_custom(%{type: :candidate, data: candidate})
   end
 
   defp do_decode(%SdpOffer{} = event) do
@@ -208,7 +204,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     to_custom(%{
       type: :sdp_offer,
       data: %{
-        sdp_offer: Jason.decode!(sdp_offer),
+        sdp_offer: sdp_offer |> Jason.decode!() |> SessionDescription.from_json(),
         track_id_to_track_metadata: parse_track_id_to_metadata(track_id_to_metadata),
         track_id_to_track_bitrates: parse_track_id_to_bitrates(track_id_to_bitrates),
         mid_to_track_id: parse_mid_to_track_id(mid_to_track_id)
@@ -242,7 +238,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   defp parse_track_id_to_bitrates(bitrates) do
     Map.new(bitrates, fn %{tracks: {:track_bitrate, track_bitrate}} ->
-      {track_bitrate.track_id, track_bitrate.bitrate}
+      {track_bitrate.track_id, %{high: track_bitrate.bitrate}}
     end)
   end
 

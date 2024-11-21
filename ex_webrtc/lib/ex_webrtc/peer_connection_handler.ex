@@ -8,14 +8,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
   alias Membrane.RTC.Engine.Track
 
-  alias ExWebRTC.{
-    ICECandidate,
-    MediaStreamTrack,
-    PeerConnection,
-    RTPReceiver,
-    RTPTransceiver,
-    SessionDescription
-  }
+  alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
 
   def_options endpoint_id: [
                 spec: String.t(),
@@ -170,7 +163,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     track_id_to_metadata = Map.get(event, :track_id_to_track_metadata, %{})
     state = Map.put(state, :track_id_to_metadata, track_id_to_metadata)
 
-    offer = SessionDescription.from_json(offer)
     :ok = PeerConnection.set_remote_description(state.pc, offer)
 
     state = add_new_tracks_to_webrtc(state, new_outbound_tracks)
@@ -181,7 +173,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {tracks, state} = receive_new_tracks_from_webrtc(state)
 
     answer_action = [
-      notify_parent: {:answer, SessionDescription.to_json(answer), state.mid_to_track_id}
+      notify_parent: {:answer, answer, state.mid_to_track_id}
     ]
 
     tracks_action = if Enum.empty?(tracks), do: [], else: [notify_parent: {:new_tracks, tracks}]
@@ -192,7 +184,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:candidate, candidate}, _ctx, state) do
-    candidate = ICECandidate.from_json(candidate)
     :ok = PeerConnection.add_ice_candidate(state.pc, candidate)
 
     {[], state}
@@ -259,7 +250,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do
-    msg = {:candidate, ICECandidate.to_json(candidate)}
+    msg = {:candidate, candidate}
     {[notify_parent: msg], state}
   end
 
@@ -363,8 +354,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {new_mid_to_track_id, new_outbound_tracks} =
       new_track_ids
       |> Enum.reduce({%{}, %{}}, fn {engine_track_id, track_id, mid}, {mids, tracks} ->
-        {Map.put(mids, to_string(mid), engine_track_id),
-         Map.put(tracks, engine_track_id, track_id)}
+        {Map.put(mids, mid, engine_track_id), Map.put(tracks, engine_track_id, track_id)}
       end)
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, new_mid_to_track_id))
@@ -408,8 +398,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           Map.has_key?(state.inbound_tracks, transceiver.receiver.track.id)
       end)
       |> Enum.reduce({[], []}, fn transceiver, {removed_tracks, removed_mids} ->
-        {[transceiver.receiver.track.id | removed_tracks],
-         [to_string(transceiver.mid) | removed_mids]}
+        {[transceiver.receiver.track.id | removed_tracks], [transceiver.mid | removed_mids]}
       end)
 
     if Enum.empty?(removed_tracks) do
@@ -441,11 +430,27 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
         Membrane.Logger.info("new track #{track.id}, #{track.kind}")
 
-        PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)
-        PeerConnection.replace_track(pc, transceiver.sender.id, MediaStreamTrack.new(track.kind))
-        PeerConnection.set_transceiver_direction(pc, transceiver.id, :recvonly)
+        if is_nil(transceiver) do
+          transceivers = PeerConnection.get_transceivers(pc)
 
-        do_receive_new_tracks([track | acc])
+          Logger.error(
+            "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
+            This is likely caused by incompatible codecs"
+          )
+
+          do_receive_new_tracks(acc)
+        else
+          PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)
+
+          PeerConnection.replace_track(
+            pc,
+            transceiver.sender.id,
+            MediaStreamTrack.new(track.kind)
+          )
+
+          PeerConnection.set_transceiver_direction(pc, transceiver.id, :recvonly)
+          do_receive_new_tracks([track | acc])
+        end
     after
       0 -> Enum.reverse(acc)
     end
