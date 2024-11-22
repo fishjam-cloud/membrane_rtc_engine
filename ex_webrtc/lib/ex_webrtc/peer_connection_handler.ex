@@ -53,6 +53,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     }
   ]
 
+  defmodule InboundTrack do
+    @moduledoc false
+
+    @enforce_keys [:engine_track_id, :simulcast?]
+    defstruct @enforce_keys
+
+    @type t() :: %__MODULE__{engine_track_id: Track.id(), simulcast?: boolean()}
+  end
+
   @impl true
   def handle_init(_ctx, opts) do
     %{endpoint_id: endpoint_id} = opts
@@ -91,7 +100,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       endpoint_id: endpoint_id,
       # maps engine track_id to rtc track_id
       outbound_tracks: %{},
-      # maps rtc track_id to engine track_id
+      # maps rtc track_id to InboundTrack
       inbound_tracks: %{},
       mid_to_track_id: %{},
       track_id_to_metadata: %{}
@@ -230,12 +239,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         _ctx,
         state
       ) do
-    {rtc_track_id, _id} =
-      Enum.find(state.inbound_tracks, fn {_rtc_track_id, track_id} ->
-        track_id == engine_track_id
+    {rtc_track_id, inbound_track} =
+      Enum.find(state.inbound_tracks, fn {_rtc_track_id, track} ->
+        track.engine_track_id == engine_track_id
       end)
 
-    rid = if variant == nil, do: nil, else: EndpointExWebRTC.to_rid(variant)
+    rid = if inbound_track.simulcast?, do: EndpointExWebRTC.to_rid(variant), else: nil
     PeerConnection.send_pli(state.pc, rtc_track_id, rid)
 
     {[], state}
@@ -260,8 +269,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     variant = EndpointExWebRTC.to_track_variant(rid)
 
     actions =
-      with {:ok, engine_track_id} <- Map.fetch(state.inbound_tracks, track_id),
-           pad <- Pad.ref(:output, {engine_track_id, variant}),
+      with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, track_id),
+           pad <- Pad.ref(:output, {inbound_track.engine_track_id, variant}),
            true <- Map.has_key?(ctx.pads, pad) do
         rtp =
           packet
@@ -321,7 +330,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         [event: {pad, %Membrane.KeyframeRequestEvent{}}]
 
       nil ->
-        Membrane.Logger.error("Received PLI for unknown track #{track_id}")
+        Membrane.Logger.warning("Received PLI for unknown track #{track_id}")
         []
     end
   end
@@ -401,7 +410,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     if Enum.empty?(removed_tracks) do
       {[], state}
     else
-      removed_engine_track_ids = Enum.map(removed_tracks, &Map.get(state.inbound_tracks, &1))
+      removed_engine_track_ids =
+        Enum.map(removed_tracks, &Map.get(state.inbound_tracks, &1).engine_track_id)
 
       inbound_tracks = Map.drop(state.inbound_tracks, removed_tracks)
       mid_to_track_id = Map.drop(state.mid_to_track_id, removed_mids)
@@ -470,7 +480,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           nil
       end)
 
-    %MediaStreamTrack{id: id, kind: kind} = track
+    %MediaStreamTrack{id: rtc_track_id, kind: kind} = track
 
     encoding =
       case codec.mime_type do
@@ -481,8 +491,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     track_id = Map.fetch!(state.mid_to_track_id, mid)
 
+    simulcast? = not is_nil(track.rids)
+
     variants =
-      if track.rids, do: Enum.map(track.rids, &EndpointExWebRTC.to_track_variant/1), else: [:high]
+      if simulcast?, do: Enum.map(track.rids, &EndpointExWebRTC.to_track_variant/1), else: [:high]
 
     engine_track =
       Track.new(
@@ -497,7 +509,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         variants: variants
       )
 
-    state = update_in(state.inbound_tracks, &Map.put(&1, id, engine_track.id))
+    new_inbound_track = %InboundTrack{engine_track_id: track_id, simulcast?: simulcast?}
+
+    state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
     do_make_tracks(tracks, transceivers, state, [engine_track | acc])
   end
 end

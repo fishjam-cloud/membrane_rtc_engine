@@ -190,7 +190,7 @@ export class Room {
   };
 
   public updateMetadata = (metadata: EndpointMetadata) => {
-    this.webrtc.updateEndpointMetadata({ endpoint: null, peer: metadata });
+    this.webrtc.updateEndpointMetadata({ peer: metadata });
   };
 
   public updateTrackMetadata = (metadata: TrackMetadata) => {
