@@ -184,15 +184,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
 
   defp do_decode(%{
          "type" => "disableTrackEncoding",
-         "data" => %{"trackId" => track_id, "encoding" => encoding}
-       }),
-       do: {:ok, %{type: :disable_track_variant, data: %{track_id: track_id, encoding: encoding}}}
+         "data" => %{"trackId" => track_id, "encoding" => rid}
+       }) do
+    variant = Endpoint.ExWebRTC.to_track_variant(rid)
+    {:ok, %{type: :disable_track_variant, data: %{track_id: track_id, variant: variant}}}
+  end
 
   defp do_decode(%{
          "type" => "enableTrackEncoding",
-         "data" => %{"trackId" => track_id, "encoding" => encoding}
-       }),
-       do: {:ok, %{type: :enable_track_variant, data: %{track_id: track_id, encoding: encoding}}}
+         "data" => %{"trackId" => track_id, "encoding" => rid}
+       }) do
+    variant = Endpoint.ExWebRTC.to_track_variant(rid)
+    {:ok, %{type: :enable_track_variant, data: %{track_id: track_id, variant: variant}}}
+  end
 
   defp do_decode(%{
          "type" => "muteTrack",
@@ -358,11 +362,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   end
 
   defp to_track_variants(bitrate) when is_map(bitrate) do
-    rid_to_variant = %{"l" => :low, "m" => :medium, "h" => :high}
-
-    bitrate
-    |> Enum.filter(fn {key, _value} -> key in Map.keys(rid_to_variant) end)
-    |> Map.new(fn {rid, bitrate} -> {rid_to_variant[rid], bitrate} end)
+    Map.new(bitrate, fn {rid, bitrate} -> {Endpoint.ExWebRTC.to_track_variant(rid), bitrate} end)
   end
 
   defp to_track_variants(bitrate) when is_number(bitrate), do: %{high: bitrate}

@@ -10,11 +10,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
-    EnableTrackVariant,
     DisableTrackVariant,
+    EnableTrackVariant,
     RenegotiateTracks,
-    SetTargetTrackVariant,
     SdpOffer,
+    SetTargetTrackVariant,
     TrackBitrate,
     TrackIdToBitrates,
     TrackIdToMetadata,
@@ -33,8 +33,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     TracksAdded,
     TracksRemoved,
     TrackUpdated,
-    TrackVariantEnabled,
     TrackVariantDisabled,
+    TrackVariantEnabled,
     TrackVariantSwitched,
     VadNotification
   }

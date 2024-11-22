@@ -32,11 +32,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     OfferData,
     SdpAnswer,
     TracksAdded,
+    TracksRemoved,
+    TrackUpdated,
     TrackVariantDisabled,
     TrackVariantEnabled,
     TrackVariantSwitched,
-    TracksRemoved,
-    TrackUpdated,
     VadNotification
   }
 

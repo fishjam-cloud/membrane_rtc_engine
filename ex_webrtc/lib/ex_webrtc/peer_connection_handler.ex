@@ -257,11 +257,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:rtp, track_id, rid, packet}, ctx, state) do
-    rid = if rid == nil, do: :high, else: rid
+    variant = if rid == nil, do: :high, else: rid
 
     actions =
       with {:ok, engine_track_id} <- Map.fetch(state.inbound_tracks, track_id),
-           pad <- Pad.ref(:output, {engine_track_id, rid}),
+           pad <- Pad.ref(:output, {engine_track_id, variant}),
            true <- Map.has_key?(ctx.pads, pad) do
         rtp =
           packet
@@ -481,6 +481,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     track_id = Map.fetch!(state.mid_to_track_id, mid)
 
+    variants =
+      if track.rids, do: Enum.map(track.rids, &EndpointExWebRTC.to_track_variant/1), else: [:high]
+
     engine_track =
       Track.new(
         kind,
@@ -490,7 +493,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         codec.clock_rate,
         codec.sdp_fmtp_line,
         id: track_id,
-        metadata: Map.get(state.track_id_to_metadata, track_id)
+        metadata: Map.get(state.track_id_to_metadata, track_id),
+        variants: variants
       )
 
     state = update_in(state.inbound_tracks, &Map.put(&1, id, engine_track.id))
