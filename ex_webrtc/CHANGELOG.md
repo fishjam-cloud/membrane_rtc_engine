@@ -10,3 +10,4 @@
 * Send only other endpoints on json ready notification [#14](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/16)
 * Fix inconsistencies in media events [#17](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/17)
 * Send ICE servers in `Connected` event [#18](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/18)
+* Allow clients for sending simulcast tracks [#15](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/15)

@@ -68,13 +68,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       |> Enum.map(fn {_codec, params} -> params end)
 
     pc_options =
-      %{
+      [
         ice_port_range: opts.ice_port_range,
         ice_servers: opts.ice_servers,
         video_codecs: video_codecs,
         controlling_process: self()
-      }
-      |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
+      ]
+      |> Keyword.merge(@opts)
 
     peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
     pc_gen_server_options = [name: peer_connection]
@@ -235,8 +235,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         track_id == engine_track_id
       end)
 
-    _rid = EndpointExWebRTC.to_rid(variant)
-    PeerConnection.send_pli(state.pc, rtc_track_id, nil)
+    rid = if variant == nil, do: nil, else: EndpointExWebRTC.to_rid(variant)
+    PeerConnection.send_pli(state.pc, rtc_track_id, rid)
 
     {[], state}
   end
@@ -257,7 +257,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:rtp, track_id, rid, packet}, ctx, state) do
-    variant = if rid == nil, do: :high, else: rid
+    variant = EndpointExWebRTC.to_track_variant(rid)
 
     actions =
       with {:ok, engine_track_id} <- Map.fetch(state.inbound_tracks, track_id),
