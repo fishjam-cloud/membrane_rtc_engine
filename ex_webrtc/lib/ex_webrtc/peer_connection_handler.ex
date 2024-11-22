@@ -101,7 +101,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(:output, {_track_id, _rid}) = pad, _ctx, state) do
+  def handle_pad_added(Pad.ref(:output, {_track_id, _variant}) = pad, _ctx, state) do
     {[stream_format: {pad, %Membrane.RTP{}}], state}
   end
 
@@ -146,8 +146,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_buffer(Pad.ref(:input, track_id), _buffer, _ctx, state) do
-    Membrane.Logger.warning("Received buffer from unknown track #{track_id}")
+  def handle_buffer(Pad.ref(:input, engine_track_id), _buffer, _ctx, state) do
+    Membrane.Logger.warning("Received buffer from unknown track #{engine_track_id}")
     {[], state}
   end
 

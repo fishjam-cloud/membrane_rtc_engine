@@ -140,8 +140,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_pad_added(Pad.ref(:output, {track_id, variant}) = pad, _ctx, state) do
-    if variant != :high, do: raise("ExWebrtcEndpoint handles only the high variant of tracks.")
-
     track = Map.fetch!(state.inbound_tracks, track_id)
 
     track_sender = %TrackSender{
@@ -333,7 +331,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   defp log_tracks(tracks) do
     tracks
-    |> Enum.map(&Map.take(&1, [:type, :stream_id, :id, :origin, :encoding]))
+    |> Enum.map(
+      &Map.take(&1, [:type, :stream_id, :id, :origin, :encoding, :variants, :disabled_variants])
+    )
     |> inspect()
   end
 
@@ -416,7 +416,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   defp handle_media_event(type, event, _ctx, state) do
-    Membrane.Logger.warning("unexpected media event: #{type}, #{event}")
+    Membrane.Logger.warning("unexpected media event: #{type}, #{inspect(event)}")
     {[], state}
   end
 
@@ -441,8 +441,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     end)
 
     tracks_ready =
-      Enum.map(tracks, fn track ->
-        {:notify_parent, {:track_ready, track.id, :high, track.encoding}}
+      Enum.flat_map(tracks, fn track ->
+        Enum.map(track.variants, &{:notify_parent, {:track_ready, track.id, &1, track.encoding}})
       end)
 
     new_inbound_tracks = Map.new(tracks, fn track -> {track.id, track} end)
@@ -556,6 +556,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     }
 
     {[notify_parent: {:publish, notification}], state}
+  end
+
+  @impl true
+  def handle_child_notification(
+        {:variant_switched, _new_variant, _reason},
+        :track_receiver,
+        _ctx,
+        state
+      ) do
+    {[], state}
   end
 
   @impl true
