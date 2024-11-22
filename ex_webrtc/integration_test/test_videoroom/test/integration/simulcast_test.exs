@@ -23,7 +23,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   @stats_number 15
   @stats_interval 1_000
 
-  @browser_options %{count: 1, headless: false}
+  @browser_options %{count: 1, headless: true}
   @max_test_duration 240_000
 
   @tag timeout: @max_test_duration
@@ -145,8 +145,6 @@ defmodule TestVideoroom.Integration.SimulcastTest do
 
           sender_stats_samples = browser_id_to_stats_samples[0]
           receiver_stats_samples = browser_id_to_stats_samples[1]
-
-          IO.inspect({tag, rid, sender_stats_samples, receiver_stats_samples})
 
           assert_sender_receiver_stats(
             tag,
