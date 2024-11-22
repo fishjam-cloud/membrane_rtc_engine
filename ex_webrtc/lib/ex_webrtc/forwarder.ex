@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Forwarder do
   end
 
   @doc """
-  Reconfigures forwarder after encoding switch.
+  Reconfigures forwarder after variant switch.
   """
   @spec reconfigure(t(), Membrane.Buffer.t()) :: t()
   def reconfigure(%__MODULE__{started?: false} = forwarder, buffer) do

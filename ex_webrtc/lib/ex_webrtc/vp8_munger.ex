@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.VP8Munger do
   @moduledoc false
   # Module responsible for rewriting VP8 RTP payload fields
-  # to provide transparent switch between simulcast encodings.
+  # to provide transparent switch between simulcast variants.
   import Bitwise
 
   alias Membrane.Buffer

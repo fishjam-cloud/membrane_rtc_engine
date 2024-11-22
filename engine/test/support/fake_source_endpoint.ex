@@ -11,8 +11,6 @@ defmodule Membrane.RTC.Engine.Support.FakeSourceEndpoint do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Support.{StaticTrackSender, TestSource}
 
-  @type encoding_t() :: String.t()
-
   def_options rtc_engine: [
                 spec: pid(),
                 description: "Pid of parent Engine"
