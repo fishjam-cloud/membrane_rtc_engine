@@ -83,7 +83,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         video_codecs: video_codecs,
         controlling_process: self()
       ]
-      |> Keyword.merge(@opts)
 
     peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
     pc_gen_server_options = [name: peer_connection]
