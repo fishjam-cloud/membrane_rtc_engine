@@ -257,8 +257,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       raw_media_event =
         %Peer.MediaEvent{
           content:
-            {:track_bitrate,
-             %TrackBitrate{track_id: "track_id", bitrate: variant_bitrates()}}
+            {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: variant_bitrates()}}
         }
         |> Peer.MediaEvent.encode()
 
@@ -487,12 +486,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   defp variant_bitrates() do
     bitrates =
-    Enum.map(
-      [VARIANT_LOW: 150_000, VARIANT_MEDIUM: 500_000, VARIANT_HIGH: 1_500_000],
-      fn {variant, bitrate} ->
-        %VariantBitrate{variant: variant, bitrate: bitrate}
-      end
-    )
+      Enum.map(
+        [VARIANT_LOW: 150_000, VARIANT_MEDIUM: 500_000, VARIANT_HIGH: 1_500_000],
+        fn {variant, bitrate} ->
+          %VariantBitrate{variant: variant, bitrate: bitrate}
+        end
+      )
 
     {:variant_bitrates, %VariantBitrates{bitrates: bitrates}}
   end

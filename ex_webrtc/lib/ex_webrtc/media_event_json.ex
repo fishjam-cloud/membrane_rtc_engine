@@ -291,10 +291,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
       } ->
         {:ok,
          %{
-           type: :track_variant_bitrates,
+           type: :track_bitrate,
            data: %{
              track_id: track_id,
-             variant_bitrates: to_track_variants(variant_bitrates)
+             bitrates: to_track_variants(variant_bitrates)
            }
          }}
 

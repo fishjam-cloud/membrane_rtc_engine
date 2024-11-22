@@ -408,9 +408,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {actions, %{state | negotiation?: true}}
   end
 
-  defp handle_media_event(:track_variant_bitrates, data, _ctx, state) do
-    state = put_in(state, [:track_id_to_bitrates, data.track_id], data.variant_bitrates)
-    msg = {:variant_bitrates, data.variant_bitrates}
+  defp handle_media_event(:track_bitrates, data, _ctx, state) do
+    state = put_in(state, [:track_id_to_bitrates, data.track_id], data.bitrates)
+    msg = {:variant_bitrates, data.bitrates}
 
     {[notify_child: {{:track_sender, data.track_id}, msg}], state}
   end

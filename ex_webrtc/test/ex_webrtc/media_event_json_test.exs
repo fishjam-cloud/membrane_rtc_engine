@@ -127,10 +127,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
       expected_media_event = %{
         type: :custom,
         data: %{
-          type: :track_variant_bitrates,
+          type: :track_bitrate,
           data: %{
             track_id: track_id,
-            variant_bitrates: decoded_bitrates
+            bitrates: decoded_bitrates
           }
         }
       }
