@@ -10,12 +10,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
+    EnableTrackVariant,
+    DisableTrackVariant,
     RenegotiateTracks,
+    SetTargetTrackVariant,
     SdpOffer,
     TrackBitrate,
     TrackIdToBitrates,
     TrackIdToMetadata,
-    UpdateEndpointMetadata
+    UpdateEndpointMetadata,
+    VariantBitrate
   }
 
   alias Fishjam.MediaEvents.Server.MediaEvent.{
@@ -29,6 +33,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     TracksAdded,
     TracksRemoved,
     TrackUpdated,
+    TrackVariantEnabled,
+    TrackVariantDisabled,
+    TrackVariantSwitched,
     VadNotification
   }
 
@@ -121,6 +128,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
     end
+
+    # TODO: test with simulcast track
 
     test "is ok when event misses key" do
       sdp = %{
@@ -222,6 +231,90 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       expected_media_event = %{
         type: :custom,
         data: %{type: :renegotiate_tracks}
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
+  describe "deserializing simulcast events" do
+    test "enable_track_variant" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:enable_track_variant,
+             %EnableTrackVariant{track_id: "track_id", variant: :VARIANT_MEDIUM}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :enable_track_variant,
+        data: %{track_id: "track_id", variant: :medium}
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "disable_track_variant" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:disable_track_variant,
+             %DisableTrackVariant{track_id: "track_id", variant: :VARIANT_MEDIUM}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :disable_track_variant,
+        data: %{track_id: "track_id", variant: :medium}
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "set_target_track_variant" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:set_target_track_variant,
+             %SetTargetTrackVariant{track_id: "track_id", variant: :VARIANT_MEDIUM}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :set_target_track_variant,
+        data: %{track_id: "track_id", variant: :medium}
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "track_bitrate" do
+      variant_bitrates =
+        Enum.map(
+          [VARIANT_LOW: 150_000, VARIANT_MEDIUM: 500_000, VARIANT_HIGH: 1_500_000],
+          fn {variant, bitrate} ->
+            %VariantBitrate{variant: variant, bitrate: bitrate}
+          end
+        )
+
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:track_bitrate,
+             %TrackBitrate{track_id: "track_id", variant_bitrates: variant_bitrates}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :custom,
+        data: %{
+          type: :track_variant_bitrates,
+          data: %{
+            track_id: "track_id",
+            variant_bitrates: %{low: 150_000, medium: 500_000, high: 1_500_000}
+          }
+        }
       }
 
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
@@ -344,6 +437,27 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
       assert {:vad_notification, %VadNotification{}} =
                event = MediaEvent.voice_activity("track_id", :unknown)
+
+      assert_action(event)
+    end
+
+    test "track_variant_switched" do
+      assert {:track_variant_switched, %TrackVariantSwitched{}} =
+               event = MediaEvent.track_variant_switched("endpoint_id", "track_id", :medium)
+
+      assert_action(event)
+    end
+
+    test "track_variant_enabled" do
+      assert {:track_variant_enabled, %TrackVariantEnabled{}} =
+               event = MediaEvent.track_variant_enabled("endpoint_id", "track_id", :medium)
+
+      assert_action(event)
+    end
+
+    test "track_variant_disabled" do
+      assert {:track_variant_disabled, %TrackVariantDisabled{}} =
+               event = MediaEvent.track_variant_disabled("endpoint_id", "track_id", :medium)
 
       assert_action(event)
     end

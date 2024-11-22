@@ -11,9 +11,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
+    DisableTrackVariant,
     Disconnect,
+    EnableTrackVariant,
     RenegotiateTracks,
     SdpOffer,
+    SetTargetTrackVariant,
+    TrackBitrate,
     UpdateEndpointMetadata,
     UpdateTrackMetadata
   }
@@ -28,6 +32,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     OfferData,
     SdpAnswer,
     TracksAdded,
+    TrackVariantDisabled,
+    TrackVariantEnabled,
+    TrackVariantSwitched,
     TracksRemoved,
     TrackUpdated,
     VadNotification
@@ -148,6 +155,39 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
      }}
   end
 
+  @spec track_variant_switched(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_switched(endpoint_id, track_id, variant) do
+    {:track_variant_switched,
+     %TrackVariantSwitched{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
+     }}
+  end
+
+  @spec track_variant_disabled(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_disabled(endpoint_id, track_id, variant) do
+    {:track_variant_disabled,
+     %TrackVariantDisabled{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
+     }}
+  end
+
+  @spec track_variant_enabled(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_enabled(endpoint_id, track_id, variant) do
+    {:track_variant_enabled,
+     %TrackVariantEnabled{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
+     }}
+  end
+
   @spec to_action(t()) :: [notify_parent: {:forward_to_parent, {:media_event, binary()}}]
   def to_action(event) do
     event = %Server.MediaEvent{content: event}
@@ -177,6 +217,30 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   defp do_decode(%UpdateEndpointMetadata{metadata: metadata}),
     do: {:ok, %{type: :update_endpoint_metadata, data: %{metadata: Jason.decode!(metadata.json)}}}
+
+  defp do_decode(%DisableTrackVariant{track_id: track_id, variant: variant}) do
+    {:ok,
+     %{
+       type: :disable_track_variant,
+       data: %{track_id: track_id, variant: from_proto_variant(variant)}
+     }}
+  end
+
+  defp do_decode(%EnableTrackVariant{track_id: track_id, variant: variant}) do
+    {:ok,
+     %{
+       type: :enable_track_variant,
+       data: %{track_id: track_id, variant: from_proto_variant(variant)}
+     }}
+  end
+
+  defp do_decode(%SetTargetTrackVariant{track_id: track_id, variant: variant}) do
+    {:ok,
+     %{
+       type: :set_target_track_variant,
+       data: %{track_id: track_id, variant: from_proto_variant(variant)}
+     }}
+  end
 
   defp do_decode(%UpdateTrackMetadata{
          track_id: track_id,
@@ -214,6 +278,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         track_id_to_track_metadata: parse_track_id_to_metadata(track_id_to_metadata),
         track_id_to_track_bitrates: parse_track_id_to_bitrates(track_id_to_bitrates),
         mid_to_track_id: parse_mid_to_track_id(mid_to_track_id)
+      }
+    })
+  end
+
+  defp do_decode(%TrackBitrate{track_id: track_id, variant_bitrates: variant_bitrates}) do
+    to_custom(%{
+      type: :track_variant_bitrates,
+      data: %{
+        track_id: track_id,
+        variant_bitrates:
+          Map.new(variant_bitrates, fn %{variant: variant, bitrate: bitrate} ->
+            {from_proto_variant(variant), bitrate}
+          end)
       }
     })
   end
@@ -274,4 +351,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   defp to_proto_vad_status(:silence), do: :STATUS_SILENCE
   defp to_proto_vad_status(:speech), do: :STATUS_SPEECH
   defp to_proto_vad_status(_type), do: :STATUS_UNSPECIFIED
+
+  defp to_proto_variant(:low), do: :VARIANT_LOW
+  defp to_proto_variant(:medium), do: :VARIANT_MEDIUM
+  defp to_proto_variant(_variant), do: :VARIANT_HIGH
+
+  defp from_proto_variant(:VARIANT_LOW), do: :low
+  defp from_proto_variant(:VARIANT_MEDIUM), do: :medium
+  defp from_proto_variant(_variant), do: :high
 end
