@@ -3,7 +3,7 @@ import Config
 config :test_videoroom,
   ecto_repos: [TestVideoroom.Repo],
   # Configure serialization of media events - either JSON or protobuf
-  # This variable is subjected to chaanges when running `mix test.protobuf` and `mix test.json`
+  # This variable is subjected to changes when running `mix test.protobuf` and `mix test.json`
   event_serialization: :json
 
 # Defines the sources for typescript client
