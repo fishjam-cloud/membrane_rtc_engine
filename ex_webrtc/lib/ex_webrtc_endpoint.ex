@@ -84,6 +84,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @track_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :track, :metadata, :event]
   @endpoint_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :metadata, :event]
 
+  @default_ice_servers [
+    %{urls: "stun:stun.l.google.com:19302"},
+    %{urls: "stun:stun.l.google.com:5349"}
+  ]
+
   @impl true
   def handle_init(ctx, opts) do
     {_, endpoint_id} = ctx.name
@@ -118,7 +123,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
         ice_port_range: state.ice_port_range,
-        video_codecs: [opts.video_codec]
+        video_codecs: [opts.video_codec],
+        ice_servers: @default_ice_servers
       })
     ]
 
@@ -184,7 +190,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     Membrane.Logger.info("endpoint ready, endpoints: #{inspect(endpoints)}")
 
-    action = endpoint_id |> serializer.connected(endpoints) |> serializer.to_action()
+    action =
+      endpoint_id
+      |> serializer.connected(endpoints, @default_ice_servers)
+      |> serializer.to_action()
+
     {action, state}
   end
 

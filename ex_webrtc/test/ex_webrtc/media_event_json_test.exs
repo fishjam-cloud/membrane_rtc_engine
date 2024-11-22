@@ -206,7 +206,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
                  id: ^endpoint_id,
                  otherEndpoints: [%{id: "other_endpoint"}]
                }
-             } = MediaEvent.connected(endpoint_id, other_endpoints)
+             } = MediaEvent.connected(endpoint_id, other_endpoints, [])
     end
   end
 

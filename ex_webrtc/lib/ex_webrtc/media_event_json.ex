@@ -5,12 +5,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Track
 
-  alias ExWebRTC.{ICECandidate, SessionDescription}
+  alias ExWebRTC.{ICECandidate, PeerConnection.Configuration, SessionDescription}
 
   @type t() :: map()
 
-  @spec connected(Endpoint.id(), list()) :: t()
-  def connected(endpoint_id, other_endpoints) do
+  @spec connected(Endpoint.id(), [Endpoint.t()], [Configuration.ice_server()]) ::
+          t()
+  def connected(endpoint_id, other_endpoints, _ice_servers) do
     other_endpoints =
       other_endpoints
       # backward compatibility

@@ -238,8 +238,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   describe "serializing valid media events" do
     test "connected" do
+      ice_servers = [
+        %{urls: ["stun:stun.l.google.com:19302"]},
+        %{urls: ["turns:turns.example.com:5349", "turns:turns.example.com:5347"]},
+        %{
+          urls: "turn:turn.example.com:3478",
+          username: "user123",
+          credential: "password123"
+        }
+      ]
+
       assert {:connected, %Connected{}} =
-               event = MediaEvent.connected("myendpoint", [engine_endpoint()])
+               event = MediaEvent.connected("myendpoint", [engine_endpoint()], ice_servers)
 
       assert_action(event)
     end

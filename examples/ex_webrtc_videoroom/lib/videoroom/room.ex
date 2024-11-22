@@ -37,7 +37,8 @@ defmodule Videoroom.Room do
 
     webrtc_endpoint = %ExWebRTC{
       rtc_engine: state.rtc_engine,
-      ice_port_range: state.ice_port_range
+      ice_port_range: state.ice_port_range,
+      event_serialization: :json
     }
 
     :ok = Engine.add_endpoint(state.rtc_engine, webrtc_endpoint, id: peer_id)
