@@ -19,7 +19,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     SetTargetTrackVariant,
     TrackBitrate,
     UpdateEndpointMetadata,
-    UpdateTrackMetadata
+    UpdateTrackMetadata,
+    VariantBitrates
   }
 
   alias Fishjam.MediaEvents.Server.MediaEvent.{
@@ -282,15 +283,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     })
   end
 
-  defp do_decode(%TrackBitrate{track_id: track_id, variant_bitrates: variant_bitrates}) do
+  defp do_decode(%TrackBitrate{track_id: track_id, bitrate: bitrate}) do
     to_custom(%{
-      type: :track_variant_bitrates,
+      type: :track_bitrate,
       data: %{
         track_id: track_id,
-        variant_bitrates:
-          Map.new(variant_bitrates, fn %{variant: variant, bitrate: bitrate} ->
-            {from_proto_variant(variant), bitrate}
-          end)
+        bitrates: parse_bitrate(bitrate)
       }
     })
   end
@@ -320,8 +318,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   end
 
   defp parse_track_id_to_bitrates(bitrates) do
-    Map.new(bitrates, fn %{tracks: {:track_bitrate, track_bitrate}} ->
-      {track_bitrate.track_id, %{high: track_bitrate.bitrate}}
+    Map.new(bitrates, fn %{track_id: track_id, bitrate: bitrate} ->
+      {track_id, parse_bitrate(bitrate)}
+    end)
+  end
+
+  defp parse_bitrate({:track_bitrate, bitrate}), do: %{high: bitrate}
+
+  defp parse_bitrate({:variant_bitrates, %VariantBitrates{bitrates: bitrates}}) do
+    Map.new(bitrates, fn variant ->
+      {from_proto_variant(variant.variant), variant.bitrate}
     end)
   end
 
