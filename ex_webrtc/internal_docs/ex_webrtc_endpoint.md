@@ -16,7 +16,7 @@ and `Membrane.RTC.Engine.Event.TrackVariantPaused` events, and replying to `Memb
 
 #### VariantTracker
 
-A browser can pause sending some encoding when e.g. it doesn't have enough bandwidth.
+A browser can pause sending some variant when e.g. it doesn't have enough bandwidth.
 This fact is not communicated to the server.
 `VariantTracker` is responsible for tracking variant activity i.e. whether it is still active.
 

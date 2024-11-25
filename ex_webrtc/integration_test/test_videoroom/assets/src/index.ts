@@ -1,29 +1,73 @@
 import { Encoding } from "@fishjam-cloud/ts-client";
 import { Room } from "./room";
-import { remoteStreamsStats, inboundSimulcastStreamStats, outboundSimulcastStreamStats } from "./stats";
+import {
+  remoteStreamsStats,
+  inboundSimulcastStreamStats,
+  outboundSimulcastStreamStats,
+} from "./stats";
 
 const data = document.querySelector("div#data") as HTMLElement;
 
 const getButtonsWithPrefix = (types: string[], prefix: string) => {
-  return types.map((type) => document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement)
-}
+  return types.map(
+    (type) =>
+      document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement,
+  );
+};
 
-const startButtons = getButtonsWithPrefix(["simulcast", "all", "all-update", "mic-only", "camera-only", "none"], "start");
+const startButtons = getButtonsWithPrefix(
+  ["simulcast", "all", "all-update", "mic-only", "camera-only", "none"],
+  "start",
+);
 
-const simulcastButtons = getButtonsWithPrefix(["local-low-encoding", "local-medium-encoding", "local-high-encoding",
-  "peer-low-encoding", "peer-medium-encoding", "peer-high-encoding"], "simulcast")
+const simulcastButtons = getButtonsWithPrefix(
+  [
+    "local-low-variant",
+    "local-medium-variant",
+    "local-high-variant",
+    "peer-low-variant",
+    "peer-medium-variant",
+    "peer-high-variant",
+  ],
+  "simulcast",
+);
 
-const simulcastStatsButtons: HTMLButtonElement[] = getButtonsWithPrefix(["inbound-stats", "outbound-stats"], "simulcast")
+const simulcastStatsButtons: HTMLButtonElement[] = getButtonsWithPrefix(
+  ["inbound-stats", "outbound-stats"],
+  "simulcast",
+);
 
-const metadataButtons = getButtonsWithPrefix(["update-peer", "update-track", "peer", "track"], "metadata")
+const metadataButtons = getButtonsWithPrefix(
+  ["update-peer", "update-track", "peer", "track"],
+  "metadata",
+);
 
-const [startSimulcastButton, startAllButton, startAllUpdateButton, startMicOnlyButton, startCameraOnlyButton, startNoneButton] = startButtons;
-const [localLowEncodingButton, localMediumEncodingButton, localHighEncodingButton,
-  peerLowEncodingButton, peerMediumEncodingButton, peerHighEncodingButton] = simulcastButtons
+const [
+  startSimulcastButton,
+  startAllButton,
+  startAllUpdateButton,
+  startMicOnlyButton,
+  startCameraOnlyButton,
+  startNoneButton,
+] = startButtons;
+const [
+  localLowVariantButton,
+  localMediumVariantButton,
+  localHighVariantButton,
+  peerLowVariantButton,
+  peerMediumVariantButton,
+  peerHighVariantButton,
+] = simulcastButtons;
 
-const [inboundSimulcastStatsButton, outboundSimulcastStatsButton] = simulcastStatsButtons
+const [inboundSimulcastStatsButton, outboundSimulcastStatsButton] =
+  simulcastStatsButtons;
 
-const [updatePeerMetadataButton, updateTrackMetadataButton, peerMetadataButton, trackMetadataButton] = metadataButtons
+const [
+  updatePeerMetadataButton,
+  updateTrackMetadataButton,
+  peerMetadataButton,
+  trackMetadataButton,
+] = metadataButtons;
 
 const stopButton = document.querySelector("button#stop") as HTMLButtonElement;
 const statsButton = document.querySelector("button#stats") as HTMLButtonElement;
@@ -41,17 +85,17 @@ const simulcastPreferences = {
   width: { max: 1280, ideal: 1280, min: 1280 },
   height: { max: 720, ideal: 720, min: 720 },
   frameRate: { max: 30, ideal: 24 },
-}
+};
 
 async function start(media: string, simulcast = false) {
   if (room) return;
 
-  const useVideo = ["all", "camera"].some(source => media.includes(source));
-  const useAudio = ["all", "mic"].some(source => media.includes(source));
+  const useVideo = ["all", "camera"].some((source) => media.includes(source));
+  const useAudio = ["all", "mic"].some((source) => media.includes(source));
   const updateMetadata = media.includes("update");
 
   if (simulcast) {
-    simulcastButtons.map(elem => elem.disabled = false)
+    simulcastButtons.map((elem) => (elem.disabled = false));
   }
 
   const constraints = {
@@ -60,8 +104,7 @@ async function start(media: string, simulcast = false) {
   };
 
   startButtons.forEach((button) => (button.disabled = true));
-  if (stopButton)
-    stopButton.disabled = false;
+  if (stopButton) stopButton.disabled = false;
 
   room = new Room(constraints, updateMetadata, simulcast);
 
@@ -96,21 +139,20 @@ async function refreshStats(statsFunction: (room: Room) => string | object) {
   }
   const stats = await statsFunction(room);
 
-  putStats(stats)
+  putStats(stats);
 }
 
-
-function toggleSimulcastEncoding(button: HTMLButtonElement, encoding: Encoding) {
-  const isEnabled = button.textContent?.startsWith("Disable")
-  let text = button.textContent
+function toggleSimulcastVariant(button: HTMLButtonElement, rid: Encoding) {
+  const isEnabled = button.textContent?.startsWith("Disable");
+  let text = button.textContent;
   if (isEnabled) {
-    room?.disableSimulcastEncoding(encoding)
-    text = text!.replace("Disable", "Enable")
+    room?.disableSimulcastVariant(rid);
+    text = text!.replace("Disable", "Enable");
   } else {
-    room?.enableSimulcastEncoding(encoding)
-    text = text!.replace("Enable", "Disable")
+    room?.enableSimulcastVariant(rid);
+    text = text!.replace("Enable", "Disable");
   }
-  button.textContent = text
+  button.textContent = text;
 }
 
 // setup all button callbacks
@@ -121,16 +163,42 @@ startMicOnlyButton.onclick = () => start("mic");
 startCameraOnlyButton.onclick = () => start("camera");
 startNoneButton.onclick = () => start("none");
 stopButton.onclick = stop;
-statsButton.onclick = () => { refreshStats(remoteStreamsStats); }
-updatePeerMetadataButton.onclick = () => { room?.updateMetadata("newMeta") }
-updateTrackMetadataButton.onclick = () => { room?.updateTrackMetadata("newTrackMeta") }
-peerMetadataButton.onclick = () => { putStats(room?.lastPeerMetadata!) }
-trackMetadataButton.onclick = () => { putStats(room?.lastTrackMetadata!) }
-localLowEncodingButton.onclick = () => { toggleSimulcastEncoding(localLowEncodingButton, "l") }
-localMediumEncodingButton.onclick = () => { toggleSimulcastEncoding(localMediumEncodingButton, "m") }
-localHighEncodingButton.onclick = () => { toggleSimulcastEncoding(localHighEncodingButton, "h") }
-peerLowEncodingButton.onclick = () => { room?.selectPeerSimulcastEncoding("l") }
-peerMediumEncodingButton.onclick = () => { room?.selectPeerSimulcastEncoding("m") }
-peerHighEncodingButton.onclick = () => { room?.selectPeerSimulcastEncoding("h") }
-inboundSimulcastStatsButton.onclick = () => { refreshStats(inboundSimulcastStreamStats) }
-outboundSimulcastStatsButton.onclick = () => { refreshStats(outboundSimulcastStreamStats) }
+statsButton.onclick = () => {
+  refreshStats(remoteStreamsStats);
+};
+updatePeerMetadataButton.onclick = () => {
+  room?.updateMetadata("newMeta");
+};
+updateTrackMetadataButton.onclick = () => {
+  room?.updateTrackMetadata("newTrackMeta");
+};
+peerMetadataButton.onclick = () => {
+  putStats(room?.lastPeerMetadata!);
+};
+trackMetadataButton.onclick = () => {
+  putStats(room?.lastTrackMetadata!);
+};
+localLowVariantButton.onclick = () => {
+  toggleSimulcastVariant(localLowVariantButton, "l");
+};
+localMediumVariantButton.onclick = () => {
+  toggleSimulcastVariant(localMediumVariantButton, "m");
+};
+localHighVariantButton.onclick = () => {
+  toggleSimulcastVariant(localHighVariantButton, "h");
+};
+peerLowVariantButton.onclick = () => {
+  room?.selectPeerSimulcastVariant("l");
+};
+peerMediumVariantButton.onclick = () => {
+  room?.selectPeerSimulcastVariant("m");
+};
+peerHighVariantButton.onclick = () => {
+  room?.selectPeerSimulcastVariant("h");
+};
+inboundSimulcastStatsButton.onclick = () => {
+  refreshStats(inboundSimulcastStreamStats);
+};
+outboundSimulcastStatsButton.onclick = () => {
+  refreshStats(outboundSimulcastStreamStats);
+};

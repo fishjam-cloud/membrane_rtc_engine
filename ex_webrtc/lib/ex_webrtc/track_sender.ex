@@ -4,7 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   # TrackSender:
   # * adds `is_keyframe` flag to each buffer's metadata
   # (will be removed after releasing new RTP plugin)
-  # * tracks encoding activity
+  # * tracks variants activity
 
   use Membrane.Filter
 
@@ -471,7 +471,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
     end
   end
 
-  defp to_output_pad(Pad.ref(:input, {_track_id, _encoding} = pad_id)) do
+  defp to_output_pad(Pad.ref(:input, {_track_id, _variant} = pad_id)) do
     Pad.ref(:output, pad_id)
   end
 end

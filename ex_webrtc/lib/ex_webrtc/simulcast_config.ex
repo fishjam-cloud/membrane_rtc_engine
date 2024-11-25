@@ -26,7 +26,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SimulcastConfig do
   @doc """
   Default implementation of `initial_target_variant` function in `t:t/0`.
 
-  Returns :high, which will result in choosing the highest possible encoding.
+  Returns :high, which will result in choosing the highest possible variant.
   """
   @spec initial_target_variant(Track.t()) :: :high
   def initial_target_variant(_track), do: :high

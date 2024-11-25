@@ -25,7 +25,7 @@ export function attachStream(stream: MediaStream, peerId: string): void {
 export function addVideoElement(
   peerId: string,
   label: string,
-  isLocalVideo: boolean
+  isLocalVideo: boolean,
 ): void {
   const videoId = elementId(peerId, "video");
   const audioId = elementId(peerId, "audio");
@@ -91,7 +91,7 @@ function setupVideoFeed(peerId: string, label: string, isLocalVideo: boolean) {
   const audio = feed.querySelector("audio") as HTMLAudioElement;
   const video = feed.querySelector("video") as HTMLVideoElement;
   const videoLabel = feed.querySelector(
-    "div[name='video-label']"
+    "div[name='video-label']",
   ) as HTMLDivElement;
 
   feed.id = elementId(peerId, "feed");
@@ -114,7 +114,7 @@ export function removeVideoElement(peerId: string): void {
 }
 
 export function setErrorMessage(
-  message: string = "Cannot connect to server, refresh the page and try again"
+  message: string = "Cannot connect to server, refresh the page and try again",
 ): void {
   const errorContainer = document.getElementById("videochat-error");
   if (errorContainer) {

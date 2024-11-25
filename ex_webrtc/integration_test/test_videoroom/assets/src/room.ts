@@ -1,4 +1,15 @@
-import { WebRTCEndpoint, Endpoint, TrackContext, Encoding, TrackKind, SimulcastConfig, BandwidthLimit, SimulcastBandwidthLimit, TrackBandwidthLimit } from "@fishjam-cloud/ts-client";
+import {
+  WebRTCEndpoint,
+  Endpoint,
+  TrackContext,
+  Encoding,
+  TrackKind,
+  SimulcastConfig,
+  BandwidthLimit,
+  SimulcastBandwidthLimit,
+  TrackBandwidthLimit,
+} from "@fishjam-cloud/ts-client";
+// @ts-ignore
 import { Push, Socket } from "phoenix";
 import {
   addVideoElement,
@@ -12,23 +23,21 @@ export const LOCAL_ENDPOINT_ID = "local-endpoint";
 export type EndpointMetadata = string;
 export type TrackMetadata = string;
 
-
 const SIMULCAST_CONFIG: SimulcastConfig = {
   enabled: true,
   activeEncodings: ["l", "m", "h"],
-  disabledEncodings: []
-}
+  disabledEncodings: [],
+};
 
-const SIMULCAST_BANDWIDTH: SimulcastBandwidthLimit = new Map(
-  [["l", 150],
+const SIMULCAST_BANDWIDTH: SimulcastBandwidthLimit = new Map([
+  ["l", 150],
   ["m", 500],
-  ["h", 1500]
-  ]
-)
+  ["h", 1500],
+]);
 
 export class Room {
   public endpointId: string | undefined;
-  private endpoints: Endpoint<EndpointMetadata, TrackMetadata>[] = [];
+  private endpoints: Endpoint[] = [];
   private displayName: string;
   private localStream: MediaStream | undefined;
   public webrtc: WebRTCEndpoint;
@@ -41,8 +50,8 @@ export class Room {
   private webrtcSocketRefs: string[] = [];
   private webrtcChannel;
 
-  public lastPeerMetadata: string | undefined;
-  public lastTrackMetadata: string | undefined;
+  public lastPeerMetadata: EndpointMetadata | undefined;
+  public lastTrackMetadata: TrackMetadata | undefined;
 
   private updateMetadataOnStart: boolean;
 
@@ -50,7 +59,11 @@ export class Room {
   private simulcastConfig: SimulcastConfig | undefined;
   private bandwidth: TrackBandwidthLimit | undefined;
 
-  constructor(contraints: MediaStreamConstraints, updateMetadata: boolean, simulcast: boolean) {
+  constructor(
+    contraints: MediaStreamConstraints,
+    updateMetadata: boolean,
+    simulcast: boolean,
+  ) {
     this.constraints = contraints;
     this.updateMetadataOnStart = updateMetadata;
     this.simulcastEnabled = simulcast;
@@ -79,33 +92,47 @@ export class Room {
 
     this.webrtc.on("sendMediaEvent", (mediaEvent: string) => {
       this.webrtcChannel.push("mediaEvent", { data: mediaEvent });
-    })
+    });
 
     this.webrtc.on("connectionError", (e) => setErrorMessage(e.message));
 
-    this.webrtc.on("connected", async (endpointId: string, otherEndpoints: Endpoint<EndpointMetadata, TrackMetadata>[]) => {
-      this.endpointId = endpointId;
-      this.endpoints = otherEndpoints;
-      this.endpoints.forEach((endpoint) => {
-        const displayName = endpoint.metadata?.displayName || "undefined";
-        addVideoElement(endpoint.id, displayName, false);
-      });
-      this.updateParticipantsList();
+    this.webrtc.on(
+      "connected",
+      async (endpointId: string, otherEndpoints: Endpoint[]) => {
+        this.endpointId = endpointId;
+        this.endpoints = otherEndpoints.filter(
+          (endpoint) => endpoint.id != this.endpointId,
+        );
+        this.endpoints.forEach((endpoint) => {
+          const displayName =
+            (endpoint.metadata as EndpointMetadata) || "undefined";
+          addVideoElement(endpoint.id, displayName, false);
+        });
+        console.log(this.endpoints);
+        this.updateParticipantsList();
 
-      for (const track of this.localStream!.getTracks()) {
-        const trackId = await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind }, this.simulcastConfig, this.bandwidth );
-        if (this.updateMetadataOnStart) {
-          this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
+        for (const track of this.localStream!.getTracks()) {
+          const trackId = await this.webrtc.addTrack(
+            track,
+            { peer: this.displayName, kind: track.kind },
+            this.simulcastConfig,
+            this.bandwidth,
+          );
+          if (this.updateMetadataOnStart) {
+            this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
+          }
         }
-      }
+      },
+    );
+    this.webrtc.on("connectionError", () => {
+      throw `Endpoint denied.`;
     });
-    this.webrtc.on("connectionError", () => { throw `Endpoint denied.` });
 
-    this.webrtc.on("trackReady", (ctx: TrackContext<EndpointMetadata, TrackMetadata>) => {
+    this.webrtc.on("trackReady", (ctx: TrackContext) => {
       this.streams[ctx.stream!.id] = ctx.stream!;
 
       console.log("trackReady", ctx.trackId, ctx.track!.kind, ctx.stream!.id);
-      attachStream(ctx.stream!, ctx.endpoint.id)
+      attachStream(ctx.stream!, ctx.endpoint.id);
     });
 
     this.webrtc.on("trackRemoved", (ctx) => {
@@ -113,17 +140,28 @@ export class Room {
 
       console.log("trackRemoved", ctx.track!.id, ctx.track!.kind);
 
-      if (ctx.stream?.getTracks()!.every((track) => this.removedTracks.includes(track.id)))
+      if (
+        ctx.stream
+          ?.getTracks()!
+          .every((track) => this.removedTracks.includes(track.id))
+      )
         delete this.streams[ctx.stream!.id];
     });
 
-    this.webrtc.on("endpointAdded", (endpoint: Endpoint<EndpointMetadata, TrackMetadata>) => {
-      this.endpoints.push(endpoint);
-      this.updateParticipantsList();
-      addVideoElement(endpoint.id, endpoint.metadata?.displayName!, false);
+    this.webrtc.on("endpointAdded", (endpoint: Endpoint) => {
+      // Ignore endpointAdded notifications received before `connected` event
+      if (this.endpointId && endpoint.id != this.endpointId) {
+        this.endpoints.push(endpoint);
+        this.updateParticipantsList();
+        addVideoElement(
+          endpoint.id,
+          endpoint.metadata as EndpointMetadata,
+          false,
+        );
+      }
     });
 
-    this.webrtc.on("endpointRemoved", (endpoint: Endpoint<EndpointMetadata, TrackMetadata>) => {
+    this.webrtc.on("endpointRemoved", (endpoint: Endpoint) => {
       this.endpoints = this.endpoints.filter((e) => e.id !== endpoint.id);
       removeVideoElement(endpoint.id);
       this.updateParticipantsList();
@@ -131,15 +169,14 @@ export class Room {
 
     this.webrtcChannel.on("mediaEvent", (event: any) => {
       this.webrtc.receiveMediaEvent(event.data);
-    }
-    );
+    });
 
     this.webrtc.on("endpointUpdated", (endpoint) => {
-      this.lastPeerMetadata = endpoint.metadata;
+      this.lastPeerMetadata = endpoint.metadata as EndpointMetadata;
     });
 
     this.webrtc.on("trackUpdated", (ctx) => {
-      this.lastTrackMetadata = ctx.metadata;
+      this.lastTrackMetadata = ctx.metadata as TrackMetadata;
     });
   }
 
@@ -152,65 +189,81 @@ export class Room {
     }
   };
 
-    public updateMetadata = (metadata: EndpointMetadata) => {
-    this.webrtc.updateEndpointMetadata({endpoint: null, peer: metadata});
+  public updateMetadata = (metadata: EndpointMetadata) => {
+    this.webrtc.updateEndpointMetadata({ peer: metadata });
   };
 
   public updateTrackMetadata = (metadata: TrackMetadata) => {
     const tracks = this.webrtc.getLocalEndpoint().tracks;
     const trackId = tracks.keys().next().value!;
     this.webrtc.updateTrackMetadata(trackId, metadata);
-  }
+  };
 
-  public selectPeerSimulcastEncoding = (encoding: Encoding) => {
+  public selectPeerSimulcastVariant = (rid: Encoding) => {
     const remoteTracks = Object.entries(this.webrtc.getRemoteTracks());
 
-    const videoTracks = remoteTracks.filter(track => {
+    const videoTracks = remoteTracks.filter((track) => {
       const [_, trackContext] = track;
       return trackContext.track?.kind === "video";
     });
 
-    videoTracks.forEach(track => {
+    videoTracks.forEach((track) => {
       const [trackId, _] = track;
-      this.webrtc.setTargetTrackEncoding(trackId, encoding);
+      this.webrtc.setTargetTrackEncoding(trackId, rid);
     });
-  }
+  };
 
-  public disableSimulcastEncoding = (encoding: Encoding) => {
-    const [trackId, _] = Array.from(this.webrtc.getLocalEndpoint().tracks).filter((track => {
+  public disableSimulcastVariant = (rid: Encoding) => {
+    const [trackId, _] = Array.from(
+      this.webrtc.getLocalEndpoint().tracks,
+    ).filter((track) => {
       const [_, trackContext] = track;
-      return trackContext.track?.kind === "video"
-    }))[0];
-    this.webrtc.disableTrackEncoding(trackId, encoding)
-  }
+      return trackContext.track?.kind === "video";
+    })[0];
+    this.webrtc.disableTrackEncoding(trackId, rid);
+  };
 
-  public enableSimulcastEncoding = (encoding: Encoding) => {
-    const [trackId, _] = Array.from(this.webrtc.getLocalEndpoint().tracks).filter((track => {
+  public enableSimulcastVariant = (rid: Encoding) => {
+    const [trackId, _] = Array.from(
+      this.webrtc.getLocalEndpoint().tracks,
+    ).filter((track) => {
       const [_, trackContext] = track;
-      return trackContext.track?.kind === "video"
-    }))[0];
+      return trackContext.track?.kind === "video";
+    })[0];
 
-    this.webrtc.enableTrackEncoding(trackId, encoding)
-  }
+    this.webrtc.enableTrackEncoding(trackId, rid);
+  };
 
-  public getEndpointTrackCtx = (endpointId: string, kind: TrackKind): TrackContext<EndpointMetadata, TrackMetadata> => {
+  public getEndpointRemoteTrackCtx = (
+    endpointId: string,
+    kind: TrackKind,
+  ): TrackContext => {
     const tracksCtxs = Array.from(Object.values(this.webrtc.getRemoteTracks()));
-    const trackCtx = tracksCtxs.find(trackCtx => trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind);
-    return trackCtx!;
-  }
+    console.log(
+      this.webrtc.getRemoteTracks(),
+      tracksCtxs,
+      endpointId,
+      this.endpointId,
+      kind,
+    );
 
-  public getPeerEncoding = () => { return this.webrtc.getLocalEndpoint().tracks }
+    const trackCtx = tracksCtxs.find(
+      (trackCtx) =>
+        trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind,
+    );
+    return trackCtx!;
+  };
 
   private init = async () => {
     if (this.constraints.audio != false || this.constraints.video != false) {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia(
-          this.constraints
+          this.constraints,
         );
       } catch (error) {
         console.error(error);
         setErrorMessage(
-          "Failed to setup video room, make sure to grant camera and microphone permissions"
+          "Failed to setup video room, make sure to grant camera and microphone permissions",
         );
         throw "error";
       }
@@ -235,9 +288,10 @@ export class Room {
     }
   };
 
-
   private updateParticipantsList = (): void => {
-    const participantsNames = this.endpoints.map((e) => e.metadata?.displayName!);
+    const participantsNames = this.endpoints.map(
+      (e) => e.metadata as EndpointMetadata,
+    );
 
     if (this.displayName) {
       participantsNames.push(this.displayName);

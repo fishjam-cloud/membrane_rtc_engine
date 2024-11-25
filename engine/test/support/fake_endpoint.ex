@@ -19,8 +19,6 @@ defmodule Membrane.RTC.Engine.Support.SinkEndpoint do
                 description: "Pid of endpoint owner"
               ]
 
-  @type encoding_t() :: String.t()
-
   def_input_pad :input,
     accepted_format: _any,
     availability: :on_request

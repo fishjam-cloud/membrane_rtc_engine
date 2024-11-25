@@ -2,7 +2,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
   @moduledoc false
   # Module responsible for rewriting RTP packet's sequence number and timestamp
-  # to provide transparent switch between simulcast encodings.
+  # to provide transparent switch between simulcast variants.
   #
   # It is almost rewritten from livekit
   # https://github.com/livekit/livekit-server/blob/90b97137c9f36da2136291f738d83146f3faaf66/pkg/sfu/rtpmunger.go#L86
@@ -18,9 +18,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
   alias Membrane.RTCP.SenderReportPacket
 
   @typedoc """
-  * `highest_incoming_seq_num` - the highest incoming sequence number for current encoding.
+  * `highest_incoming_seq_num` - the highest incoming sequence number for current variant.
     It does not include `seq_num_offset` so unlike `last_seq_num`,
-    it is different for different encodings (it is not contiguous)
+    it is different for different variants (it is not contiguous)
   * `last_seq_num` - last sequence number we received. It includes `seq_num_offset`
     so it is contiguous until rollover
   """
@@ -75,9 +75,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
     clock_rate = round(rtp_munger.clock_rate / 1000)
     adj = (arrival - rtp_munger.last_packet_arrival) * clock_rate
 
-    # if packet in an encoding we are going to switch to arrived
+    # if packet in a variant we are going to switch to arrived
     # exactly or almost at the same time
-    # as the last packet in currently used encoding
+    # as the last packet in currently used variant
     # then set adjustment to one so that we do not send
     # two packets with the same timestamp
     adj = if adj == 0, do: 1, else: adj

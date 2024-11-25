@@ -3,7 +3,7 @@ import Config
 config :test_videoroom,
   ecto_repos: [TestVideoroom.Repo],
   # Configure serialization of media events - either JSON or protobuf
-  # This variable is set during tests using the `use_serializer` task
+  # This variable is subjected to changes when running `mix test.protobuf` and `mix test.json`
   event_serialization: :json
 
 # Defines the sources for typescript client
@@ -11,7 +11,7 @@ config :ts_client,
   protobuf:
     "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main",
   json:
-    "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main"
+    "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
 
 # Configures the endpoint
 config :test_videoroom, TestVideoroomWeb.Endpoint,

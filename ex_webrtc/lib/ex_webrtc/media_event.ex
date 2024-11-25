@@ -2,18 +2,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   @moduledoc false
 
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.PeerConnection.Configuration
   alias ExWebRTC.SessionDescription
 
-  alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer, Server}
+  alias Fishjam.MediaEvents.{Candidate, Peer, Server}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
+    DisableTrackVariant,
     Disconnect,
+    EnableTrackVariant,
     RenegotiateTracks,
     SdpOffer,
+    TrackBitrates,
     UpdateEndpointMetadata,
     UpdateTrackMetadata
   }
@@ -30,6 +32,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     TracksAdded,
     TracksRemoved,
     TrackUpdated,
+    TrackVariantDisabled,
+    TrackVariantEnabled,
+    TrackVariantSwitched,
     VadNotification
   }
 
@@ -41,22 +46,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
           t()
   def connected(endpoint_id, endpoints, ice_servers) do
     endpoints =
-      endpoints
-      |> Enum.map(
-        &%Server.MediaEvent.Endpoint{
-          endpoint_id: &1.id,
-          endpoint_type: to_type_string(&1.type),
-          metadata: %Metadata{json: Jason.encode!(&1.metadata)},
-          tracks: &1 |> Engine.Endpoint.get_active_tracks() |> to_tracks_info()
-        }
-      )
+      Map.new(endpoints, fn endpoint ->
+        {endpoint.id,
+         %Server.MediaEvent.Endpoint{
+           endpoint_type: to_type_string(endpoint.type),
+           metadata_json: Jason.encode!(endpoint.metadata),
+           track_id_to_track: endpoint |> Engine.Endpoint.get_active_tracks() |> to_tracks_info()
+         }}
+      end)
 
     ice_servers = parse_ice_servers(ice_servers)
 
     {:connected,
      %Connected{
        endpoint_id: endpoint_id,
-       endpoints: endpoints,
+       endpoint_id_to_endpoint: endpoints,
        ice_servers: ice_servers
      }}
   end
@@ -66,7 +70,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     {:endpoint_added,
      %EndpointAdded{
        endpoint_id: id,
-       metadata: %Metadata{json: Jason.encode!(metadata)}
+       metadata_json: Jason.encode!(metadata)
      }}
   end
 
@@ -83,16 +87,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     {:endpoint_updated,
      %EndpointUpdated{
        endpoint_id: endpoint_id,
-       metadata: %Metadata{json: Jason.encode!(metadata)}
+       metadata_json: Jason.encode!(metadata)
      }}
   end
 
-  @spec tracks_added(Engine.Endpoint.id(), [Track.t()]) :: t()
+  @spec tracks_added(Engine.Endpoint.id(), [Engine.Track.t()]) :: t()
   def tracks_added(endpoint_id, tracks) do
     {:tracks_added,
      %TracksAdded{
        endpoint_id: endpoint_id,
-       tracks: to_tracks_info(tracks)
+       track_id_to_track: to_tracks_info(tracks)
      }}
   end
 
@@ -111,7 +115,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
      %TrackUpdated{
        endpoint_id: endpoint_id,
        track_id: track_id,
-       metadata: %Metadata{json: Jason.encode!(metadata)}
+       metadata_json: Jason.encode!(metadata)
      }}
   end
 
@@ -120,7 +124,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     {:sdp_answer,
      %SdpAnswer{
        sdp_answer: answer |> SessionDescription.to_json() |> Jason.encode!(),
-       mid_to_track_id: to_mid_to_track_id(mid_to_track_id)
+       mid_to_track_id: mid_to_track_id
      }}
   end
 
@@ -139,12 +143,45 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     {:candidate, candidate}
   end
 
-  @spec voice_activity(Track.id(), :speech | :silence) :: t()
+  @spec voice_activity(Engine.Track.id(), :speech | :silence) :: t()
   def voice_activity(track_id, vad) do
     {:vad_notification,
      %VadNotification{
        track_id: track_id,
        status: to_proto_vad_status(vad)
+     }}
+  end
+
+  @spec track_variant_switched(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_switched(endpoint_id, track_id, variant) do
+    {:track_variant_switched,
+     %TrackVariantSwitched{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
+     }}
+  end
+
+  @spec track_variant_disabled(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_disabled(endpoint_id, track_id, variant) do
+    {:track_variant_disabled,
+     %TrackVariantDisabled{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
+     }}
+  end
+
+  @spec track_variant_enabled(Engine.Endpoint.id(), Engine.Track.id(), Engine.Track.variant()) ::
+          t()
+  def track_variant_enabled(endpoint_id, track_id, variant) do
+    {:track_variant_enabled,
+     %TrackVariantEnabled{
+       endpoint_id: endpoint_id,
+       track_id: track_id,
+       variant: to_proto_variant(variant)
      }}
   end
 
@@ -167,26 +204,42 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     end
   end
 
-  defp do_decode(%Connect{metadata: nil}),
+  defp do_decode(%Connect{metadata_json: nil}),
     do: @err_invalid_event
 
-  defp do_decode(%Connect{metadata: metadata}),
-    do: {:ok, %{type: :connect, data: %{metadata: Jason.decode!(metadata.json)}}}
+  defp do_decode(%Connect{metadata_json: metadata_json}),
+    do: {:ok, %{type: :connect, data: %{metadata: Jason.decode!(metadata_json)}}}
 
   defp do_decode(%Disconnect{}), do: {:ok, %{type: :disconnect}}
 
-  defp do_decode(%UpdateEndpointMetadata{metadata: metadata}),
-    do: {:ok, %{type: :update_endpoint_metadata, data: %{metadata: Jason.decode!(metadata.json)}}}
+  defp do_decode(%UpdateEndpointMetadata{metadata_json: metadata_json}),
+    do: {:ok, %{type: :update_endpoint_metadata, data: %{metadata: Jason.decode!(metadata_json)}}}
+
+  defp do_decode(%DisableTrackVariant{track_id: track_id, variant: variant}) do
+    {:ok,
+     %{
+       type: :disable_track_variant,
+       data: %{track_id: track_id, variant: from_proto_variant(variant)}
+     }}
+  end
+
+  defp do_decode(%EnableTrackVariant{track_id: track_id, variant: variant}) do
+    {:ok,
+     %{
+       type: :enable_track_variant,
+       data: %{track_id: track_id, variant: from_proto_variant(variant)}
+     }}
+  end
 
   defp do_decode(%UpdateTrackMetadata{
          track_id: track_id,
-         metadata: metadata
+         metadata_json: metadata_json
        }),
        do:
          {:ok,
           %{
             type: :update_track_metadata,
-            data: %{track_id: track_id, track_metadata: Jason.decode!(metadata.json)}
+            data: %{track_id: track_id, track_metadata: Jason.decode!(metadata_json)}
           }}
 
   defp do_decode(%RenegotiateTracks{}) do
@@ -202,7 +255,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   defp do_decode(%SdpOffer{} = event) do
     %{
       sdp_offer: sdp_offer,
-      track_id_to_metadata: track_id_to_metadata,
+      track_id_to_metadata_json: track_id_to_metadata,
       track_id_to_bitrates: track_id_to_bitrates,
       mid_to_track_id: mid_to_track_id
     } = event
@@ -213,7 +266,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         sdp_offer: sdp_offer |> Jason.decode!() |> SessionDescription.from_json(),
         track_id_to_track_metadata: parse_track_id_to_metadata(track_id_to_metadata),
         track_id_to_track_bitrates: parse_track_id_to_bitrates(track_id_to_bitrates),
-        mid_to_track_id: parse_mid_to_track_id(mid_to_track_id)
+        mid_to_track_id: mid_to_track_id
+      }
+    })
+  end
+
+  defp do_decode(%TrackBitrates{track_id: track_id, variant_bitrates: bitrates}) do
+    to_custom(%{
+      type: :track_bitrate,
+      data: %{
+        track_id: track_id,
+        bitrates: parse_bitrates(bitrates)
       }
     })
   end
@@ -227,34 +290,40 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   defp to_type_string(type), do: Module.split(type) |> List.last() |> String.downcase()
 
   defp to_tracks_info(tracks) do
-    Enum.map(
-      tracks,
-      &%Server.MediaEvent.Track{
-        track_id: &1.id,
-        metadata: %Metadata{json: Jason.encode!(&1.metadata)}
-      }
-    )
+    Map.new(tracks, fn track ->
+      {track.id,
+       %Server.MediaEvent.Track{
+         metadata_json: Jason.encode!(track.metadata),
+         simulcast_config: simulcast_config(track)
+       }}
+    end)
+  end
+
+  defp simulcast_config(track) do
+    enabled_variants = track.variants -- track.disabled_variants
+
+    %Server.MediaEvent.Track.SimulcastConfig{
+      enabled: length(track.variants) > 0,
+      enabled_variants: Enum.map(enabled_variants, &to_proto_variant/1),
+      disabled_variants: Enum.map(track.disabled_variants, &to_proto_variant/1)
+    }
   end
 
   defp parse_track_id_to_metadata(tracks) do
-    Map.new(tracks, fn %{track_id: track_id, metadata: metadata} ->
-      {track_id, Jason.decode!(metadata.json)}
+    Map.new(tracks, fn {track_id, metadata} ->
+      {track_id, Jason.decode!(metadata)}
     end)
   end
 
   defp parse_track_id_to_bitrates(bitrates) do
-    Map.new(bitrates, fn %{tracks: {:track_bitrate, track_bitrate}} ->
-      {track_bitrate.track_id, %{high: track_bitrate.bitrate}}
+    Map.new(bitrates, fn {track_id, bitrate} ->
+      {track_id, parse_bitrates(bitrate.variant_bitrates)}
     end)
   end
 
-  defp parse_mid_to_track_id(mids) do
-    Map.new(mids, &{&1.mid, &1.track_id})
-  end
-
-  defp to_mid_to_track_id(mid_to_track_id) do
-    Enum.map(mid_to_track_id, fn {mid, track_id} ->
-      %MidToTrackId{mid: mid, track_id: track_id}
+  defp parse_bitrates(bitrates) do
+    Map.new(bitrates, fn variant ->
+      {from_proto_variant(variant.variant), variant.bitrate}
     end)
   end
 
@@ -274,4 +343,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
   defp to_proto_vad_status(:silence), do: :STATUS_SILENCE
   defp to_proto_vad_status(:speech), do: :STATUS_SPEECH
   defp to_proto_vad_status(_type), do: :STATUS_UNSPECIFIED
+
+  defp to_proto_variant(:low), do: :VARIANT_LOW
+  defp to_proto_variant(:medium), do: :VARIANT_MEDIUM
+  defp to_proto_variant(_variant), do: :VARIANT_HIGH
+
+  defp from_proto_variant(:VARIANT_LOW), do: :low
+  defp from_proto_variant(:VARIANT_MEDIUM), do: :medium
+  defp from_proto_variant(_variant), do: :high
 end

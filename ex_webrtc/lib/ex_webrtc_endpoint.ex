@@ -22,6 +22,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @type video_codec :: :H264 | :VP8
 
+  @type track_variant :: :low | :medium | :high
+
+  @typedoc """
+  "l" | "m" | "h"
+  """
+  @type rid :: String.t()
+
   def_options rtc_engine: [
                 spec: pid(),
                 description: "Pid of parent Engine"
@@ -132,9 +139,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(:output, {track_id, rid}) = pad, _ctx, state) do
-    if rid != :high, do: raise("ExWebrtcEndpoint handles only the high variant of tracks.")
-
+  def handle_pad_added(Pad.ref(:output, {track_id, variant}) = pad, _ctx, state) do
     track = Map.fetch!(state.inbound_tracks, track_id)
 
     track_sender = %TrackSender{
@@ -145,7 +150,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       get_child(:connection_handler)
       |> via_out(pad)
-      |> via_in(Pad.ref(:input, {track_id, rid}))
+      |> via_in(Pad.ref(:input, {track_id, variant}))
       |> child({:track_sender, track_id}, track_sender, get_if_exists: true)
       |> via_out(pad)
       |> bin_output(pad)
@@ -176,7 +181,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_pad_removed(Pad.ref(:output, {_track_id, _rid}), _ctx, state) do
+  def handle_pad_removed(Pad.ref(:output, {_track_id, _variant}), _ctx, state) do
     {[], state}
   end
 
@@ -232,13 +237,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
-  def handle_parent_notification({:track_variant_enabled, _track, _encoding}, _ctx, state) do
+  def handle_parent_notification({:track_variant_enabled, _track, _variant}, _ctx, state) do
     # TODO: add simulcast support
     {[], state}
   end
 
   @impl true
-  def handle_parent_notification({:track_variant_disabled, _track, _encoding}, _ctx, state) do
+  def handle_parent_notification({:track_variant_disabled, _track, _variant}, _ctx, state) do
     # TODO: add simulcast support
     {[], state}
   end
@@ -326,7 +331,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   defp log_tracks(tracks) do
     tracks
-    |> Enum.map(&Map.take(&1, [:type, :stream_id, :id, :origin, :encoding]))
+    |> Enum.map(
+      &Map.take(&1, [:type, :stream_id, :id, :origin, :encoding, :variants, :disabled_variants])
+    )
     |> inspect()
   end
 
@@ -348,22 +355,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   defp handle_media_event(
          :disable_track_variant,
-         %{track_id: track_id, encoding: rid},
+         %{track_id: track_id, variant: variant},
          _ctx,
          state
        ) do
-    encoding = to_track_variant(rid)
-    {[notify_parent: {:disable_track_variant, track_id, encoding}], state}
+    {[notify_parent: {:disable_track_variant, track_id, variant}], state}
   end
 
   defp handle_media_event(
          :enable_track_variant,
-         %{track_id: track_id, encoding: rid},
+         %{track_id: track_id, variant: variant},
          _ctx,
          state
        ) do
-    encoding = to_track_variant(rid)
-    {[notify_parent: {:enable_track_variant, track_id, encoding}], state}
+    {[notify_parent: {:enable_track_variant, track_id, variant}], state}
   end
 
   defp handle_media_event(:update_endpoint_metadata, %{metadata: metadata}, _ctx, state) do
@@ -403,15 +408,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {actions, %{state | negotiation?: true}}
   end
 
-  defp handle_media_event(:track_variant_bitrates, data, _ctx, state) do
-    state = put_in(state, [:track_id_to_bitrates, data.track_id], data.variant_bitrates)
-    msg = {:variant_bitrates, data.variant_bitrates}
+  defp handle_media_event(:track_bitrates, data, _ctx, state) do
+    state = put_in(state, [:track_id_to_bitrates, data.track_id], data.bitrates)
+    msg = {:variant_bitrates, data.bitrates}
 
     {[notify_child: {{:track_sender, data.track_id}, msg}], state}
   end
 
   defp handle_media_event(type, event, _ctx, state) do
-    Membrane.Logger.warning("unexpected media event: #{type}, #{event}")
+    Membrane.Logger.warning("unexpected media event: #{type}, #{inspect(event)}")
     {[], state}
   end
 
@@ -436,8 +441,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     end)
 
     tracks_ready =
-      Enum.map(tracks, fn track ->
-        {:notify_parent, {:track_ready, track.id, :high, track.encoding}}
+      Enum.flat_map(tracks, fn track ->
+        Enum.map(track.variants, &{:notify_parent, {:track_ready, track.id, &1, track.encoding}})
       end)
 
     new_inbound_tracks = Map.new(tracks, fn track -> {track.id, track} end)
@@ -554,6 +559,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   end
 
   @impl true
+  def handle_child_notification(
+        {:variant_switched, _new_variant, _reason},
+        :track_receiver,
+        _ctx,
+        state
+      ) do
+    {[], state}
+  end
+
+  @impl true
   def handle_child_notification(_msg, _child, _ctx, state) do
     {[], state}
   end
@@ -598,14 +613,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {actions, state}
   end
 
-  @spec to_rid(atom()) :: String.t()
+  @spec to_rid(track_variant()) :: rid()
   def to_rid(:high), do: "h"
   def to_rid(:medium), do: "m"
   def to_rid(:low), do: "l"
 
-  defp to_track_variant(rid) when rid in ["h", nil], do: :high
-  defp to_track_variant("m"), do: :medium
-  defp to_track_variant("l"), do: :low
+  @spec to_track_variant(rid() | nil) :: track_variant()
+  def to_track_variant(rid) when rid in ["h", nil], do: :high
+  def to_track_variant("m"), do: :medium
+  def to_track_variant("l"), do: :low
 
   defp get_media_count(state) do
     tracks_types =
