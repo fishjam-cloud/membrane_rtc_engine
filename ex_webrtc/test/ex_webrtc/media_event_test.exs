@@ -21,12 +21,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias Fishjam.MediaEvents.Server.MediaEvent.{
     Connected,
+    Endpoint,
     EndpointAdded,
     EndpointRemoved,
     EndpointUpdated,
     EndpointUpdated,
+    IceServer,
     OfferData,
     SdpAnswer,
+    Track,
     TracksAdded,
     TracksRemoved,
     TrackUpdated,
@@ -268,10 +271,39 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         }
       ]
 
-      assert {:connected, %Connected{}} =
-               event = MediaEvent.connected("myendpoint", [engine_endpoint()], ice_servers)
+      assert {:connected, %Connected{} = connected} =
+               event =
+               MediaEvent.connected(
+                 "myendpoint",
+                 [engine_endpoint(id: "myendpoint")],
+                 ice_servers
+               )
 
       assert_action(event)
+
+      assert %Connected{
+               endpoint_id: "myendpoint",
+               endpoint_id_to_endpoint: %{
+                 "myendpoint" => %Endpoint{
+                   endpoint_type: "exwebrtc",
+                   metadata_json: Jason.encode!(%{display_name: "hello"}),
+                   track_id_to_track: %{
+                     "track_id" => %Track{
+                       metadata_json: Jason.encode!(%{trackName: "my_track"}),
+                       simulcast_config: %Track.SimulcastConfig{
+                         enabled: true,
+                         enabled_variants: [:VARIANT_LOW, :VARIANT_MEDIUM, :VARIANT_HIGH],
+                         disabled_variants: []
+                       }
+                     }
+                   }
+                 }
+               },
+               ice_servers: connected.ice_servers
+             } == connected
+
+      assert not Enum.empty?(connected.ice_servers) and
+               Enum.all?(connected.ice_servers, &is_struct(&1, IceServer))
     end
 
     test "endpoint_added" do
@@ -440,11 +472,25 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     assert is_binary(message)
   end
 
-  defp engine_endpoint() do
+  defp engine_endpoint(opts \\ []) do
     %Engine.Endpoint{
       type: Engine.Endpoint.ExWebRTC,
-      id: "endpoint_id",
-      metadata: %{display_name: "hello"}
+      id: Keyword.get(opts, :id, "endpoint_id"),
+      metadata: %{display_name: "hello"},
+      inbound_tracks: %{
+        "track_id" =>
+          Engine.Track.new(
+            :video,
+            "stream_id",
+            "endpoint_id",
+            :H264,
+            90_000,
+            nil,
+            id: "track_id",
+            metadata: %{trackName: "my_track"},
+            variants: [:low, :medium, :high]
+          )
+      }
     }
   end
 
