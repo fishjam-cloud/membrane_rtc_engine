@@ -6,7 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   alias ExWebRTC.SessionDescription
 
-  alias Fishjam.MediaEvents.{Candidate, Metadata, MidToTrackId, Peer}
+  alias Fishjam.MediaEvents.{Candidate, Peer}
 
   alias Fishjam.MediaEvents.Peer.MediaEvent.{
     Connect,
@@ -14,12 +14,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     EnableTrackVariant,
     RenegotiateTracks,
     SdpOffer,
-    SetTargetTrackVariant,
-    TrackBitrate,
-    TrackIdToMetadata,
+    TrackBitrates,
     UpdateEndpointMetadata,
-    VariantBitrate,
-    VariantBitrates
+    VariantBitrate
   }
 
   alias Fishjam.MediaEvents.Server.MediaEvent.{
@@ -39,23 +36,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     VadNotification
   }
 
+  @mock_sdp "v=0\r\no=- 52485560578773596 0 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=ice-options:trickle\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic:WMS *\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111\r\nc=IN IP4 0.0.0.0\r\na=rtcp:9 IN IP4 0.0.0.0\r\na=sendrecv\r\na=mid:0\r\na=ice-ufrag:W80f\r\na=ice-pwd:5o2HUxiZqwk0gDNDwxRGZg==\r\na=ice-options:trickle\r\na=fingerprint:sha-256 9E:D2:28:2A:C0:03:0B:EE:81:09:38:0B:DE:F2:37:5A:25:46:88:6B:96:FD:C2:A7:72:CF:5F:B7:BD:BC:A6:A0\r\na=setup:actpass\r\na=rtcp-mux\r\na=extmap:1 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\n"
+
   describe "deserializing `connect` media event" do
     test "creates proper map when event is valid" do
       raw_media_event =
         %Peer.MediaEvent{
-          content:
-            {:connect,
-             %Connect{
-               metadata: %Metadata{json: Jason.encode!(%{"displayName" => "Bob"})}
-             }}
+          content: {:connect, %Connect{metadata_json: Jason.encode!(%{"displayName" => "Bob"})}}
         }
         |> Peer.MediaEvent.encode()
 
       expected_media_event = %{
         type: :connect,
-        data: %{
-          metadata: %{"displayName" => "Bob"}
-        }
+        data: %{metadata: %{"displayName" => "Bob"}}
       }
 
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
@@ -63,7 +56,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
     test "returns error when metadata is not a valid json" do
       raw_media_event =
-        %Connect{metadata: %Metadata{json: nil}} |> Peer.MediaEvent.encode()
+        %Connect{metadata_json: nil} |> Peer.MediaEvent.encode()
 
       assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
     end
@@ -71,9 +64,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
 
   describe "deserializing sdpOffer media event" do
     test "valid event - non simulcast track" do
-      bitrates = [
-        %TrackBitrate{track_id: "track_id", bitrate: {:track_bitrate, 500_000}}
-      ]
+      bitrates = %{
+        "track_id" => %TrackBitrates{
+          variant_bitrates: [%VariantBitrate{variant: :VARIANT_HIGH, bitrate: 500_000}]
+        }
+      }
 
       decoded_bitrates = %{"track_id" => %{high: 500_000}}
 
@@ -83,12 +78,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     test "valid event - simulcast track" do
       raw_variant_bitrates = %{low: 150_000, medium: 500_000, high: 1_500_000}
 
-      bitrates = [
-        %TrackBitrate{
-          track_id: "track_id",
-          bitrate: variant_bitrates()
-        }
-      ]
+      bitrates = %{"track_id" => %TrackBitrates{variant_bitrates: variant_bitrates()}}
 
       decoded_bitrates = %{"track_id" => raw_variant_bitrates}
 
@@ -140,9 +130,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         %Peer.MediaEvent{
           content:
             {:update_endpoint_metadata,
-             %UpdateEndpointMetadata{
-               metadata: %Metadata{json: "{this is not a valid json]"}
-             }}
+             %UpdateEndpointMetadata{metadata_json: "{this is not a valid json]"}}
         }
         |> Peer.MediaEvent.encode()
 
@@ -236,28 +224,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
     end
 
-    test "set_target_track_variant" do
-      raw_media_event =
-        %Peer.MediaEvent{
-          content:
-            {:set_target_track_variant,
-             %SetTargetTrackVariant{track_id: "track_id", variant: :VARIANT_MEDIUM}}
-        }
-        |> Peer.MediaEvent.encode()
-
-      expected_media_event = %{
-        type: :set_target_track_variant,
-        data: %{track_id: "track_id", variant: :medium}
-      }
-
-      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
-    end
-
     test "track_bitrate" do
       raw_media_event =
         %Peer.MediaEvent{
           content:
-            {:track_bitrate, %TrackBitrate{track_id: "track_id", bitrate: variant_bitrates()}}
+            {:track_bitrates,
+             %TrackBitrates{track_id: "track_id", variant_bitrates: variant_bitrates()}}
         }
         |> Peer.MediaEvent.encode()
 
@@ -419,19 +391,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
   end
 
   defp test_decode_sdp_offer(bitrates, expected_bitrates) do
-    metadata = [
-      %TrackIdToMetadata{
-        track_id: "track_id",
-        metadata: %Metadata{json: Jason.encode!(%{"abc" => "cba"})}
-      }
-    ]
+    metadata = %{"track_id" => Jason.encode!(%{"abc" => "cba"})}
 
     decoded_metadata = %{"track_id" => %{"abc" => "cba"}}
 
-    mids = [%MidToTrackId{track_id: "track_id", mid: "5"}]
-    decoded_mids = %{"5" => "track_id"}
-
-    sdp = "mock_sdp"
+    mids = %{"5" => "track_id"}
 
     raw_media_event =
       %Peer.MediaEvent{
@@ -441,9 +405,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
              sdp_offer:
                Jason.encode!(%{
                  "type" => "offer",
-                 "sdp" => sdp
+                 "sdp" => @mock_sdp
                }),
-             track_id_to_metadata: metadata,
+             track_id_to_metadata_json: metadata,
              track_id_to_bitrates: bitrates,
              mid_to_track_id: mids
            }}
@@ -457,11 +421,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         data: %{
           sdp_offer: %SessionDescription{
             type: :offer,
-            sdp: sdp
+            sdp: @mock_sdp
           },
           track_id_to_track_metadata: decoded_metadata,
           track_id_to_track_bitrates: expected_bitrates,
-          mid_to_track_id: decoded_mids
+          mid_to_track_id: mids
         }
       }
     }
@@ -485,14 +449,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
   end
 
   defp variant_bitrates() do
-    bitrates =
-      Enum.map(
-        [VARIANT_LOW: 150_000, VARIANT_MEDIUM: 500_000, VARIANT_HIGH: 1_500_000],
-        fn {variant, bitrate} ->
-          %VariantBitrate{variant: variant, bitrate: bitrate}
-        end
-      )
-
-    {:variant_bitrates, %VariantBitrates{bitrates: bitrates}}
+    Enum.map(
+      [VARIANT_LOW: 150_000, VARIANT_MEDIUM: 500_000, VARIANT_HIGH: 1_500_000],
+      fn {variant, bitrate} -> %VariantBitrate{variant: variant, bitrate: bitrate} end
+    )
   end
 end
