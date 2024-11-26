@@ -121,11 +121,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   @spec sdp_answer(SessionDescription.t(), %{String.t() => non_neg_integer()}) :: t()
   def sdp_answer(answer, mid_to_track_id) do
-    {:sdp_answer,
-     %SdpAnswer{
-       sdp_answer: answer |> SessionDescription.to_json() |> Jason.encode!(),
-       mid_to_track_id: mid_to_track_id
-     }}
+    {:sdp_answer, %SdpAnswer{sdp: answer.sdp, mid_to_track_id: mid_to_track_id}}
   end
 
   @spec offer_data(%{audio: non_neg_integer(), video: non_neg_integer()}) :: t()
@@ -254,7 +250,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
 
   defp do_decode(%SdpOffer{} = event) do
     %{
-      sdp_offer: sdp_offer,
+      sdp: sdp,
       track_id_to_metadata_json: track_id_to_metadata,
       track_id_to_bitrates: track_id_to_bitrates,
       mid_to_track_id: mid_to_track_id
@@ -263,7 +259,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     to_custom(%{
       type: :sdp_offer,
       data: %{
-        sdp_offer: sdp_offer |> Jason.decode!() |> SessionDescription.from_json(),
+        sdp_offer: %SessionDescription{sdp: sdp, type: :offer},
         track_id_to_track_metadata: parse_track_id_to_metadata(track_id_to_metadata),
         track_id_to_track_bitrates: parse_track_id_to_bitrates(track_id_to_bitrates),
         mid_to_track_id: mid_to_track_id

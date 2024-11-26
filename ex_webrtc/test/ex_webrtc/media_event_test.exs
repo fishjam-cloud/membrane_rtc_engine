@@ -89,18 +89,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     end
 
     test "is ok when event misses key" do
-      sdp = %{
-        "type" => "offer",
-        "sdp" => "mock_sdp"
-      }
-
       raw_media_event =
         %Peer.MediaEvent{
-          content:
-            {:sdp_offer,
-             %SdpOffer{
-               sdp_offer: Jason.encode!(sdp)
-             }}
+          content: {:sdp_offer, %SdpOffer{sdp: "mock_sdp"}}
         }
         |> Peer.MediaEvent.encode()
 
@@ -351,19 +342,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     end
 
     test "sdp_answer" do
-      sdp =
-        SessionDescription.to_json(%SessionDescription{
-          sdp: "sdp",
-          type: :answer
-        })
-
-      assert {:sdp_answer, %SdpAnswer{}} =
+      assert {:sdp_answer, %SdpAnswer{} = sdp_answer} =
                event =
-               MediaEvent.sdp_answer(%SessionDescription{sdp: sdp, type: :answer}, %{
+               MediaEvent.sdp_answer(%SessionDescription{sdp: "mock_sdp", type: :answer}, %{
                  "mid" => "track_id"
                })
 
       assert_action(event)
+
+      assert %{
+               sdp: "mock_sdp",
+               mid_to_track_id: %{"mid" => "track_id"}
+             } = sdp_answer
     end
 
     test "offer_data" do
@@ -434,11 +424,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
         content:
           {:sdp_offer,
            %SdpOffer{
-             sdp_offer:
-               Jason.encode!(%{
-                 "type" => "offer",
-                 "sdp" => @mock_sdp
-               }),
+             sdp: @mock_sdp,
              track_id_to_metadata_json: metadata,
              track_id_to_bitrates: bitrates,
              mid_to_track_id: mids
