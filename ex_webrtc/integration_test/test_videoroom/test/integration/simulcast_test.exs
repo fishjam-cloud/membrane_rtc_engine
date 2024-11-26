@@ -12,6 +12,8 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   @simulcast_inbound_stats "simulcast-inbound-stats"
   @simulcast_outbound_stats "simulcast-outbound-stats"
   @change_own_high "simulcast-local-high-variant"
+  @set_peer_encoding_low "simulcast-peer-low-variant"
+  @set_peer_encoding_medium "simulcast-peer-medium-variant"
 
   # max time needed to recognize variant as inactive
   @variant_inactivity_time 2_000
@@ -20,10 +22,12 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   # time needed to request and receive a variant
   @variant_request_time 2_000
 
+  # TODO: right now noop_variant_selector is used so probing is not used
+  @probe_times %{low_to_medium: 30_000, low_to_high: 45_000, nil_to_high: 50_000}
+
   @stats_number 15
   @stats_interval 1_000
 
-  @browser_options %{count: 1, headless: true}
   @max_test_duration 240_000
 
   @tag timeout: @max_test_duration
@@ -122,6 +126,85 @@ defmodule TestVideoroom.Integration.SimulcastTest do
       after_warmup: "h",
       after_disabling_variant_high: "m",
       after_enabling_variant_high: "h"
+    }
+
+    for {actions, browser_id} <- actions_with_id, into: [] do
+      specific_mustang = %{
+        mustang_options
+        | id: browser_id,
+          actions: actions
+      }
+
+      Task.async(fn ->
+        Stampede.start({TestMustang, specific_mustang}, @browser_options)
+      end)
+    end
+    |> Task.await_many(:infinity)
+
+    receive do
+      {:stats, stats} ->
+        for tag <- Map.keys(tag_to_expected_rid),
+            browser_id_to_stats_samples = Map.get(stats, tag) do
+          rid = tag_to_expected_rid[tag]
+
+          sender_stats_samples = browser_id_to_stats_samples[0]
+          receiver_stats_samples = browser_id_to_stats_samples[1]
+
+          assert_sender_receiver_stats(
+            tag,
+            rid,
+            sender_stats_samples,
+            receiver_stats_samples
+          )
+        end
+    end
+  end
+
+  @tag timeout: @max_test_duration
+  test "changing encoding to low and then returning to medium works correctly " do
+    browsers_number = 2
+
+    pid = self()
+
+    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+
+    mustang_options = %{
+      target_url: @room_url,
+      warmup_time: @warmup_time,
+      start_button: @start_with_simulcast,
+      receiver: receiver,
+      actions: [],
+      simulcast_inbound_stats_button: @simulcast_inbound_stats,
+      simulcast_outbound_stats_button: @simulcast_outbound_stats,
+      id: -1
+    }
+
+    receiver_actions = [
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval, tag: :after_warmup},
+      {:click, @set_peer_encoding_low, @variant_request_time},
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_low_en},
+      {:click, @set_peer_encoding_medium, @probe_times[:low_to_medium] + @variant_request_time},
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_medium_en}
+    ]
+
+    sender_actions = [
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval, tag: :after_warmup},
+      {:wait, @variant_request_time},
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_low_en},
+      {:wait, @probe_times[:low_to_medium] + @variant_request_time},
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_medium_en}
+    ]
+
+    actions_with_id = [sender_actions, receiver_actions] |> Enum.with_index()
+
+    tag_to_expected_rid = %{
+      after_warmup: "m",
+      after_switching_to_low_en: "l",
+      after_switching_to_medium_en: "m"
     }
 
     for {actions, browser_id} <- actions_with_id, into: [] do

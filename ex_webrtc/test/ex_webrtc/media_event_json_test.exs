@@ -105,6 +105,50 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
     end
   end
 
+  describe "deserializing setTargetTrackVariant media event" do
+    test "creates proper map when event is valid" do
+      raw_media_event =
+        %{
+          "type" => "custom",
+          "data" => %{
+            "type" => "setTargetTrackVariant",
+            "data" => %{
+              "trackId" => "track_id",
+              "variant" => "l"
+            }
+          }
+        }
+        |> Jason.encode!()
+
+      expected_media_event = %{
+        type: :custom,
+        data: %{
+          type: :set_target_track_variant,
+          data: %{
+            track_id: "track_id",
+            variant: :low
+          }
+        }
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "returns error when event misses key" do
+      raw_media_event =
+        %{
+          "type" => "setTargetTrackVariant",
+          "data" => %{
+            "trackId" => "track_id",
+            "variant" => "l"
+          }
+        }
+        |> Jason.encode!()
+
+      assert {:error, :invalid_media_event} == MediaEvent.decode(raw_media_event)
+    end
+  end
+
   describe "deserializing trackVariantBitrates media event" do
     test "creates proper map when event is valid" do
       track_id = "track_id"

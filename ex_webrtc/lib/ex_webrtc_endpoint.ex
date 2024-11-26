@@ -371,6 +371,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {[notify_parent: {:enable_track_variant, track_id, variant}], state}
   end
 
+  defp handle_media_event(
+         :set_target_track_variant,
+         %{track_id: track_id, variant: variant},
+         _ctx,
+         state
+       ) do
+    msg = {:set_target_variant, variant}
+    {[notify_child: {{:track_receiver, track_id}, msg}], state}
+  end
+
   defp handle_media_event(:update_endpoint_metadata, %{metadata: metadata}, _ctx, state) do
     {[notify_parent: {:update_endpoint_metadata, metadata}], state}
   end

@@ -344,11 +344,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
       %{
         "type" => "setTargetTrackVariant",
         "data" => %{
-          "trackId" => tid,
+          "trackId" => track_id,
           "variant" => variant
         }
       } ->
-        {:ok, %{type: :set_target_track_variant, data: %{track_id: tid, variant: variant}}}
+        {:ok,
+         %{
+           type: :set_target_track_variant,
+           data: %{track_id: track_id, variant: rid_to_track_variant(variant)}
+         }}
 
       _other ->
         {:error, :invalid_media_event}
@@ -360,6 +364,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
   defp as_custom(msg) do
     %{type: "custom", data: msg}
   end
+
+  defp rid_to_track_variant(rid) when rid in ["h", nil], do: :high
+  defp rid_to_track_variant("m"), do: :medium
+  defp rid_to_track_variant("l"), do: :low
 
   defp to_track_variants(bitrate) when is_map(bitrate) do
     Map.new(bitrate, fn {rid, bitrate} -> {Endpoint.ExWebRTC.to_track_variant(rid), bitrate} end)
