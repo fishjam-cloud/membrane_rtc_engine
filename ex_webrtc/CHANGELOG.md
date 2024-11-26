@@ -12,3 +12,4 @@
 * Send ICE servers in `Connected` event [#18](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/18)
 * Allow clients for sending simulcast tracks [#15](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/15)
 * Update sdp offer/answer events [#21](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/21)
+* Add manual variant switching [#20](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/20)
