@@ -345,13 +345,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJson do
         "type" => "setTargetTrackVariant",
         "data" => %{
           "trackId" => track_id,
-          "variant" => variant
+          "variant" => rid
         }
       } ->
         {:ok,
          %{
            type: :set_target_track_variant,
-           data: %{track_id: track_id, variant: rid_to_track_variant(variant)}
+           data: %{track_id: track_id, variant: rid_to_track_variant(rid)}
          }}
 
       _other ->

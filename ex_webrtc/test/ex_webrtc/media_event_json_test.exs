@@ -137,10 +137,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventJsonTest do
     test "returns error when event misses key" do
       raw_media_event =
         %{
-          "type" => "setTargetTrackVariant",
+          "type" => "custom",
           "data" => %{
-            "trackId" => "track_id",
-            "variant" => "l"
+            "type" => "setTargetTrackVariant",
+            "data" => %{
+              "trackId" => "track_id"
+            }
           }
         }
         |> Jason.encode!()

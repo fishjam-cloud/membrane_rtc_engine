@@ -22,8 +22,8 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   # time needed to request and receive a variant
   @variant_request_time 2_000
 
-  # TODO: right now noop_variant_selector is used so probing is not used
-  @probe_times %{low_to_medium: 30_000, low_to_high: 45_000, nil_to_high: 50_000}
+  # time needed to request and receive a keyframe
+  @keyframe_request_time 5_000
 
   @stats_number 15
   @stats_interval 1_000
@@ -185,7 +185,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
       {:click, @set_peer_encoding_low, @variant_request_time},
       {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
        tag: :after_switching_to_low_en},
-      {:click, @set_peer_encoding_medium, @probe_times[:low_to_medium] + @variant_request_time},
+      {:click, @set_peer_encoding_medium, @keyframe_request_time + @variant_request_time},
       {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
        tag: :after_switching_to_medium_en}
     ]
@@ -195,7 +195,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
       {:wait, @variant_request_time},
       {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
        tag: :after_switching_to_low_en},
-      {:wait, @probe_times[:low_to_medium] + @variant_request_time},
+      {:wait, @keyframe_request_time + @variant_request_time},
       {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
        tag: :after_switching_to_medium_en}
     ]
