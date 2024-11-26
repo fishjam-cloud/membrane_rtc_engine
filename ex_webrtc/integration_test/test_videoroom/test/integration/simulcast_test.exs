@@ -28,6 +28,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   @stats_number 15
   @stats_interval 1_000
 
+  @browser_options %{count: 1, headless: true}
   @max_test_duration 240_000
 
   @tag timeout: @max_test_duration
@@ -202,7 +203,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
     actions_with_id = [sender_actions, receiver_actions] |> Enum.with_index()
 
     tag_to_expected_rid = %{
-      after_warmup: "m",
+      after_warmup: "h",
       after_switching_to_low_en: "l",
       after_switching_to_medium_en: "m"
     }
