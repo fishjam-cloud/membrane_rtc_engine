@@ -13,8 +13,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     DisableTrackVariant,
     EnableTrackVariant,
     RenegotiateTracks,
-    SetTargetTrackVariant,
     SdpOffer,
+    SetTargetTrackVariant,
     TrackBitrates,
     UpdateEndpointMetadata,
     VariantBitrate

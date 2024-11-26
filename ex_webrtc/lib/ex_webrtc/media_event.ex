@@ -14,8 +14,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     Disconnect,
     EnableTrackVariant,
     RenegotiateTracks,
-    SetTargetTrackVariant,
     SdpOffer,
+    SetTargetTrackVariant,
     TrackBitrates,
     UpdateEndpointMetadata,
     UpdateTrackMetadata
