@@ -14,6 +14,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
     EnableTrackVariant,
     RenegotiateTracks,
     SdpOffer,
+    SetTargetTrackVariant,
     TrackBitrates,
     UpdateEndpointMetadata,
     VariantBitrate
@@ -213,6 +214,26 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEventTest do
       expected_media_event = %{
         type: :disable_track_variant,
         data: %{track_id: "track_id", variant: :medium}
+      }
+
+      assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)
+    end
+
+    test "set_target_track_variant" do
+      raw_media_event =
+        %Peer.MediaEvent{
+          content:
+            {:set_target_track_variant,
+             %SetTargetTrackVariant{track_id: "track_id", variant: :VARIANT_MEDIUM}}
+        }
+        |> Peer.MediaEvent.encode()
+
+      expected_media_event = %{
+        type: :set_target_track_variant,
+        data: %{
+          track_id: "track_id",
+          variant: :medium
+        }
       }
 
       assert {:ok, expected_media_event} == MediaEvent.decode(raw_media_event)

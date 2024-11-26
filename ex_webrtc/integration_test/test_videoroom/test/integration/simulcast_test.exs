@@ -12,6 +12,8 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   @simulcast_inbound_stats "simulcast-inbound-stats"
   @simulcast_outbound_stats "simulcast-outbound-stats"
   @change_own_high "simulcast-local-high-variant"
+  @set_peer_encoding_low "simulcast-peer-low-variant"
+  @set_peer_encoding_medium "simulcast-peer-medium-variant"
 
   # max time needed to recognize variant as inactive
   @variant_inactivity_time 2_000
@@ -19,6 +21,9 @@ defmodule TestVideoroom.Integration.SimulcastTest do
   @variant_activity_time 11_000
   # time needed to request and receive a variant
   @variant_request_time 2_000
+
+  # time needed to request and receive a keyframe
+  @keyframe_request_time 5_000
 
   @stats_number 15
   @stats_interval 1_000
@@ -122,6 +127,85 @@ defmodule TestVideoroom.Integration.SimulcastTest do
       after_warmup: "h",
       after_disabling_variant_high: "m",
       after_enabling_variant_high: "h"
+    }
+
+    for {actions, browser_id} <- actions_with_id, into: [] do
+      specific_mustang = %{
+        mustang_options
+        | id: browser_id,
+          actions: actions
+      }
+
+      Task.async(fn ->
+        Stampede.start({TestMustang, specific_mustang}, @browser_options)
+      end)
+    end
+    |> Task.await_many(:infinity)
+
+    receive do
+      {:stats, stats} ->
+        for tag <- Map.keys(tag_to_expected_rid),
+            browser_id_to_stats_samples = Map.get(stats, tag) do
+          rid = tag_to_expected_rid[tag]
+
+          sender_stats_samples = browser_id_to_stats_samples[0]
+          receiver_stats_samples = browser_id_to_stats_samples[1]
+
+          assert_sender_receiver_stats(
+            tag,
+            rid,
+            sender_stats_samples,
+            receiver_stats_samples
+          )
+        end
+    end
+  end
+
+  @tag timeout: @max_test_duration
+  test "changing encoding to low and then returning to medium works correctly " do
+    browsers_number = 2
+
+    pid = self()
+
+    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+
+    mustang_options = %{
+      target_url: @room_url,
+      warmup_time: @warmup_time,
+      start_button: @start_with_simulcast,
+      receiver: receiver,
+      actions: [],
+      simulcast_inbound_stats_button: @simulcast_inbound_stats,
+      simulcast_outbound_stats_button: @simulcast_outbound_stats,
+      id: -1
+    }
+
+    receiver_actions = [
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval, tag: :after_warmup},
+      {:click, @set_peer_encoding_low, @variant_request_time},
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_low_en},
+      {:click, @set_peer_encoding_medium, @keyframe_request_time + @variant_request_time},
+      {:get_stats, @simulcast_inbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_medium_en}
+    ]
+
+    sender_actions = [
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval, tag: :after_warmup},
+      {:wait, @variant_request_time},
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_low_en},
+      {:wait, @keyframe_request_time + @variant_request_time},
+      {:get_stats, @simulcast_outbound_stats, @stats_number, @stats_interval,
+       tag: :after_switching_to_medium_en}
+    ]
+
+    actions_with_id = [sender_actions, receiver_actions] |> Enum.with_index()
+
+    tag_to_expected_rid = %{
+      after_warmup: "h",
+      after_switching_to_low_en: "l",
+      after_switching_to_medium_en: "m"
     }
 
     for {actions, browser_id} <- actions_with_id, into: [] do
