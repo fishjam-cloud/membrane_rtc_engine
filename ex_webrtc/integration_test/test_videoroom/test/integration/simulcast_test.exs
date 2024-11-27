@@ -247,7 +247,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
       receiver_stats["height"] == sender_variant_stats["height"] and
         receiver_stats["width"] == sender_variant_stats["width"]
 
-    correct_dimensions? or sender_variant_stats["qualityLimitationReason"] != "none"
+    correct_dimensions?
   end
 
   defp assert_sender_receiver_stats(
