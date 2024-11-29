@@ -148,7 +148,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
         |> update_in([:rtp, :sequence_number], &calculate_seq_num(&1, rtp_munger))
         |> update_in([:rtp, :timestamp], &calculate_timestamp(&1, rtp_munger))
 
-      %Membrane.Buffer{buffer | metadata: metadata}
+      # RTP buffers should only have rtp timestamp in one place
+      %Membrane.Buffer{buffer | pts: nil, metadata: metadata}
     end
 
     seq_num_diff = buffer.metadata.rtp.sequence_number - rtp_munger.highest_incoming_seq_num

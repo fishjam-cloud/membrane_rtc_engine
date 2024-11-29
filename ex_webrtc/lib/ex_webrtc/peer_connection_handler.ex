@@ -122,7 +122,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   def handle_buffer(Pad.ref(:input, track_id), buffer, _ctx, state)
       when is_map_key(state.outbound_tracks, track_id) do
     %Buffer{
-      pts: timestamp,
       payload: payload,
       metadata: %{rtp: rtp}
     } = buffer
@@ -134,7 +133,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         payload,
         payload_type: rtp.payload_type,
         sequence_number: rtp.sequence_number,
-        timestamp: timestamp,
+        timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
         csrc: rtp.csrc,
         marker: rtp.marker,
