@@ -13,4 +13,5 @@
 * Allow clients for sending simulcast tracks [#15](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/15)
 * Update sdp offer/answer events [#21](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/21)
 * Add manual variant switching [#20](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/20)
+* Fix simulcast tests [#22](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/22)
 * Fix layer switching [#24](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/24)
