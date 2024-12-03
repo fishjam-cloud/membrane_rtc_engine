@@ -56,6 +56,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
               event_serialization: [
                 spec: :json | :protobuf,
                 description: "Serialization method for encoding and decoding Media Events"
+              ],
+              ice_servers: [
+                spec: [ExWebRTC.PeerConnection.Configuration.ice_server()],
+                description: "List of servers that may be used by ICE agent"
               ]
 
   def_input_pad :input,
@@ -90,11 +94,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @track_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :track, :metadata, :event]
   @endpoint_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :metadata, :event]
-
-  @default_ice_servers [
-    %{urls: "stun:stun.l.google.com:19302"},
-    %{urls: "stun:stun.l.google.com:5349"}
-  ]
 
   @impl true
   def handle_init(ctx, opts) do
@@ -131,7 +130,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         endpoint_id: endpoint_id,
         ice_port_range: state.ice_port_range,
         video_codecs: [opts.video_codec],
-        ice_servers: @default_ice_servers
+        ice_servers: opts.ice_servers
       })
     ]
 
@@ -197,7 +196,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     action =
       endpoint_id
-      |> serializer.connected(endpoints, @default_ice_servers)
+      |> serializer.connected(endpoints, state.ice_servers)
       |> serializer.to_action()
 
     {action, state}
