@@ -33,11 +33,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: pid(),
                 description: "Pid of parent Engine"
               ],
-              ice_port_range: [
-                spec: Enumerable.t(non_neg_integer()),
-                description: "Range of ports that ICE will use for gathering host candidates.",
-                default: nil
-              ],
               video_codec: [
                 spec: video_codec,
                 description: "Allowed video codec",
@@ -56,10 +51,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
               event_serialization: [
                 spec: :json | :protobuf,
                 description: "Serialization method for encoding and decoding Media Events"
-              ],
-              ice_servers: [
-                spec: [ExWebRTC.PeerConnection.Configuration.ice_server()],
-                description: "List of servers that may be used by ICE agent"
               ]
 
   def_input_pad :input,
@@ -128,9 +119,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
-        ice_port_range: state.ice_port_range,
-        video_codecs: [opts.video_codec],
-        ice_servers: opts.ice_servers
+        video_codecs: [opts.video_codec]
       })
     ]
 
@@ -196,7 +185,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     action =
       endpoint_id
-      |> serializer.connected(endpoints, state.ice_servers)
+      |> serializer.connected(
+        endpoints,
+        Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers, [])
+      )
       |> serializer.to_action()
 
     {action, state}

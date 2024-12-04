@@ -224,7 +224,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     [
       child(:handler, %PeerConnectionHandler{
         endpoint_id: @endpoint_id,
-        ice_port_range: 50_000..50_050,
         video_codecs: Keyword.get(options, :video_codecs)
       })
     ]
