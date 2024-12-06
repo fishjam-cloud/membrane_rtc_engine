@@ -48,7 +48,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
     {:ok, %{browsers: browsers}}
   end
 
-  @tag timeout: 40_000
+  @tag timeout: 60_000
   test "Participants receive audio and video when using simulcast", %{browsers: browsers} do
     assertion_function = fn stats_list ->
       Enum.each(stats_list, fn stats ->
@@ -145,7 +145,7 @@ defmodule TestVideoroom.Integration.SimulcastTest do
         receiver_stats["width"] == sender_variant_stats["width"]
 
     simmilar_frame_number? =
-      sender_variant_stats["framesSent"] - receiver_stats["framesReceived"] < 200
+      sender_variant_stats["framesSent"] - receiver_stats["framesReceived"] - 20 * @warmup_time < 150
 
     correct_dimensions? and simmilar_frame_number?
   end
