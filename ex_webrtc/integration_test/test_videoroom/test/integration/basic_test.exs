@@ -3,6 +3,8 @@ defmodule TestVideoroom.Integration.BasicTest do
 
   import TestVideoroom.Integration.Utils
 
+  alias TestVideoroom.MetricsValidator
+
   @room_url "http://localhost:4001"
 
   # in miliseconds
@@ -175,6 +177,48 @@ defmodule TestVideoroom.Integration.BasicTest do
     end
   end
 
+  @tag timeout: 30_000
+  test "telemetry events are published" do
+    assert is_number(Application.fetch_env!(:membrane_rtc_engine_ex_webrtc, :get_stats_interval))
+    browsers_number = 2
+
+    report_count = 15
+
+    pid = self()
+    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+
+    :ok = Process.send(TestVideoroom.MetricsScraper, {:subscribe, pid}, [])
+
+    mustang_options = %{
+      target_url: @room_url,
+      warmup_time: @warmup,
+      start_button: @start_with_all,
+      actions: [wait: report_count * 1_000],
+      receiver: receiver,
+      id: -1
+    }
+
+    for browser <- 0..(browsers_number - 1), into: [] do
+      mustang_options = %{mustang_options | id: browser}
+
+      Task.async(fn ->
+        Stampede.start({TestMustang, mustang_options}, @browser_options)
+      end)
+    end
+    |> Task.await_many(:infinity)
+
+    all_reports = receive_reports()
+    valid_reports = Enum.drop_while(all_reports, &(MetricsValidator.validate_report(&1) != :ok))
+
+    results = Enum.map(all_reports, &MetricsValidator.validate_report(&1))
+    error_msg = "Too many reports failed. Results: #{inspect(results)}"
+    assert length(valid_reports) >= report_count - 3, error_msg
+
+    Enum.each(valid_reports, fn report ->
+      assert :ok == MetricsValidator.validate_report(report)
+    end)
+  end
+
   defp count_playing_streams(streams, kind) do
     streams
     |> Enum.filter(fn
@@ -182,5 +226,14 @@ defmodule TestVideoroom.Integration.BasicTest do
       _stream -> false
     end)
     |> Enum.count()
+  end
+
+  defp receive_reports(reports \\ []) do
+    receive do
+      {:metrics, report} ->
+        receive_reports([report | reports])
+    after
+      0 -> Enum.reverse(reports)
+    end
   end
 end

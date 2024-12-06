@@ -11,17 +11,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
 
   require Membrane.TelemetryMetrics
 
-  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
+  alias Membrane.RTC.Engine.Endpoint
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.{PeerConnectionHandler, TrackReceiver}
   alias Membrane.RTC.Engine.Track
   alias Membrane.RTP.PayloadFormatResolver
 
-  @rtp_packet_arrival_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :packet, :arrival]
-  @variant_switched_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :variant, :switched]
-  @paddings_sent_event [Membrane.RTC.Engine.Endpoint.ExWebRTC, :RTP, :paddings, :sent]
+  @rtp_packet_arrival_event [Endpoint.ExWebRTC, :RTP, :packet, :arrival]
+  @variant_switched_event [Endpoint.ExWebRTC, :RTP, :variant, :switched]
+  @paddings_sent_event [Endpoint.ExWebRTC, :RTP, :paddings, :sent]
 
   @spec metrics() :: [Telemetry.Metrics.t()]
   def metrics() do
-    endpoint_metrics()
+    endpoint_metrics() ++ PeerConnectionHandler.Metrics.metrics()
   end
 
   defp endpoint_metrics() do

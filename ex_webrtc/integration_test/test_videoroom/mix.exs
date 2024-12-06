@@ -31,13 +31,12 @@ defmodule TestVideoroom.MixProject do
       {:phoenix_html, "~> 3.0"},
       {:phoenix_live_view, "~> 0.17"},
       {:esbuild, "~> 0.4", runtime: Mix.env() == :dev},
-      {:telemetry, "~> 1.0", override: true},
+      {:telemetry, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:plug_cowboy, "~> 2.5"},
       {:cowlib, "~> 2.11", override: true},
-      {:membrane_rtc_engine, path: rtc_engine_path(), override: true},
+      {:membrane_rtc_engine, path: rtc_engine_path()},
       {:membrane_rtc_engine_ex_webrtc, path: Path.join(rtc_engine_path(), "../ex_webrtc/")},
-      {:ex_sdp, "~> 0.17.0", override: true},
       {:stampede, github: "fishjam-dev/stampede-elixir"}
     ]
   end
