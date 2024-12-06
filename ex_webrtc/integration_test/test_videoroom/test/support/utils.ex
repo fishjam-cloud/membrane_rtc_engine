@@ -1,28 +1,49 @@
-defmodule TestVideoroom.Integration.Utils do
+defmodule TestVideoroom.Utils do
   @moduledoc false
 
-  def receive_stats(mustangs_number, pid, acc \\ %{}) do
-    if mustangs_number > 0 do
-      receive do
-        {_browser_id, :end} ->
-          receive_stats(mustangs_number - 1, pid, acc)
+  import ExUnit.Assertions
 
-        {browser_id, tag, data} ->
-          acc
-          |> then(fn acc ->
-            default_map = %{browser_id => [data]}
+  alias TestVideoroom.Browser
 
-            Map.update(
-              acc,
-              tag,
-              default_map,
-              fn tag_map -> Map.update(tag_map, browser_id, [data], &(&1 ++ [data])) end
-            )
-          end)
-          |> then(&receive_stats(mustangs_number, pid, &1))
+  def start_browser(brower_options, id) do
+    {:ok, pid} = Browser.start_link(%{brower_options | id: id})
+    pid
+  end
+
+  def assert_stats(_browsers, _buttons, 0, _fun), do: :ok
+
+  def assert_stats(browsers, buttons, count, assertion_function) do
+    browsers
+    |> browsers_with_buttons(buttons)
+    |> Enum.each(fn {browser, button} ->
+      Browser.fetch_stats_async(browser, button)
+    end)
+
+    msgs = Enum.map(0..(length(browsers) - 1), &Browser.receive_stats(&1))
+
+    assertion_function.(msgs)
+    assert_stats(browsers, buttons, count - 1, assertion_function)
+  end
+
+  def count_playing_streams(streams, kind) do
+    streams
+    |> Enum.filter(fn
+      %{"kind" => ^kind, "playing" => playing} -> playing
+      _stream -> false
+    end)
+    |> Enum.count()
+  end
+
+  defp browsers_with_buttons(browsers, buttons) do
+    buttons =
+      if is_binary(buttons) do
+        List.duplicate(buttons, length(browsers))
+      else
+        assert is_list(buttons)
+        assert length(buttons) == length(browsers)
+        buttons
       end
-    else
-      send(pid, {:stats, acc})
-    end
+
+    Enum.zip(browsers, buttons)
   end
 end

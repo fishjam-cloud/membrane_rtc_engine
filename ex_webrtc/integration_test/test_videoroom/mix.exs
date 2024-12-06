@@ -37,7 +37,7 @@ defmodule TestVideoroom.MixProject do
       {:cowlib, "~> 2.11", override: true},
       {:membrane_rtc_engine, path: rtc_engine_path()},
       {:membrane_rtc_engine_ex_webrtc, path: Path.join(rtc_engine_path(), "../ex_webrtc/")},
-      {:stampede, github: "fishjam-dev/stampede-elixir"}
+      {:playwright, github: "fishjam-dev/playwright-elixir"}
     ]
   end
 

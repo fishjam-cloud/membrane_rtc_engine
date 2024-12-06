@@ -105,6 +105,7 @@ export async function inboundSimulcastStreamStats(room: Room) {
     )!;
 
     return {
+      endpointId: peer.id,
       height: inboundVideoStats.frameHeight,
       width: inboundVideoStats.frameWidth,
       framesPerSecond: inboundVideoStats.framesPerSecond || 0,
@@ -120,7 +121,7 @@ export async function outboundSimulcastStreamStats(room: Room) {
   const peerConnection = room.webrtc.connectionManager?.getConnection()!;
   const stats = await peerConnection.getStats();
 
-  let data = { peerId: room.endpointId!, l: {}, m: {}, h: {} };
+  let data = { l: {}, m: {}, h: {} };
   for (let [_key, report] of stats) {
     if (report.type == "outbound-rtp") {
       const rid: Encoding = report.rid;
