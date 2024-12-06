@@ -14,18 +14,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
                 spec: String.t(),
                 description: "ID of the parent endpoint"
               ],
-              ice_port_range: [
-                spec: Enumerable.t(non_neg_integer()),
-                description: "Range of ports that ICE will use for gathering host candidates."
-              ],
               video_codecs: [
                 spec: [EndpointExWebRTC.video_codec()] | nil,
                 description: "Allowed video codecs"
-              ],
-              ice_servers: [
-                spec: [PeerConnection.Configuration.ice_server()],
-                description: "List of servers that may be used by ICE agent",
-                default: []
               ]
 
   def_input_pad :input,
@@ -78,11 +69,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     pc_options =
       [
-        ice_port_range: opts.ice_port_range,
-        ice_servers: opts.ice_servers,
+        ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
+        ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
         video_codecs: video_codecs,
         controlling_process: self()
       ]
+      |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
     peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
     pc_gen_server_options = [name: peer_connection]

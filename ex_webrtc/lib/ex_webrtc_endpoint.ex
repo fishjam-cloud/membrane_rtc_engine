@@ -33,11 +33,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: pid(),
                 description: "Pid of parent Engine"
               ],
-              ice_port_range: [
-                spec: Enumerable.t(non_neg_integer()),
-                description: "Range of ports that ICE will use for gathering host candidates.",
-                default: nil
-              ],
               video_codec: [
                 spec: video_codec,
                 description: "Allowed video codec",
@@ -91,11 +86,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @track_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :track, :metadata, :event]
   @endpoint_metadata_event [Membrane.RTC.Engine.Endpoint.WebRTC, :endpoint, :metadata, :event]
 
-  @default_ice_servers [
-    %{urls: "stun:stun.l.google.com:19302"},
-    %{urls: "stun:stun.l.google.com:5349"}
-  ]
-
   @impl true
   def handle_init(ctx, opts) do
     {_, endpoint_id} = ctx.name
@@ -129,9 +119,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
-        ice_port_range: state.ice_port_range,
-        video_codecs: [opts.video_codec],
-        ice_servers: @default_ice_servers
+        video_codecs: [opts.video_codec]
       })
     ]
 
@@ -197,7 +185,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     action =
       endpoint_id
-      |> serializer.connected(endpoints, @default_ice_servers)
+      |> serializer.connected(
+        endpoints,
+        Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers, [])
+      )
       |> serializer.to_action()
 
     {action, state}
