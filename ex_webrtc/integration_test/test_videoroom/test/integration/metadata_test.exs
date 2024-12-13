@@ -1,12 +1,9 @@
 defmodule TestVideoroom.Integration.MetadataTest do
   use TestVideoroomWeb.ConnCase, async: false
 
-  import TestVideoroom.Integration.Utils
+  import TestVideoroom.Utils
 
-  @room_url "http://localhost:4001"
-
-  # in miliseconds
-  @warmup_time 10_000
+  alias TestVideoroom.Browser
 
   @start_all "start-all"
   @start_all_update "start-all-update"
@@ -14,129 +11,62 @@ defmodule TestVideoroom.Integration.MetadataTest do
   @update_track "metadata-update-track"
   @metadata_peer "metadata-peer"
   @metadata_track "metadata-track"
-  @browser_options %{count: 1, headless: true}
 
-  @tag timeout: 120_000
-  test "updating peer metadata works and updating track metadata works correctly" do
-    browsers_number = 2
+  @browser_options %{target_url: "http://localhost:4001", receiver: nil, id: -1, headless: true}
 
-    pid = self()
+  @warmup_time 8_000
 
-    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+  setup do
+    browser_options = %{@browser_options | receiver: self()}
+    browsers = Enum.map(0..1, &start_browser(browser_options, &1))
 
-    mustang_options = %{
-      target_url: @room_url,
-      warmup_time: @warmup_time,
-      start_button: @start_all,
-      receiver: receiver,
-      actions: [],
-      id: -1
-    }
+    playwrights = Enum.map(browsers, &Browser.get_playwright(&1))
 
-    actions1 = [
-      {:click, @update_peer, 4_000},
-      {:click, @update_track, 4_000}
-    ]
-
-    actions2 = [
-      {:wait, 3_000},
-      {:get_stats, @metadata_peer, 1, 1_000, tag: :peer_metadata},
-      {:wait, 3_000},
-      {:get_stats, @metadata_track, 1, 1_000, tag: :track_metadata}
-    ]
-
-    stage_to_text = %{
-      peer_metadata: %{"peer" => "newMeta"},
-      track_metadata: "newTrackMeta"
-    }
-
-    actions_with_id = [actions1, actions2] |> Enum.with_index()
-
-    for {actions, browser_id} <- actions_with_id, into: [] do
-      specific_mustang = %{mustang_options | id: browser_id, actions: actions}
-
-      Task.async(fn ->
-        Stampede.start({TestMustang, specific_mustang}, @browser_options)
+    on_exit(fn ->
+      playwrights
+      |> Enum.each(fn playwright ->
+        Playwright.Browser.close(playwright)
       end)
-    end
-    |> Task.await_many(:infinity)
+    end)
 
-    receive do
-      {:stats, stats} ->
-        for {stage, browsers} <- stats do
-          text = stage_to_text[stage]
-
-          Enum.all?(browsers, fn
-            {1, stats} ->
-              assert(
-                Enum.any?(stats, &(&1 == text)),
-                "Failed on stage: #{stage} should be metadata: #{inspect(text)}, but stats are #{inspect(stats)}"
-              )
-
-            {_other, _stats} ->
-              true
-          end)
-        end
-    end
+    {:ok, %{browsers: browsers}}
   end
 
-  @tag timeout: 120_000
-  test "updating track metadata immediately after adding track works" do
-    browsers_number = 2
+  @tag timeout: 60_000
+  test "updating peer metadata works and updating track metadata works correctly", %{
+    browsers: browsers
+  } do
+    Enum.each(browsers, &Browser.join(&1, @start_all))
 
-    pid = self()
+    [sender, receiver] = browsers
 
-    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+    Process.sleep(@warmup_time)
 
-    mustang_options = %{
-      target_url: @room_url,
-      start_button: @start_all_update,
-      receiver: receiver,
-      actions: [],
-      warmup_time: @warmup_time,
-      id: -1
-    }
+    Browser.click(sender, @update_peer)
+    Process.sleep(2_000)
 
-    actions1 = [
-      {:wait, 5_000}
-    ]
+    stats = Browser.get_stats(receiver, @metadata_peer)
+    assert %{"peer" => "newMeta"} = stats
 
-    actions2 = [
-      {:wait, 3_000},
-      {:get_stats, @metadata_track, 1, 1_000, tag: :track_metadata}
-    ]
+    Browser.click(sender, @update_track)
+    Process.sleep(2_000)
 
-    stage_to_text = %{
-      track_metadata: "updatedMetadataOnStart"
-    }
+    stats = Browser.get_stats(receiver, @metadata_track)
+    assert "newTrackMeta" = stats
+  end
 
-    actions_with_id = [actions1, actions2] |> Enum.with_index()
+  @tag timeout: 30_000
+  test "updating track metadata immediately after adding track works", %{browsers: browsers} do
+    browsers_with_start_button = Enum.zip(browsers, [@start_all_update, @start_all])
+    [_sender, receiver] = browsers
 
-    for {actions, browser_id} <- actions_with_id, into: [] do
-      specific_mustang = %{mustang_options | id: browser_id, actions: actions}
+    Enum.each(browsers_with_start_button, fn {browser, button} ->
+      Browser.join(browser, button)
+    end)
 
-      Task.async(fn ->
-        Stampede.start({TestMustang, specific_mustang}, @browser_options)
-      end)
-    end
-    |> Task.await_many(:infinity)
+    Process.sleep(@warmup_time)
 
-    receive do
-      {:stats, stats} ->
-        for {stage, browsers} <- stats do
-          text = stage_to_text[stage]
-
-          Enum.all?(browsers, fn
-            {1, stats} ->
-              assert(
-                Enum.any?(stats, &(&1 == text)),
-                "Failed on stage: #{stage} should be metadata: #{text}, but stats are #{inspect(stats)}"
-              )
-
-            {_other, _stats} ->
-              true
-          end)
-        end
-    end
+    stats = Browser.get_stats(receiver, @metadata_track)
+    assert "updatedMetadataOnStart" = stats
   end
 end
