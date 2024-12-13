@@ -145,7 +145,8 @@ defmodule TestVideoroom.Integration.SimulcastTest do
         receiver_stats["width"] == sender_variant_stats["width"]
 
     simmilar_frame_number? =
-      sender_variant_stats["framesSent"] - receiver_stats["framesReceived"] - 20 * @warmup_time < 150
+      sender_variant_stats["framesSent"] - receiver_stats["framesReceived"] - 20 * @warmup_time <
+        150
 
     correct_dimensions? and simmilar_frame_number?
   end
