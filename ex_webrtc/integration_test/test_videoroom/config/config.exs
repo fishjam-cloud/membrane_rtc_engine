@@ -35,6 +35,11 @@ config :logger, :console,
 
 config :logger, level: :info
 
+config :logger,
+  compile_time_purge_matching: [
+    [level_lower_than: :info]
+  ]
+
 config :phoenix, :json_library, Jason
 
 # The CI image is too old for the precompiled deps to work
