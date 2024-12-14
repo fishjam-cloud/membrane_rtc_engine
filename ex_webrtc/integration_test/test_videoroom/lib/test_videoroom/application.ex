@@ -7,7 +7,13 @@ defmodule TestVideoroom.Application do
   def start(_type, _args) do
     children = [
       {Phoenix.PubSub, name: TestVideoroom.PubSub},
-      TestVideoroomWeb.Endpoint
+      TestVideoroomWeb.Endpoint,
+      {Membrane.TelemetryMetrics.Reporter,
+       [
+         metrics: Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics.metrics(),
+         name: ExWebrtcMetricsReporter
+       ]},
+      TestVideoroom.MetricsScraper
     ]
 
     opts = [strategy: :one_for_one, name: TestVideoroom.Supervisor]

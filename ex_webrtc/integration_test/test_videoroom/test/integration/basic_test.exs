@@ -1,186 +1,153 @@
 defmodule TestVideoroom.Integration.BasicTest do
   use TestVideoroomWeb.ConnCase, async: false
 
-  import TestVideoroom.Integration.Utils
+  import TestVideoroom.Utils
 
-  @room_url "http://localhost:4001"
-
-  # in miliseconds
-  @warmup 6_000
+  alias TestVideoroom.MetricsValidator
+  alias TestVideoroom.Browser
 
   @start_with_all "start-all"
   @start_with_mic "start-mic-only"
   @start_with_camera "start-camera-only"
   @start_with_nothing "start-none"
   @stats "stats"
-  @browser_options %{count: 1, headless: true}
-  @actions [
-    {:get_stats, @stats, 1, 0, tag: :after_warmup},
-    {:wait, 60_000},
-    {:get_stats, @stats, 1, 0, tag: :before_leave}
-  ]
 
-  @tag timeout: 180_000
-  test "Users gradually joining and leaving can hear and see each other" do
-    browsers_number = 4
+  @browser_options %{target_url: "http://localhost:4001", receiver: nil, id: -1, headless: true}
 
-    pid = self()
+  @warmup_time 12_000
 
-    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+  setup do
+    browser_options = %{@browser_options | receiver: self()}
+    browsers = Enum.map(0..3, &start_browser(browser_options, &1))
 
-    mustang_options = %{
-      target_url: @room_url,
-      warmup_time: @warmup,
-      start_button: @start_with_all,
-      actions: @actions,
-      receiver: receiver,
-      id: -1
-    }
+    playwrights = Enum.map(browsers, &Browser.get_playwright(&1))
 
-    for browser <- 0..(browsers_number - 1), into: [] do
-      mustang_options = %{mustang_options | id: browser}
+    on_exit(fn ->
+      playwrights
+      |> Enum.each(fn playwright ->
+        Playwright.Browser.close(playwright)
+      end)
+    end)
 
-      task =
-        Task.async(fn ->
-          Stampede.start({TestMustang, mustang_options}, @browser_options)
-        end)
-
-      Process.sleep(20_000)
-      task
-    end
-    |> Task.await_many(:infinity)
-
-    receive do
-      {:stats, acc} ->
-        Enum.each(acc, fn
-          {:after_warmup, browsers} ->
-            Enum.each(browsers, fn {browser_id, stats_list} ->
-              Enum.each(stats_list, fn stats ->
-                assert count_playing_streams(stats, "audio") == browser_id
-                assert count_playing_streams(stats, "video") == browser_id
-              end)
-            end)
-
-          {:before_leave, browsers} ->
-            Enum.each(browsers, fn {browser_id, stats_list} ->
-              Enum.each(stats_list, fn stats ->
-                assert count_playing_streams(stats, "audio") == browsers_number - browser_id - 1
-                assert count_playing_streams(stats, "video") == browsers_number - browser_id - 1
-              end)
-            end)
-        end)
-    end
+    {:ok, %{browsers: browsers}}
   end
 
   @tag timeout: 120_000
-  test "Users joining all at once can hear and see each other" do
-    browsers_number = 4
+  test "Users gradually joining and leaving can hear and see each other", %{browsers: browsers} do
+    browsers_with_id = Enum.zip(browsers, 0..3)
 
-    pid = self()
+    Enum.each(browsers_with_id, fn {browser, id} ->
+      Browser.join(browser, @start_with_all)
 
-    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
+      Process.sleep(@warmup_time)
 
-    mustang_options = %{
-      target_url: @room_url,
-      warmup_time: @warmup,
-      start_button: @start_with_all,
-      actions: @actions,
-      receiver: receiver,
-      id: -1
-    }
-
-    for browser <- 0..(browsers_number - 1), into: [] do
-      mustang_options = %{mustang_options | id: browser}
-
-      Task.async(fn ->
-        Stampede.start({TestMustang, mustang_options}, @browser_options)
-      end)
-    end
-    |> Task.await_many(:infinity)
-
-    receive do
-      {:stats, acc} ->
-        Enum.each(acc, fn
-          {:after_warmup, browsers} ->
-            Enum.each(browsers, fn {_browser_id, stats_list} ->
-              Enum.each(stats_list, fn stats ->
-                assert count_playing_streams(stats, "audio") == browsers_number - 1
-                assert count_playing_streams(stats, "video") == browsers_number - 1
-              end)
-            end)
-
-          {:before_leave, _browsers} ->
-            :ok
-        end)
-    end
-  end
-
-  @tag timeout: 180_000
-  test "Users joining without either microphone, camera or both can see or hear other users" do
-    browsers_number = 4
-
-    pid = self()
-
-    receiver = Process.spawn(fn -> receive_stats(browsers_number, pid) end, [:link])
-
-    mustang_options = %{
-      target_url: @room_url,
-      warmup_time: @warmup,
-      start_button: @start_with_all,
-      actions: @actions,
-      receiver: receiver,
-      id: -1
-    }
-
-    buttons_with_id =
-      [@start_with_all, @start_with_camera, @start_with_mic, @start_with_nothing]
-      |> Enum.with_index()
-      |> Map.new(fn {button, browser_id} -> {browser_id, button} end)
-
-    for {browser_id, button} <- buttons_with_id, into: [] do
-      specific_mustang = %{mustang_options | start_button: button, id: browser_id}
-
-      Process.sleep(1_000)
-
-      Task.async(fn ->
-        Stampede.start({TestMustang, specific_mustang}, @browser_options)
-      end)
-    end
-    |> Task.await_many(:infinity)
-
-    browser_received_tracks = %{
-      0 => %{a: 1, v: 1},
-      1 => %{a: 2, v: 1},
-      2 => %{a: 1, v: 2},
-      3 => %{a: 2, v: 2}
-    }
-
-    receive do
-      {:stats, acc} ->
-        Enum.each(acc, fn
-          {:after_warmup, browsers} ->
-            Enum.each(browsers, fn {browser_id, stats_list} ->
-              Enum.each(stats_list, fn stats ->
-                assert count_playing_streams(stats, "audio") ==
-                         browser_received_tracks[browser_id].a
-
-                assert count_playing_streams(stats, "video") ==
-                         browser_received_tracks[browser_id].v
-              end)
-            end)
-
-          {:before_leave, _browsers} ->
-            :ok
-        end)
-    end
-  end
-
-  defp count_playing_streams(streams, kind) do
-    streams
-    |> Enum.filter(fn
-      %{"kind" => ^kind, "playing" => playing} -> playing
-      _stream -> false
+      stats = Browser.get_stats(browser, @stats)
+      assert count_playing_streams(stats, "audio") == id
+      assert count_playing_streams(stats, "video") == id
     end)
-    |> Enum.count()
+
+    assertion_function = fn stats_list ->
+      Enum.each(stats_list, fn stats ->
+        assert count_playing_streams(stats, "audio") == 3
+        assert count_playing_streams(stats, "video") == 3
+      end)
+    end
+
+    assert_stats(browsers, @stats, 10, assertion_function)
+
+    Enum.each(browsers_with_id, fn {browser, id} ->
+      stats = Browser.get_stats(browser, @stats)
+      assert count_playing_streams(stats, "audio") == 3 - id
+      assert count_playing_streams(stats, "video") == 3 - id
+
+      Browser.leave(browser)
+
+      Process.sleep(5_000)
+    end)
+  end
+
+  @tag timeout: 90_000
+  test "Users joining all at once can hear and see each other", %{browsers: browsers} do
+    Enum.each(browsers, &Browser.join(&1, @start_with_all))
+
+    Process.sleep(@warmup_time)
+
+    assertion_function = fn stats_list ->
+      Enum.each(stats_list, fn stats ->
+        assert count_playing_streams(stats, "audio") == 3
+        assert count_playing_streams(stats, "video") == 3
+      end)
+    end
+
+    assert_stats(browsers, @stats, 20, assertion_function)
+  end
+
+  @tag timeout: 90_000
+  test "Users joining without either microphone, camera or both can see or hear other users", %{
+    browsers: browsers
+  } do
+    browsers_with_start_button =
+      Enum.zip(browsers, [
+        @start_with_all,
+        @start_with_camera,
+        @start_with_mic,
+        @start_with_nothing
+      ])
+
+    browser_received_tracks = [%{a: 1, v: 1}, %{a: 2, v: 1}, %{a: 1, v: 2}, %{a: 2, v: 2}]
+
+    Enum.each(browsers_with_start_button, fn {browser, button} ->
+      Browser.join(browser, button)
+    end)
+
+    Process.sleep(@warmup_time)
+
+    assertion_function = fn stats_list ->
+      stats_with_expected_tracks = Enum.zip(stats_list, browser_received_tracks)
+
+      Enum.each(stats_with_expected_tracks, fn {stats, expected_tracks} ->
+        assert count_playing_streams(stats, "audio") == expected_tracks[:a]
+        assert count_playing_streams(stats, "video") == expected_tracks[:v]
+      end)
+    end
+
+    assert_stats(browsers, @stats, 20, assertion_function)
+  end
+
+  @tag timeout: 30_000
+  test "telemetry events are published", %{browsers: browsers} do
+    browsers = Enum.take(browsers, 2)
+
+    assert is_number(Application.fetch_env!(:membrane_rtc_engine_ex_webrtc, :get_stats_interval))
+    report_count = 15
+    max_invalid_reports = 3
+
+    Enum.each(browsers, &Browser.join(&1, @start_with_all))
+
+    :ok = Process.send(TestVideoroom.MetricsScraper, {:subscribe, self()}, [])
+
+    receive_reports(report_count, max_invalid_reports)
+  end
+
+  defp receive_reports(expected_reports, max_invalid_reports, reports \\ [])
+
+  defp receive_reports(0, _max_invalid_reports, reports), do: Enum.reverse(reports)
+
+  defp receive_reports(expected_reports, max_invalid_reports, reports) do
+    receive do
+      {:metrics, report} ->
+        reports = [report | reports]
+        valid? = MetricsValidator.validate_report(report) == :ok
+
+        # If one valid report has been received, we expect the next reports to be valid as well
+        max_invalid_reports = if valid?, do: 0, else: max_invalid_reports - 1
+
+        if not valid? and max_invalid_reports < 0,
+          do: raise("Received too many invalid reports, received reports: #{inspect(reports)}")
+
+        receive_reports(expected_reports - 1, max_invalid_reports, reports)
+    after
+      2_000 -> raise "Report not received within timeout, received reports: #{inspect(reports)}"
+    end
   end
 end

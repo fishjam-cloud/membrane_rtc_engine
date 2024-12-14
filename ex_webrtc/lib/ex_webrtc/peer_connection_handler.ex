@@ -6,6 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   alias Membrane.Buffer
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler.Metrics
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
@@ -17,6 +18,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
               video_codecs: [
                 spec: [EndpointExWebRTC.video_codec()] | nil,
                 description: "Allowed video codecs"
+              ],
+              telemetry_label: [
+                spec: Membrane.TelemetryMetrics.label(),
+                default: [],
+                description: "Label passed to Membrane.TelemetryMetrics functions"
               ]
 
   def_input_pad :input,
@@ -55,6 +61,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_init(_ctx, opts) do
+    Metrics.register_events(opts.telemetry_label)
+
     %{endpoint_id: endpoint_id} = opts
 
     video_codecs =
@@ -94,8 +102,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       # maps webrtc_track_id to InboundTrack
       inbound_tracks: %{},
       mid_to_track_id: %{},
-      track_id_to_metadata: %{}
+      track_id_to_metadata: %{},
+      telemetry_label: opts.telemetry_label,
+      get_stats_interval:
+        Application.get_env(:membrane_rtc_engine_ex_webrtc, :get_stats_interval),
+      peer_connection_signaling_state: nil
     }
+
+    if not is_nil(state.get_stats_interval),
+      do: Process.send_after(self(), :get_stats, state.get_stats_interval)
 
     {[], state}
   end
@@ -106,7 +121,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_pad_added(_pad, _ctx, state) do
+  def handle_pad_added(Pad.ref(:input, track_id), _ctx, state) do
+    if not is_map_key(state.outbound_tracks, track_id),
+      do: Membrane.Logger.error("Receiving new unknown track: #{track_id}")
+
     {[], state}
   end
 
@@ -140,13 +158,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       end)
 
     :ok = PeerConnection.send_rtp(state.pc, webrtc_track_id, packet)
+    Metrics.emit_outbound_packet_event(packet, webrtc_track_id, state.telemetry_label)
 
     {[], state}
   end
 
   @impl true
   def handle_buffer(Pad.ref(:input, track_id), _buffer, _ctx, state) do
-    Membrane.Logger.warning("Received buffer from unknown track #{track_id}")
+    Membrane.Logger.debug("Received buffer from unknown track #{track_id}")
     {[], state}
   end
 
@@ -245,6 +264,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     handle_webrtc_msg(msg, ctx, state)
   end
 
+  @impl true
+  def handle_info(:get_stats, _ctx, state) do
+    state.pc
+    |> PeerConnection.get_stats()
+    |> Metrics.emit_from_rtc_stats(state.telemetry_label)
+
+    Process.send_after(self(), :get_stats, state.get_stats_interval)
+
+    {[], state}
+  end
+
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do
     msg = {:candidate, candidate}
     {[notify_parent: msg], state}
@@ -256,6 +286,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
+    Metrics.emit_inbound_packet_event(packet, webrtc_track_id, rid, state.telemetry_label)
     variant = EndpointExWebRTC.to_track_variant(rid)
 
     actions =
@@ -290,8 +321,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {actions, state}
   end
 
-  defp handle_webrtc_msg({:signaling_state_change, :stable}, _ctx, state) do
-    {[notify_parent: :negotiation_done], state}
+  defp handle_webrtc_msg({:signaling_state_change, new_state}, _ctx, state) do
+    actions =
+      case {state.peer_connection_signaling_state, new_state} do
+        {:have_remote_offer, :stable} -> [notify_parent: :negotiation_done]
+        _other -> []
+      end
+
+    {actions, %{state | peer_connection_signaling_state: new_state}}
   end
 
   defp handle_webrtc_msg({:rtcp, packets}, _ctx, state) do
@@ -428,7 +465,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
               transceiver.receiver.track.id == track.id
           end)
 
-        Membrane.Logger.info("new track #{track.id}, #{track.kind}")
+        Membrane.Logger.info("new track #{inspect(track)}")
 
         if is_nil(transceiver) do
           transceivers = PeerConnection.get_transceivers(pc)
