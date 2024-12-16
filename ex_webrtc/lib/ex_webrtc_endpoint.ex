@@ -182,7 +182,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       ) do
     {:endpoint, endpoint_id} = ctx.name
 
-    Membrane.Logger.info("endpoint ready, endpoints: #{inspect(endpoints)}")
+    log_endpoints =
+      Enum.map(endpoints, fn endpoint ->
+        endpoint |> Map.from_struct() |> Map.delete(:inbound_tracks)
+      end)
+
+    Membrane.Logger.info("endpoint ready, endpoints: #{inspect(log_endpoints)}")
 
     action =
       endpoint_id

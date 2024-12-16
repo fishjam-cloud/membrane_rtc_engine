@@ -5,6 +5,10 @@ priv/static/assets
 priv/static/js
 priv/static/cache_manifest.json
 
+# Ignore assets that are produced by build tools.
+/priv/static/*
+/priv/cert/*
+
 # The directory Mix will write compiled artifacts to.
 /_build/
 

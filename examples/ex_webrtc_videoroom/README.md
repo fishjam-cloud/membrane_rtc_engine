@@ -46,31 +46,8 @@ You may be asked to install `Hex` and then `rebar3`.
 To run the demo, type:
 
 ```shell
-EXTERNAL_IP=<IPv4 address> mix phx.server
+mix phx.server
 ```
-
-where:
-
-- `EXTERNAL_IP` - your local IPv4 address of the computer this is running on. It is required unless you only connect via localhost (not to be confused with loopback).
-
-To make the server available from your local network, you can set it to a private address, like 192.168._._. The address can be found with the use of the `ifconfig` command:
-
-```shell
-ifconfig
-...
-en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
- options=400<CHANNEL_IO>
- ether 88:66:5a:49:ac:e0
- inet6 fe80::426:8833:1408:cd1a%en0 prefixlen 64 secured scopeid 0x6
- inet 192.168.1.196 netmask 0xffffff00 broadcast 192.168.1.255
- nd6 options=201<PERFORMNUD,DAD>
- media: autoselect
- status: active
-```
-
-(The address we are seeking is the address following the inet field - in that particular case, 192.168.1.196)
-
-Then go to <http://localhost:4000/>.
 
 _You might be asked to grant access to your camera, as some operating systems require that._
 
@@ -119,31 +96,8 @@ You may be asked to install `Hex` and then `rebar3`.
 To run the demo, type:
 
 ```shell
-EXTERNAL_IP=<IPv4 address> mix phx.server
+mix phx.server
 ```
-
-where:
-
-- `EXTERNAL_IP` - your local IPv4 address of the computer this is running on. It is required unless you only connect via localhost (not to be confused with loopback).
-
-To make the server available from your local network, you can set it to a private address, like 192.168._._. The address can be found with the use of the `ifconfig` command:
-
-```shell
-ifconfig
-...
-en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
- options=400<CHANNEL_IO>
- ether 88:66:5a:49:ac:e0
- inet6 fe80::426:8833:1408:cd1a%en0 prefixlen 64 secured scopeid 0x6
- inet 192.168.1.196 netmask 0xffffff00 broadcast 192.168.1.255
- nd6 options=201<PERFORMNUD,DAD>
- media: autoselect
- status: active
-```
-
-(The address we are seeking is the address following the inet field - in that particular case, 192.168.1.196)
-
-Then go to <http://localhost:4000/>.
 
 _You might be asked to grant access to your camera, as some operating systems require that._
 
@@ -188,31 +142,8 @@ You may be asked to install `Hex` and then `rebar3`.
 To run the demo, type:
 
 ```shell
-EXTERNAL_IP=<IPv4 address> mix phx.server
+mix phx.server
 ```
-
-where:
-
-- `EXTERNAL_IP` - your local IPv4 address of the computer this is running on. It is required unless you only connect via localhost (not to be confused with loopback).
-
-To make the server available from your local network, you can set it to a private address, like 192.168._._. The address can be found with the use of the `ifconfig` command:
-
-```shell
-ifconfig
-...
-en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
- options=400<CHANNEL_IO>
- ether 88:66:5a:49:ac:e0
- inet6 fe80::426:8833:1408:cd1a%en0 prefixlen 64 secured scopeid 0x6
- inet 192.168.1.196 netmask 0xffffff00 broadcast 192.168.1.255
- nd6 options=201<PERFORMNUD,DAD>
- media: autoselect
- status: active
-```
-
-(The address we are seeking is the address following the inet field - in that particular case, 192.168.1.196)
-
-Then go to <http://localhost:4000/>.
 
 _You might be asked to grant access to your camera, as some operating systems require that._
 

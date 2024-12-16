@@ -28,7 +28,6 @@ defmodule TestVideoroom.Room do
   def init(room_id) do
     Logger.info("Spawning room process: #{inspect(self())}")
 
-    ice_port_range = Application.fetch_env!(:test_videoroom, :ice_port_range)
     rtc_engine_options = [id: room_id]
 
     {:ok, pid} = Membrane.RTC.Engine.start(rtc_engine_options, [])
@@ -39,7 +38,6 @@ defmodule TestVideoroom.Room do
      %{
        rtc_engine: pid,
        peer_channels: %{},
-       ice_port_range: ice_port_range,
        listeners: [],
        room_id: room_id
      }}

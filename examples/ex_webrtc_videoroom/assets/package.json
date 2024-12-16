@@ -6,7 +6,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main",
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c",
     "phoenix": "file:../deps/phoenix",
     "phoenix_html": "file:../deps/phoenix_html",
     "query-string": "^7.0.0",
@@ -21,5 +21,5 @@
     "prettier": "^2.2.1",
     "tailwindcss": "^2.2.4"
   },
-  "packageManager": "yarn@4.3.1"
+  "packageManager": "yarn@4.5.3"
 }
