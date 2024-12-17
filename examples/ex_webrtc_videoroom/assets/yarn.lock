@@ -34,22 +34,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@bufbuild/protobuf@npm:^2.2.0":
-  version: 2.2.2
-  resolution: "@bufbuild/protobuf@npm:2.2.2"
-  checksum: 10c0/17687c36c85b2e489c7ffd676479c54e12437270eb5a724775cb880b09948cad205b79e5822a4d10cefde0eef433b781350d73bb649d8de9e84d7745871ee719
+"@bufbuild/protobuf@npm:^2.2.2":
+  version: 2.2.3
+  resolution: "@bufbuild/protobuf@npm:2.2.3"
+  checksum: 10c0/546c38b924c4a8dd79ec457928cfb99a5aab2945d11f15f4f06894bdc148ea37a1ae8b78cf17de9bb5354cbb896f6af4099073690b5b2089e1b196cec963d6ec
   languageName: node
   linkType: hard
 
-"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main":
-  version: 0.8.1
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=2d9db0ce7d59b215a3c43888c2ba8b4a1142baf9"
+"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c":
+  version: 0.9.0
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
   dependencies:
-    "@bufbuild/protobuf": "npm:^2.2.0"
+    "@bufbuild/protobuf": "npm:^2.2.2"
     events: "npm:^3.3.0"
     typed-emitter: "npm:^2.1.0"
-    uuid: "npm:^10.0.0"
-  checksum: 10c0/781773968173e8f820311bd5e330714df0fd21cf0a83ebcd7f7f53a650f988846ce6f9c3eb1ddf730e2a526a64d3521d90f485b325ed95d60452b6e0cbe505e0
+    uuid: "npm:^11.0.2"
+  checksum: 10c0/6a44f98632a53daddc3142b4a3a332fffa68bf05705a03aa094b53be52335aace5d425bae12c8cceb31c1b948ec80e78b561f0c0f6ba86deca25cf97581eac89
   languageName: node
   linkType: hard
 
@@ -1799,7 +1799,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main"
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
     "@tailwindcss/aspect-ratio": "npm:^0.3.0"
     "@types/phoenix": "npm:^1.6.4"
     autoprefixer: "npm:^10.2.0"
@@ -2151,12 +2151,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^10.0.0":
-  version: 10.0.0
-  resolution: "uuid@npm:10.0.0"
+"uuid@npm:^11.0.2":
+  version: 11.0.3
+  resolution: "uuid@npm:11.0.3"
   bin:
-    uuid: dist/bin/uuid
-  checksum: 10c0/eab18c27fe4ab9fb9709a5d5f40119b45f2ec8314f8d4cf12ce27e4c6f4ffa4a6321dc7db6c515068fa373c075b49691ba969f0010bf37f44c37ca40cd6bf7fe
+    uuid: dist/esm/bin/uuid
+  checksum: 10c0/cee762fc76d949a2ff9205770334699e0043d52bb766472593a25f150077c9deed821230251ea3d6ab3943a5ea137d2826678797f1d5f6754c7ce5ce27e9f7a6
   languageName: node
   linkType: hard
 

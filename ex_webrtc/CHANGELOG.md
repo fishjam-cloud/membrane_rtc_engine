@@ -17,3 +17,4 @@
 * Fix layer switching [#24](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/24)
 * Allow for configuring ice servers [#25](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/25)
 * Add rtp metrics [#23](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/23)
+* Improve some logs [#27](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/27)

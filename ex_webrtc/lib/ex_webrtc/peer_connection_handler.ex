@@ -413,9 +413,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
       outbound_transceivers = List.delete(outbound_transceivers, transceiver)
 
-      Membrane.Logger.info(
-        "track #{track.id}, #{track.kind} added on transceiver #{transceiver.id}"
-      )
+      Membrane.Logger.info("track #{inspect(track)} added on transceiver #{transceiver.id}")
 
       {[{engine_track.id, track.id, transceiver.mid}], outbound_transceivers}
     else

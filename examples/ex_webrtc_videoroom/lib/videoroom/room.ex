@@ -22,13 +22,12 @@ defmodule Videoroom.Room do
     Membrane.Logger.info("Spawning room proces: #{inspect(self())}")
 
     rtc_engine_options = [id: room_id]
-    ice_port_range = Application.fetch_env!(:membrane_videoroom_demo, :ice_port_range)
 
     {:ok, pid} = Membrane.RTC.Engine.start(rtc_engine_options, [])
     Engine.register(pid, self())
     Process.monitor(pid)
 
-    {:ok, %{rtc_engine: pid, peer_channels: %{}, ice_port_range: ice_port_range}}
+    {:ok, %{rtc_engine: pid, peer_channels: %{}}}
   end
 
   @impl true
@@ -37,7 +36,6 @@ defmodule Videoroom.Room do
 
     webrtc_endpoint = %ExWebRTC{
       rtc_engine: state.rtc_engine,
-      ice_port_range: state.ice_port_range,
       event_serialization: :json
     }
 
