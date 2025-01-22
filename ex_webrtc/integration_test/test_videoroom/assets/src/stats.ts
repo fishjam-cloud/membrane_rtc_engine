@@ -1,7 +1,7 @@
 // check interval is used to check if for given time interval any new packets/frames
 // have been processed, it may happen that track was processing media before
 
-import { Endpoint, Variant } from "@fishjam-cloud/ts-client";
+import { Endpoint, Variant } from "@fishjam-cloud/webrtc-client";
 
 import { Room } from "./room";
 import { EncodingStats } from "./types";

@@ -7,7 +7,7 @@ import {
   TrackBandwidthLimit,
   SerializedMediaEvent,
   Variant,
-} from "@fishjam-cloud/ts-client";
+} from "@fishjam-cloud/webrtc-client";
 
 import { WebRTCEndpoint } from "@fishjam-cloud/webrtc-client";
 

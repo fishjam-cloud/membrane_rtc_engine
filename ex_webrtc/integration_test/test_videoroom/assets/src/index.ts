@@ -1,4 +1,4 @@
-import { Variant } from "@fishjam-cloud/ts-client";
+import { Variant } from "@fishjam-cloud/webrtc-client";
 import { Room } from "./room";
 import {
   remoteStreamsStats,

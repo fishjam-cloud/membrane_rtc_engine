@@ -5,10 +5,10 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@bufbuild/protobuf@npm:^2.2.2":
-  version: 2.2.2
-  resolution: "@bufbuild/protobuf@npm:2.2.2"
-  checksum: 10c0/17687c36c85b2e489c7ffd676479c54e12437270eb5a724775cb880b09948cad205b79e5822a4d10cefde0eef433b781350d73bb649d8de9e84d7745871ee719
+"@bufbuild/protobuf@npm:^2.2.3":
+  version: 2.2.3
+  resolution: "@bufbuild/protobuf@npm:2.2.3"
+  checksum: 10c0/546c38b924c4a8dd79ec457928cfb99a5aab2945d11f15f4f06894bdc148ea37a1ae8b78cf17de9bb5354cbb896f6af4099073690b5b2089e1b196cec963d6ec
   languageName: node
   linkType: hard
 
@@ -256,15 +256,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c":
-  version: 0.9.0
-  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
+"@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client&head=main":
+  version: 0.10.2
+  resolution: "@fishjam-cloud/ts-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fwebrtc-client&commit=a2f95d5fe2d816fd37673414b0f357c6d63833be"
   dependencies:
-    "@bufbuild/protobuf": "npm:^2.2.2"
+    "@bufbuild/protobuf": "npm:^2.2.3"
     events: "npm:^3.3.0"
     typed-emitter: "npm:^2.1.0"
-    uuid: "npm:^11.0.2"
-  checksum: 10c0/6a44f98632a53daddc3142b4a3a332fffa68bf05705a03aa094b53be52335aace5d425bae12c8cceb31c1b948ec80e78b561f0c0f6ba86deca25cf97581eac89
+    uuid: "npm:^11.0.3"
+  checksum: 10c0/d76a9a9d672af3265a9a54e9f1fde15a6f6cc43f0463d6290a7f9d17fbc900f9a20e95a51b77ef4d39a2e707480aeadc4a06f7088a23467be2146082fa4ce11f
+  languageName: node
+  linkType: hard
+
+"@fishjam-cloud/webrtc-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client":
+  version: 0.10.2
+  resolution: "@fishjam-cloud/webrtc-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fwebrtc-client&commit=a2f95d5fe2d816fd37673414b0f357c6d63833be"
+  dependencies:
+    "@bufbuild/protobuf": "npm:^2.2.3"
+    events: "npm:^3.3.0"
+    typed-emitter: "npm:^2.1.0"
+    uuid: "npm:^11.0.3"
+  checksum: 10c0/abd964c6a106d12882f7bfdf8217fddd3509e03fc24e4d6ef0a9e66644b0e3ccabd4518de35081a9ed705fdc3577707442003720f046a402c132ca81d0d1af3d
   languageName: node
   linkType: hard
 
@@ -1550,7 +1562,8 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@eslint/js": "npm:^9.13.0"
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
+    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client&head=main"
+    "@fishjam-cloud/webrtc-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client"
     esbuild: "npm:^0.24.0"
     eslint: "npm:^9.13.0"
     globals: "npm:^15.11.0"
@@ -1775,12 +1788,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uuid@npm:^11.0.2":
-  version: 11.0.2
-  resolution: "uuid@npm:11.0.2"
+"uuid@npm:^11.0.3":
+  version: 11.0.5
+  resolution: "uuid@npm:11.0.5"
   bin:
     uuid: dist/esm/bin/uuid
-  checksum: 10c0/bd0670a0d6f77f1932da7544c51c32ceb467f3835382df2265f3275c4981d32c136a08a4369fb027ecfffd0b2ae48f19a28266ef636c7347264d5720e85d5ba0
+  checksum: 10c0/6f59f0c605e02c14515401084ca124b9cb462b4dcac866916a49862bcf831874508a308588c23a7718269226ad11a92da29b39d761ad2b86e736623e3a33b6e7
   languageName: node
   linkType: hard
 
