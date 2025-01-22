@@ -10,7 +10,6 @@ defmodule TestVideoroom.Integration.BasicTest do
   @start_with_mic "start-mic-only"
   @start_with_camera "start-camera-only"
   @start_with_nothing "start-none"
-  @start_without_track_to_bitrates "start_without_track_to_bitrates"
   @stats "stats"
 
   @browser_options %{target_url: "http://localhost:4001", receiver: nil, id: -1, headless: true}
