@@ -6,7 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   alias Membrane.Buffer
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
-  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler.Metrics
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
@@ -20,7 +20,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
                 description: "Allowed video codecs"
               ],
               telemetry_label: [
-                spec: Membrane.TelemetryMetrics.label(),
+                spec: Keyword.t(),
                 default: [],
                 description: "Label passed to Membrane.TelemetryMetrics functions"
               ]
@@ -61,8 +61,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_init(_ctx, opts) do
-    Metrics.register_events(opts.telemetry_label)
-
     %{endpoint_id: endpoint_id} = opts
 
     video_codecs =
@@ -158,7 +156,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       end)
 
     :ok = PeerConnection.send_rtp(state.pc, webrtc_track_id, packet)
-    Metrics.emit_outbound_packet_event(packet, webrtc_track_id, state.telemetry_label)
 
     {[], state}
   end
@@ -268,7 +265,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   def handle_info(:get_stats, _ctx, state) do
     state.pc
     |> PeerConnection.get_stats()
-    |> Metrics.emit_from_rtc_stats(state.telemetry_label)
+    |> Metrics.emit_transport_event(state.telemetry_label)
 
     Process.send_after(self(), :get_stats, state.get_stats_interval)
 
@@ -286,7 +283,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
-    Metrics.emit_inbound_packet_event(packet, webrtc_track_id, rid, state.telemetry_label)
     variant = EndpointExWebRTC.to_track_variant(rid)
 
     actions =
