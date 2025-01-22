@@ -50,13 +50,12 @@ defmodule TestVideoroom.MixProject do
         "assets.deploy",
         "test --exclude containerised"
       ],
-      "test.json": ["use_serializer json", "assets.deploy", "test --exclude containerised"],
       "assets.deploy": ["cmd --cd assets yarn install", "esbuild default --minify", "phx.digest"],
       "test.containerised": ["test --only containerised"]
     ]
   end
 
   def cli do
-    [preferred_envs: ["test.protobuf": :test, "test.json": :test]]
+    [preferred_envs: ["test.protobuf": :test]]
   end
 end
