@@ -96,6 +96,14 @@ export class Room {
     this.streams = {};
     this.removedTracks = [];
 
+    const pathParams = new URLSearchParams(window.location.search);
+    const stubBitrates = pathParams.get("stubBitrates") || false;
+
+    if (stubBitrates) {
+      // Stub trackIdToBitrates to simulate empty trackIdToTrackBitrates map
+      this.webrtc.local.getTrackIdToTrackBitrates = () => ({});
+    }
+
     this.webrtc.on("sendMediaEvent", (mediaEvent: SerializedMediaEvent) => {
       this.webrtcChannel.push("mediaEvent", mediaEvent.buffer);
     });

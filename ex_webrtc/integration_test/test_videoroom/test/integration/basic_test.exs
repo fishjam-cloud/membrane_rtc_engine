@@ -10,6 +10,7 @@ defmodule TestVideoroom.Integration.BasicTest do
   @start_with_mic "start-mic-only"
   @start_with_camera "start-camera-only"
   @start_with_nothing "start-none"
+  @start_without_track_to_bitrates "start_without_track_to_bitrates"
   @stats "stats"
 
   @browser_options %{target_url: "http://localhost:4001", receiver: nil, id: -1, headless: true}
@@ -69,6 +70,23 @@ defmodule TestVideoroom.Integration.BasicTest do
   @tag timeout: 90_000
   test "Users joining all at once can hear and see each other", %{browsers: browsers} do
     Enum.each(browsers, &Browser.join(&1, @start_with_all))
+
+    Process.sleep(@warmup_time)
+
+    assertion_function = fn stats_list ->
+      Enum.each(stats_list, fn stats ->
+        assert count_playing_streams(stats, "audio") == 3
+        assert count_playing_streams(stats, "video") == 3
+      end)
+    end
+
+    assert_stats(browsers, @stats, 20, assertion_function)
+  end
+
+
+  @tag timeout: 90_000
+  test "Users joining without trackToBitrates map given", %{browsers: browsers} do
+    Enum.each(browsers, &Browser.join(&1, @start_with_all, "?stubBitrates=true"))
 
     Process.sleep(@warmup_time)
 
