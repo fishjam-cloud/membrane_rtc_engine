@@ -6,11 +6,6 @@ config :test_videoroom,
   # This variable is subjected to changes
   event_serialization: :protobuf
 
-# Defines the sources for typescript client
-config :ts_client,
-  protobuf:
-    "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client&head=main",
-
 # Configures the endpoint
 config :test_videoroom, TestVideoroomWeb.Endpoint,
   url: [host: "localhost"],

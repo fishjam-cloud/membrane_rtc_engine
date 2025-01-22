@@ -2,7 +2,6 @@
   "license": "MIT",
   "devDependencies": {
     "@eslint/js": "^9.13.0",
-    "@fishjam-cloud/ts-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client&head=main",
     "@fishjam-cloud/webrtc-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client",
     "esbuild": "^0.24.0",
     "eslint": "^9.13.0",
