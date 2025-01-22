@@ -1,9 +1,9 @@
 // check interval is used to check if for given time interval any new packets/frames
 // have been processed, it may happen that track was processing media before
 
-import { Endpoint, Encoding } from "@fishjam-cloud/ts-client";
+import { Endpoint, Variant } from "@fishjam-cloud/ts-client";
 
-import { Room, EndpointMetadata, TrackMetadata } from "./room";
+import { Room } from "./room";
 import { EncodingStats } from "./types";
 
 // but somehow it stopped therefore we need to check deltas instead of
@@ -27,7 +27,7 @@ async function sleep(interval: number) {
 const extractStatEntry = (
   stats: RTCStatsReport,
   name: string,
-  mediaType: string,
+  mediaType: string
 ) => {
   for (let [key, value] of stats.entries()) {
     if (value.type === name && value.mediaType === mediaType) {
@@ -40,7 +40,7 @@ const extractStatEntry = (
 
 async function isVideoPlaying(
   peerConnection: RTCPeerConnection,
-  videoTrack: MediaStreamTrack,
+  videoTrack: MediaStreamTrack
 ) {
   const videoFramedDecoded = async (track: MediaStreamTrack) => {
     if (!track) return -1;
@@ -49,7 +49,7 @@ async function isVideoPlaying(
     const inboundVideoStats: RTCInboundRtpStreamStats = extractStatEntry(
       videoStats,
       "inbound-rtp",
-      "video",
+      "video"
     )!;
 
     return inboundVideoStats?.framesDecoded || -1;
@@ -64,7 +64,7 @@ async function isVideoPlaying(
 
 async function isAudioPlaying(
   peerConnection: RTCPeerConnection,
-  audioTrack: MediaStreamTrack,
+  audioTrack: MediaStreamTrack
 ) {
   const audioTotalEnergy = async (track: MediaStreamTrack) => {
     if (!track) return -1;
@@ -73,7 +73,7 @@ async function isAudioPlaying(
     const inboundAudioStats: RTCInboundRtpStreamStats = extractStatEntry(
       audioStats,
       "inbound-rtp",
-      "audio",
+      "audio"
     )!;
     return inboundAudioStats?.totalSamplesDuration || -1;
   };
@@ -91,7 +91,7 @@ export async function inboundSimulcastStreamStats(room: Room) {
   const peerConnection = room.webrtc.connectionManager?.getConnection()!;
 
   const endpoints = Array.from(
-    Object.values(room.webrtc.getRemoteEndpoints()),
+    Object.values(room.webrtc.getRemoteEndpoints())
   ).filter((endpoint) => endpoint.id != room.endpointId);
 
   const stats = endpoints.map(async (peer: Endpoint) => {
@@ -101,7 +101,7 @@ export async function inboundSimulcastStreamStats(room: Room) {
     const inboundVideoStats: RTCInboundRtpStreamStats = extractStatEntry(
       videoStats,
       "inbound-rtp",
-      "video",
+      "video"
     )!;
 
     return {
@@ -121,10 +121,16 @@ export async function outboundSimulcastStreamStats(room: Room) {
   const peerConnection = room.webrtc.connectionManager?.getConnection()!;
   const stats = await peerConnection.getStats();
 
-  let data = { l: {}, m: {}, h: {} };
+  const data = {
+    [Variant.VARIANT_LOW]: {},
+    [Variant.VARIANT_MEDIUM]: {},
+    [Variant.VARIANT_HIGH]: {},
+    [Variant.VARIANT_UNSPECIFIED]: {},
+    [Variant.UNRECOGNIZED]: {},
+  };
   for (let [_key, report] of stats) {
     if (report.type == "outbound-rtp") {
-      const rid: Encoding = report.rid;
+      const rid: Variant = report.rid;
       data[rid] = {
         framesSent: report.framesSent,
         height: report.frameHeight,

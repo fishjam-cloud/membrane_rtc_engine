@@ -9,9 +9,9 @@ config :test_videoroom,
 # Defines the sources for typescript client
 config :ts_client,
   protobuf:
-    "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&head=main",
+    "https://github.com/fishjam-cloud/web-client-sdk.git#main",
   json:
-    "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/ts-client&commit=b8652baa3c98d0069c8c81a5fbd01f358813895c"
+    "https://github.com/fishjam-cloud/web-client-sdk.git#b8652baa3c98d0069c8c81a5fbd01f358813895c"
 
 # Configures the endpoint
 config :test_videoroom, TestVideoroomWeb.Endpoint,
