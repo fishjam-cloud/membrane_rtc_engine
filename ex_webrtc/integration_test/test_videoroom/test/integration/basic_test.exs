@@ -1,9 +1,9 @@
 defmodule TestVideoroom.Integration.BasicTest do
+  alias Membrane.RTC.Engine.Endpoint
   use TestVideoroomWeb.ConnCase, async: false
 
   import TestVideoroom.Utils
 
-  alias TestVideoroom.MetricsValidator
   alias TestVideoroom.Browser
 
   @start_with_all "start-all"
@@ -119,35 +119,20 @@ defmodule TestVideoroom.Integration.BasicTest do
     browsers = Enum.take(browsers, 2)
 
     assert is_number(Application.fetch_env!(:membrane_rtc_engine_ex_webrtc, :get_stats_interval))
-    report_count = 15
-    max_invalid_reports = 3
 
     Enum.each(browsers, &Browser.join(&1, @start_with_all))
 
-    :ok = Process.send(TestVideoroom.MetricsScraper, {:subscribe, self()}, [])
+    ref = :telemetry_test.attach_event_handlers(self(), [[Endpoint.ExWebRTC, :transport]])
 
-    receive_reports(report_count, max_invalid_reports)
-  end
+    # Wait for media stream flow
+    for _ <- 1..4,
+        do: assert_receive({[Endpoint.ExWebRTC, :transport], ^ref, _measurement, _meta}, 15000)
 
-  defp receive_reports(expected_reports, max_invalid_reports, reports \\ [])
+    assert_receive {[Endpoint.ExWebRTC, :transport], ^ref,
+                    %{bytes_sent: bytes_sent, bytes_received: bytes_received}, _meta},
+                   15000
 
-  defp receive_reports(0, _max_invalid_reports, reports), do: Enum.reverse(reports)
-
-  defp receive_reports(expected_reports, max_invalid_reports, reports) do
-    receive do
-      {:metrics, report} ->
-        reports = [report | reports]
-        valid? = MetricsValidator.validate_report(report) == :ok
-
-        # If one valid report has been received, we expect the next reports to be valid as well
-        max_invalid_reports = if valid?, do: 0, else: max_invalid_reports - 1
-
-        if not valid? and max_invalid_reports < 0,
-          do: raise("Received too many invalid reports, received reports: #{inspect(reports)}")
-
-        receive_reports(expected_reports - 1, max_invalid_reports, reports)
-    after
-      2_000 -> raise "Report not received within timeout, received reports: #{inspect(reports)}"
-    end
+    assert bytes_received > 0
+    assert bytes_sent > 0
   end
 end
