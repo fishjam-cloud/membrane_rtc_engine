@@ -43,10 +43,10 @@ defmodule ConfigParser do
 end
 
 config :membrane_rtc_engine_ex_webrtc,
-  ice_port_range: System.get_env("ICE_PORT_RANGE", "50000-50100")
+  ice_port_range:
+    System.get_env("ICE_PORT_RANGE", "50000-50100")
     |> ConfigParser.parse_integrated_turn_port_range(),
   ice_servers: []
-
 
 protocol = if System.get_env("USE_TLS") == "true", do: :https, else: :http
 

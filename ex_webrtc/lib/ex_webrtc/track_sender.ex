@@ -21,7 +21,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
     VoiceActivityChanged
   }
 
-  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics
   alias Membrane.RTC.Engine.Track
   alias Membrane.RTCP.SenderReportPacket
   alias Membrane.RTCPEvent
@@ -87,8 +86,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   @impl true
   def handle_pad_added(Pad.ref(:input, id), %{playback: playback}, state) do
     {_track_id, variant} = id
-    telemetry_label = state.telemetry_label ++ [track_id: "#{state.track.id}:#{variant}"]
-    Metrics.telemetry_register(telemetry_label)
 
     {actions, state} =
       if playback == :playing and Track.simulcast?(state.track) do
@@ -288,12 +285,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
         ctx,
         %{track: track} = state
       ) do
-    Metrics.emit_packet_arrival_event(
-      buffer.payload,
-      state.track.encoding,
-      state.telemetry_label
-    )
-
     state =
       if Track.simulcast?(track) do
         update_in(state, [:trackers, variant], &VariantTracker.increment_samples(&1))
