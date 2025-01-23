@@ -125,14 +125,24 @@ defmodule TestVideoroom.Integration.BasicTest do
     ref = :telemetry_test.attach_event_handlers(self(), [[Endpoint.ExWebRTC, :transport]])
 
     # Wait for media stream flow
-    for _ <- 1..4,
-        do: assert_receive({[Endpoint.ExWebRTC, :transport], ^ref, _measurement, _meta}, 15000)
+    assert_receive {[Endpoint.ExWebRTC, :transport], ^ref, _measurement, _meta}, 15000
 
-    assert_receive {[Endpoint.ExWebRTC, :transport], ^ref,
-                    %{bytes_sent: bytes_sent, bytes_received: bytes_received}, _meta},
-                   15000
+    # Ensure that metrics values are growing
+    metrics =
+      Enum.reduce(1..8, %{}, fn _idx, prev ->
+        assert_receive {[Endpoint.ExWebRTC, :transport], ^ref,
+                        %{bytes_sent: bytes_sent, bytes_received: bytes_received},
+                        %{endpoint_id: endpoint_id}},
+                       2000
 
-    assert bytes_received > 0
-    assert bytes_sent > 0
+        {prev_sent, prev_received} = Map.get(prev, endpoint_id, {0, 0})
+        assert bytes_sent >= prev_sent and bytes_received >= prev_received
+
+        Map.put(prev, endpoint_id, {bytes_sent, bytes_received})
+      end)
+
+    Enum.each(metrics, fn {_id, {bytes_sent, bytes_received}} ->
+      assert bytes_sent > 0 and bytes_received > 0
+    end)
   end
 end
