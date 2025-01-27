@@ -12,7 +12,7 @@ import {
   WebRTCEndpoint,
   Endpoint,
   TrackContext,
-} from "@fishjam-cloud/ts-client";
+} from "@fishjam-cloud/webrtc-client";
 import { Push, Socket } from "phoenix";
 import { parse } from "query-string";
 
@@ -25,7 +25,7 @@ export type TrackMetadata = {
 };
 
 export class Room {
-  private endpoints: Endpoint<EndpointMetadata, TrackMetadata>[] = [];
+  private endpoints: Endpoint[] = [];
   private displayName: string;
   private localStream: MediaStream | undefined;
   private webrtc: WebRTCEndpoint;
@@ -54,50 +54,60 @@ export class Room {
 
     this.webrtc = new WebRTCEndpoint();
 
-    this.webrtc.on("sendMediaEvent", (mediaEvent: string) => {
-      this.webrtcChannel.push("mediaEvent", { data: mediaEvent });
-    })
+    this.webrtc.on("sendMediaEvent", (mediaEvent) => {
+      this.webrtcChannel.push("mediaEvent", mediaEvent.buffer);
+    });
 
     this.webrtc.on("connectionError", (e) => setErrorMessage(e.message));
 
-    this.webrtc.on("connected", async (endpointId: string, otherEndpoints: Endpoint<EndpointMetadata, TrackMetadata>[]) => {
-      this.endpoints = otherEndpoints;
-      this.endpoints.forEach((endpoint) => {
-        const displayName = endpoint.metadata?.displayName || "undefined";
-        addVideoElement(endpoint.id, displayName, false);
-      });
-      this.updateParticipantsList();
+    this.webrtc.on(
+      "connected",
+      async (endpointId: string, otherEndpoints: Endpoint[]) => {
+        this.endpoints = otherEndpoints;
+        this.endpoints.forEach((endpoint) => {
+          const metadata = endpoint.metadata as EndpointMetadata | undefined;
+          const displayName = metadata?.displayName || "undefined";
+          addVideoElement(endpoint.id, displayName, false);
+        });
+        this.updateParticipantsList();
 
-      for (const track of this.localStream!.getTracks()) {
-        console.log("addingTrack...");
-        await this.webrtc.addTrack(track, { peer: this.displayName, kind: track.kind });
-        console.log("room addedTrack", track)
+        for (const track of this.localStream!.getTracks()) {
+          console.log("addingTrack...");
+          await this.webrtc.addTrack(track, {
+            peer: this.displayName,
+            kind: track.kind,
+          });
+          console.log("room addedTrack", track);
+        }
       }
+    );
+    this.webrtc.on("connectionError", () => {
+      throw `Endpoint denied.`;
     });
-    this.webrtc.on("connectionError", () => { throw `Endpoint denied.` });
 
-    this.webrtc.on("trackReady", (ctx: TrackContext<EndpointMetadata, TrackMetadata>) => {
+    this.webrtc.on("trackReady", (ctx: TrackContext) => {
       console.log("trackReady", ctx);
-      attachStream(ctx.stream!, ctx.endpoint.id)
+      attachStream(ctx.stream!, ctx.endpoint.id);
     });
 
-    this.webrtc.on("endpointAdded", (endpoint: Endpoint<EndpointMetadata, TrackMetadata>) => {
+    this.webrtc.on("endpointAdded", (endpoint: Endpoint) => {
       this.endpoints.push(endpoint);
       this.updateParticipantsList();
-      addVideoElement(endpoint.id, endpoint.metadata?.displayName!, false);
+      const metadata = endpoint.metadata as EndpointMetadata | undefined;
+      addVideoElement(endpoint.id, metadata?.displayName!, false);
     });
 
-    this.webrtc.on("endpointRemoved", (endpoint: Endpoint<EndpointMetadata, TrackMetadata>) => {
+    this.webrtc.on("endpointRemoved", (endpoint: Endpoint) => {
       this.endpoints = this.endpoints.filter((e) => e.id !== endpoint.id);
       removeVideoElement(endpoint.id);
       this.updateParticipantsList();
     });
 
-    this.webrtcChannel.on("mediaEvent", (event: any) => {
-      console.log("MediaEvent", event);
-      this.webrtc.receiveMediaEvent(event.data);
-    }
-    );
+    this.webrtcChannel.on("mediaEvent", (event: ArrayBuffer) => {
+      const mediaEvent = new Uint8Array(event);
+
+      this.webrtc.receiveMediaEvent(mediaEvent);
+    });
   }
 
   public join = async () => {
@@ -156,7 +166,10 @@ export class Room {
   };
 
   private updateParticipantsList = (): void => {
-    const participantsNames = this.endpoints.map((e) => e.metadata?.displayName!);
+    const participantsNames = this.endpoints.map((endpoint) => {
+      const metadata = endpoint.metadata as EndpointMetadata | undefined;
+      return metadata?.displayName ?? "";
+    });
 
     if (this.displayName) {
       participantsNames.push(this.displayName);
