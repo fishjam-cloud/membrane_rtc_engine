@@ -258,13 +258,13 @@ __metadata:
 
 "@fishjam-cloud/webrtc-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client":
   version: 0.10.2
-  resolution: "@fishjam-cloud/webrtc-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fwebrtc-client&commit=a2f95d5fe2d816fd37673414b0f357c6d63833be"
+  resolution: "@fishjam-cloud/webrtc-client@https://github.com/fishjam-cloud/web-client-sdk.git#workspace=%40fishjam-cloud%2Fwebrtc-client&commit=ecc57934c6925c52911830e86ffbff8582838a85"
   dependencies:
     "@bufbuild/protobuf": "npm:^2.2.3"
     events: "npm:^3.3.0"
     typed-emitter: "npm:^2.1.0"
     uuid: "npm:^11.0.3"
-  checksum: 10c0/abd964c6a106d12882f7bfdf8217fddd3509e03fc24e4d6ef0a9e66644b0e3ccabd4518de35081a9ed705fdc3577707442003720f046a402c132ca81d0d1af3d
+  checksum: 10c0/724f6ccb27c077dead556888bec731f886193403d3ffacf3768b01d2ab3125a8377fe448645438a00e4ee4090bf50824a5b041656b54b32a855cbd76702a01c7
   languageName: node
   linkType: hard
 
