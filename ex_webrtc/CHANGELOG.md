@@ -19,4 +19,5 @@
 * Add rtp metrics [#23](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/23)
 * Improve some logs [#27](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/27)
 * Remove most of the metrics [#29](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/29)
-* Fix no bitrate for audio track [#30](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/30)
+* Fix no bitrate for audio track; Fix examples [#30](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/30)
+
