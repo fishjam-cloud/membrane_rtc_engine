@@ -72,7 +72,7 @@ There is one test of updating metadata functionalities:
 ## Running tests
 
 The test are defined for two media event serialization methods - json or protobuf.
-To run them use `mix test.json` or `mix test.protobuf`.
+To run them use `mix test.protobuf`.
 
 To start integration command simply run in root of the `membrane_rtc_engine` package:
 ```bash
@@ -81,7 +81,7 @@ mix test.ex_webrtc.integration
 
 Alternatively, you can run the following commands in the current directory:
 ```bash
-mix deps.get; cd assets; yarn; cd ..; mix test.json
+mix deps.get; cd assets; yarn; cd ..; mix test.protobuf
 ```
 
 ## Building a container

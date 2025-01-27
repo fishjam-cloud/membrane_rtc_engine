@@ -12,8 +12,8 @@ defmodule TestVideoroom.Browser do
     GenServer.call(browser, :get_playwright)
   end
 
-  def join(browser, button) do
-    GenServer.call(browser, {:join, button})
+  def join(browser, button, params \\ "") do
+    GenServer.call(browser, {:join, button, params})
   end
 
   def click(browser, button) do
@@ -77,8 +77,11 @@ defmodule TestVideoroom.Browser do
   end
 
   @impl true
-  def handle_call({:join, button} = action, _from, state) do
+  def handle_call({:join, button, params} = action, _from, state) do
     Logger.info("mustang: #{state.id}, action: #{inspect(action)}")
+
+    url = Playwright.Page.url(state.page) <> params
+    Playwright.Page.goto(state.page, url)
 
     state.page
     |> Playwright.Page.locator("[id=#{button}]")

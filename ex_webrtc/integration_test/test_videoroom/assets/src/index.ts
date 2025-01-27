@@ -1,4 +1,4 @@
-import { Encoding } from "@fishjam-cloud/ts-client";
+import { Variant } from "@fishjam-cloud/webrtc-client";
 import { Room } from "./room";
 import {
   remoteStreamsStats,
@@ -11,13 +11,13 @@ const data = document.querySelector("div#data") as HTMLElement;
 const getButtonsWithPrefix = (types: string[], prefix: string) => {
   return types.map(
     (type) =>
-      document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement,
+      document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement
   );
 };
 
 const startButtons = getButtonsWithPrefix(
   ["simulcast", "all", "all-update", "mic-only", "camera-only", "none"],
-  "start",
+  "start"
 );
 
 const simulcastButtons = getButtonsWithPrefix(
@@ -29,17 +29,17 @@ const simulcastButtons = getButtonsWithPrefix(
     "peer-medium-variant",
     "peer-high-variant",
   ],
-  "simulcast",
+  "simulcast"
 );
 
 const simulcastStatsButtons: HTMLButtonElement[] = getButtonsWithPrefix(
   ["inbound-stats", "outbound-stats"],
-  "simulcast",
+  "simulcast"
 );
 
 const metadataButtons = getButtonsWithPrefix(
   ["update-peer", "update-track", "peer", "track"],
-  "metadata",
+  "metadata"
 );
 
 const [
@@ -142,7 +142,7 @@ async function refreshStats(statsFunction: (room: Room) => string | object) {
   putStats(stats);
 }
 
-function toggleSimulcastVariant(button: HTMLButtonElement, rid: Encoding) {
+function toggleSimulcastVariant(button: HTMLButtonElement, rid: Variant) {
   const isEnabled = button.textContent?.startsWith("Disable");
   let text = button.textContent;
   if (isEnabled) {
@@ -179,22 +179,22 @@ trackMetadataButton.onclick = () => {
   putStats(room?.lastTrackMetadata!);
 };
 localLowVariantButton.onclick = () => {
-  toggleSimulcastVariant(localLowVariantButton, "l");
+  toggleSimulcastVariant(localLowVariantButton, Variant.VARIANT_LOW);
 };
 localMediumVariantButton.onclick = () => {
-  toggleSimulcastVariant(localMediumVariantButton, "m");
+  toggleSimulcastVariant(localMediumVariantButton, Variant.VARIANT_MEDIUM);
 };
 localHighVariantButton.onclick = () => {
-  toggleSimulcastVariant(localHighVariantButton, "h");
+  toggleSimulcastVariant(localHighVariantButton, Variant.VARIANT_HIGH);
 };
 peerLowVariantButton.onclick = () => {
-  room?.selectPeerSimulcastVariant("l");
+  room?.selectPeerSimulcastVariant(Variant.VARIANT_LOW);
 };
 peerMediumVariantButton.onclick = () => {
-  room?.selectPeerSimulcastVariant("m");
+  room?.selectPeerSimulcastVariant(Variant.VARIANT_MEDIUM);
 };
 peerHighVariantButton.onclick = () => {
-  room?.selectPeerSimulcastVariant("h");
+  room?.selectPeerSimulcastVariant(Variant.VARIANT_HIGH);
 };
 inboundSimulcastStatsButton.onclick = () => {
   refreshStats(inboundSimulcastStreamStats);

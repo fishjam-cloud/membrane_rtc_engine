@@ -82,6 +82,23 @@ defmodule TestVideoroom.Integration.BasicTest do
     assert_stats(browsers, @stats, 20, assertion_function)
   end
 
+
+  @tag timeout: 90_000
+  test "Users joining without trackToBitrates map given", %{browsers: browsers} do
+    Enum.each(browsers, &Browser.join(&1, @start_with_all, "?stubBitrates=true"))
+
+    Process.sleep(@warmup_time)
+
+    assertion_function = fn stats_list ->
+      Enum.each(stats_list, fn stats ->
+        assert count_playing_streams(stats, "audio") == 3
+        assert count_playing_streams(stats, "video") == 3
+      end)
+    end
+
+    assert_stats(browsers, @stats, 20, assertion_function)
+  end
+
   @tag timeout: 90_000
   test "Users joining without either microphone, camera or both can see or hear other users", %{
     browsers: browsers

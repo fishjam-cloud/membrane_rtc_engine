@@ -121,7 +121,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     track_sender = %TrackSender{
       track: track,
-      variant_bitrates: Map.fetch!(state.track_id_to_bitrates, track_id)
+      variant_bitrates: Map.get(state.track_id_to_bitrates, track_id, %{})
     }
 
     spec = [
