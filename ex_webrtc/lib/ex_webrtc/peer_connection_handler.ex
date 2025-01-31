@@ -11,32 +11,28 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
 
-  def_options(
-    endpoint_id: [
-      spec: String.t(),
-      description: "ID of the parent endpoint"
-    ],
-    video_codecs: [
-      spec: [EndpointExWebRTC.video_codec()] | nil,
-      description: "Allowed video codecs"
-    ],
-    telemetry_label: [
-      spec: Keyword.t(),
-      default: [],
-      description: "Label passed to Membrane.TelemetryMetrics functions"
-    ]
-  )
+  def_options endpoint_id: [
+                spec: String.t(),
+                description: "ID of the parent endpoint"
+              ],
+              video_codecs: [
+                spec: [EndpointExWebRTC.video_codec()] | nil,
+                description: "Allowed video codecs"
+              ],
+              telemetry_label: [
+                spec: Keyword.t(),
+                default: [],
+                description: "Label passed to Membrane.TelemetryMetrics functions"
+              ]
 
-  def_input_pad(:input,
+  def_input_pad :input,
     accepted_format: _any,
     availability: :on_request
-  )
 
-  def_output_pad(:output,
+  def_output_pad :output,
     accepted_format: _any,
     availability: :on_request,
     flow_control: :push
-  )
 
   @video_codecs [
     H264: %ExWebRTC.RTPCodecParameters{
@@ -109,7 +105,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       get_stats_interval:
         Application.get_env(:membrane_rtc_engine_ex_webrtc, :get_stats_interval),
       peer_connection_signaling_state: nil,
-      transport_stats: nil
+      prev_transport_stats: nil
     }
 
     if not is_nil(state.get_stats_interval),
@@ -271,11 +267,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     transport_stats =
       state.pc
       |> PeerConnection.get_stats()
-      |> Metrics.emit_transport_event(state.telemetry_label, state.transport_stats)
+      |> Metrics.emit_transport_event(state.telemetry_label, state.prev_transport_stats)
 
     Process.send_after(self(), :get_stats, state.get_stats_interval)
 
-    {[], %{state | transport_stats: transport_stats}}
+    {[], %{state | prev_transport_stats: transport_stats}}
   end
 
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do

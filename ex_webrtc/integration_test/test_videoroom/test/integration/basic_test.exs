@@ -143,8 +143,7 @@ defmodule TestVideoroom.Integration.BasicTest do
     # Wait for media stream flow
     assert_receive {[Endpoint.ExWebRTC, :transport], ^ref, _measurement, _meta}, 15000
 
-    # Ensure that metrics values are growing
-    metrics =
+    sum_metric =
       Enum.reduce(1..8, %{}, fn _idx, prev ->
         assert_receive {[Endpoint.ExWebRTC, :transport], ^ref,
                         %{bytes_sent: bytes_sent, bytes_received: bytes_received},
@@ -152,12 +151,12 @@ defmodule TestVideoroom.Integration.BasicTest do
                        2000
 
         {prev_sent, prev_received} = Map.get(prev, endpoint_id, {0, 0})
-        assert bytes_sent >= prev_sent and bytes_received >= prev_received
+        assert bytes_sent >= 0 and bytes_received >= 0
 
-        Map.put(prev, endpoint_id, {bytes_sent, bytes_received})
+        Map.put(prev, endpoint_id, {prev_sent + bytes_sent, prev_received + bytes_received})
       end)
 
-    Enum.each(metrics, fn {_id, {bytes_sent, bytes_received}} ->
+    Enum.each(sum_metric, fn {_id, {bytes_sent, bytes_received}} ->
       assert bytes_sent > 0 and bytes_received > 0
     end)
   end
