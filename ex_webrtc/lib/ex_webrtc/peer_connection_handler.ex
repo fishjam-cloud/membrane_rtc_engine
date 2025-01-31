@@ -104,7 +104,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       telemetry_label: opts.telemetry_label,
       get_stats_interval:
         Application.get_env(:membrane_rtc_engine_ex_webrtc, :get_stats_interval),
-      peer_connection_signaling_state: nil
+      peer_connection_signaling_state: nil,
+      prev_transport_stats: nil
     }
 
     if not is_nil(state.get_stats_interval),
@@ -263,13 +264,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_info(:get_stats, _ctx, state) do
-    state.pc
-    |> PeerConnection.get_stats()
-    |> Metrics.emit_transport_event(state.telemetry_label)
+    transport_stats =
+      state.pc
+      |> PeerConnection.get_stats()
+      |> Metrics.emit_transport_event(state.telemetry_label, state.prev_transport_stats)
 
     Process.send_after(self(), :get_stats, state.get_stats_interval)
 
-    {[], state}
+    {[], %{state | prev_transport_stats: transport_stats}}
   end
 
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do
