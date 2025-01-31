@@ -82,7 +82,6 @@ defmodule TestVideoroom.Integration.BasicTest do
     assert_stats(browsers, @stats, 20, assertion_function)
   end
 
-
   @tag timeout: 90_000
   test "Users joining without trackToBitrates map given", %{browsers: browsers} do
     Enum.each(browsers, &Browser.join(&1, @start_with_all, "?stubBitrates=true"))

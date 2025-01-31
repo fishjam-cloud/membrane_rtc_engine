@@ -25,12 +25,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics do
     ]
   end
 
-  @spec emit_transport_event(map(), Keyword.t()) :: :ok
-  def emit_transport_event(%{transport: transport}, telemetry_label) do
+  @spec emit_transport_event(map(), Keyword.t(), map()) :: :ok
+  def emit_transport_event(rtc_state, telemetry_label, nil) do
+    emit_transport_event(rtc_stats, telemetry_label, %{bytes_received: 0, bytes_sent: 0})
+  end
+
+  def emit_transport_event(%{transport: transport}, telemetry_label, prev_transport) do
     :telemetry.execute(
       [Endpoint.ExWebRTC, :transport],
-      %{bytes_received: transport.bytes_received, bytes_sent: transport.bytes_sent},
+      %{
+        bytes_received: prev_transport.bytes_received - transport.bytes_received,
+        bytes_sent: prev_transport.bytes_sent - transport.bytes_sent
+      },
       Map.new(telemetry_label)
     )
+
+    transport
   end
 end
