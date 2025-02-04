@@ -961,7 +961,7 @@ defmodule Membrane.RTC.Engine do
          _ctx,
          state
        ) do
-    Membrane.Logger.info(
+    Membrane.Logger.warning(
       "New incoming #{encoding} track #{track_id} (variant: #{variant}) from endpoint #{inspect(endpoint_id)}"
     )
 
