@@ -271,6 +271,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     tracks_added = get_new_tracks_actions(new_tracks, state)
     offer_data = get_offer_data(state)
 
+    Membrane.Logger.warning("NEW TRACKS, SENDING OFFER DATA: #{inspect(offer_data)}")
+
     {tracks_added ++ offer_data, %{state | negotiation?: true}}
   end
 
@@ -400,6 +402,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   defp handle_media_event(:renegotiate_tracks, _data, _ctx, state) do
     actions = get_offer_data(state)
 
+    Membrane.Logger.warning("MEDIA EVENT REGENOTIATE TRACKS, SENDING OFFER DATA: #{inspect(actions)}")
+
     {actions, %{state | negotiation?: true}}
   end
 
@@ -501,6 +505,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
 
       offer_data = get_offer_data(state)
+
+      Membrane.Logger.warning("NEGOTIATION DONE, SENDING OFFER DATA: #{inspect(offer_data)}")
+
       {offer_data, %{state | negotiation?: true, queued_negotiation?: false}}
     end
   end
@@ -518,6 +525,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_child_notification(:renegotiate, :connection_handler, _ctx, state) do
     actions = get_offer_data(state)
+
+    Membrane.Logger.warning("CONNECTION HANDLER RENEGOTIATE, SENDING OFFER DATA: #{inspect(actions)}")
+
 
     {actions, %{state | negotiation?: true}}
   end

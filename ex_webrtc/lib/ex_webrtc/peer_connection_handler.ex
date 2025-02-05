@@ -539,6 +539,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         metadata: Map.get(state.track_id_to_metadata, track_id),
         variants: variants
       )
+    Membrane.Logger.warning("TRANSCIEVERS: #{inspect(transceivers)}")
 
     Membrane.Logger.warning("CONNECTION ADDING TRACK: #{inspect(track)}, MID: #{inspect(mid)}")
     new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
