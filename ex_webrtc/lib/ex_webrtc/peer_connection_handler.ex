@@ -175,7 +175,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     Membrane.Logger.warning(
       "RECEIVED OFFER: #{inspect(offer, structs: false, limit: :infinity, printable_limit: :infinity)}"
     )
-
+    result = Registry.lookup(Membrane.RTC.Engine.Registry.PeerConnection, state.endpoint_id)
+    Membrane.Logger.error("PID: SELF: #{inspect(self())}, PERRCONNECTION: #{inspect(result)}")
     state = update_in(state.mid_to_track_id, &Map.merge(&1, mid_to_track_id))
 
     track_id_to_metadata = Map.get(event, :track_id_to_track_metadata, %{})
