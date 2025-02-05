@@ -171,7 +171,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   def handle_parent_notification({:offer, event, new_outbound_tracks}, _ctx, state) do
     %{sdp_offer: offer, mid_to_track_id: mid_to_track_id} = event
     Membrane.Logger.warning("RECEIVED MIDS: #{inspect(mid_to_track_id)}")
-    Membrane.Logger.warning("RECEIVED OFFER: #{inspect(offer)}")
+
+    Membrane.Logger.warning(
+      "RECEIVED OFFER: #{inspect(offer, structs: false, limit: :infinity, printable_limit: :infinity)}"
+    )
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, mid_to_track_id))
 
