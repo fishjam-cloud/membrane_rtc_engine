@@ -61,8 +61,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_init(_ctx, opts) do
-    %{endpoint_id: endpoint_id} = opts
-
     video_codecs =
       if opts.video_codecs do
         Enum.filter(@video_codecs, fn {codec, _params} ->
@@ -82,19 +80,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
-    peer_connection = {:via, Registry, {Membrane.RTC.Engine.Registry.PeerConnection, endpoint_id}}
-    pc_gen_server_options = [name: peer_connection]
-
-    child_spec = %{
-      id: :peer_connection,
-      start: {PeerConnection, :start_link, [pc_options, pc_gen_server_options]}
-    }
-
-    {:ok, _sup} = Supervisor.start_link([child_spec], strategy: :one_for_one)
+    {:ok, pc} = PeerConnection.start_link(pc_options)
 
     state = %{
-      pc: peer_connection,
-      endpoint_id: endpoint_id,
+      pc: pc,
+      endpoint_id: opts.endpoint_id,
       # maps track_id to webrtc_track_id
       outbound_tracks: %{},
       # maps webrtc_track_id to InboundTrack
@@ -108,7 +98,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       prev_transport_stats: nil
     }
 
-    if not is_nil(state.get_stats_interval),
+    unless is_nil(state.get_stats_interval),
       do: Process.send_after(self(), :get_stats, state.get_stats_interval)
 
     {[], state}
