@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.VAD do
   @moduledoc false
 
-  alias Membrane.RTP.{VadEvent, Utils}
+  alias Membrane.RTP.{Utils, VadEvent}
   alias Membrane.RTP.Vad.{AudioLevelQueue, IsSpeakingEstimator}
 
   @enforce_keys [
