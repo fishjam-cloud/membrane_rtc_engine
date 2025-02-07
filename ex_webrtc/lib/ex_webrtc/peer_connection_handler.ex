@@ -182,7 +182,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     tracks_action = if Enum.empty?(tracks), do: [], else: [notify_parent: {:new_tracks, tracks}]
     {tracks_removed_action, state} = get_tracks_removed_action(state)
 
-    {answer_action ++ tracks_action ++ tracks_removed_action, state}
+    {answer_action ++ tracks_removed_action ++ tracks_action, state}
   end
 
   @impl true
@@ -445,24 +445,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp receive_new_tracks_from_webrtc(state) do
-    do_receive_new_tracks([]) |> make_tracks(state)
+    []
+    |> do_receive_new_tracks()
+    |> make_tracks(state)
   end
 
   defp do_receive_new_tracks(acc) do
     receive do
       {:ex_webrtc, pc, {:track, track}} ->
-        transceiver =
-          PeerConnection.get_transceivers(pc)
-          |> Enum.find(fn transceiver ->
-            not is_nil(transceiver.receiver.track) and
-              transceiver.receiver.track.id == track.id
-          end)
+        transceivers = PeerConnection.get_transceivers(pc)
+
+        # based on spec in RTCTransciever track is always present
+        track_transciever =
+          Enum.find(transceivers, &(&1.receiver.track.id == track.id))
 
         Membrane.Logger.info("new track #{inspect(track)}")
 
-        if is_nil(transceiver) do
-          transceivers = PeerConnection.get_transceivers(pc)
-
+        if is_nil(track_transciever) do
           Logger.error(
             "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
             This is likely caused by incompatible codecs"
@@ -470,15 +469,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
           do_receive_new_tracks(acc)
         else
-          PeerConnection.set_transceiver_direction(pc, transceiver.id, :sendrecv)
+          PeerConnection.set_transceiver_direction(pc, track_transciever.id, :sendrecv)
 
           PeerConnection.replace_track(
             pc,
-            transceiver.sender.id,
+            track_transciever.sender.id,
             MediaStreamTrack.new(track.kind)
           )
 
-          PeerConnection.set_transceiver_direction(pc, transceiver.id, :recvonly)
+          PeerConnection.set_transceiver_direction(pc, track_transciever.id, :recvonly)
           do_receive_new_tracks([track | acc])
         end
     after
@@ -514,27 +513,43 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     track_id = Map.fetch!(state.mid_to_track_id, mid)
 
-    simulcast? = not is_nil(track.rids)
+    track_exists? =
+      state.inbound_tracks
+      |> Map.values()
+      |> Enum.find(&(&1.track_id == track_id))
 
-    variants =
-      if simulcast?, do: Enum.map(track.rids, &EndpointExWebRTC.to_track_variant/1), else: [:high]
-
-    engine_track =
-      Track.new(
-        kind,
-        MediaStreamTrack.generate_stream_id(),
-        state.endpoint_id,
-        encoding,
-        codec.clock_rate,
-        codec.sdp_fmtp_line,
-        id: track_id,
-        metadata: Map.get(state.track_id_to_metadata, track_id),
-        variants: variants
+    if track_exists? do
+      Membrane.Logger.error(
+        "Engine track with id #{track_id} was already added. This track will be ignored otherwise it would cause engine crash. \
+        WebRTC Track: #{inspect(track)}, with mid: #{mid}"
       )
 
-    new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
+      do_make_tracks(tracks, transceivers, state, acc)
+    else
+      simulcast? = not is_nil(track.rids)
 
-    state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
-    do_make_tracks(tracks, transceivers, state, [engine_track | acc])
+      variants =
+        if simulcast?,
+          do: Enum.map(track.rids, &EndpointExWebRTC.to_track_variant/1),
+          else: [:high]
+
+      engine_track =
+        Track.new(
+          kind,
+          MediaStreamTrack.generate_stream_id(),
+          state.endpoint_id,
+          encoding,
+          codec.clock_rate,
+          codec.sdp_fmtp_line,
+          id: track_id,
+          metadata: Map.get(state.track_id_to_metadata, track_id),
+          variants: variants
+        )
+
+      new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
+
+      state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
+      do_make_tracks(tracks, transceivers, state, [engine_track | acc])
+    end
   end
 end
