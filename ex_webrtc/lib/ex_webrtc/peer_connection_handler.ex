@@ -264,6 +264,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {[], %{state | prev_transport_stats: transport_stats}}
   end
 
+  @impl true
+  def handle_terminate_request(_ctx, state) do
+    PeerConnection.close(state.pc)
+
+    {[terminate: :normal], state}
+  end
+
   defp handle_webrtc_msg({:ice_candidate, candidate}, _ctx, state) do
     msg = {:candidate, candidate}
     {[notify_parent: msg], state}
