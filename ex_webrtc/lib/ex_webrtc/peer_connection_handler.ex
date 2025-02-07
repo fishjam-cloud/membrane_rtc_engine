@@ -7,6 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   alias Membrane.Buffer
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.VAD
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
@@ -50,6 +51,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     }
   ]
 
+  @audio_level_uri "urn:ietf:params:rtp-hdrext:ssrc-audio-level"
+
   defmodule InboundTrack do
     @moduledoc false
 
@@ -76,7 +79,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
         ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
         video_codecs: video_codecs,
-        controlling_process: self()
+        controlling_process: self(),
+        rtp_header_extensions:
+          PeerConnection.Configuration.default_rtp_header_extensions() ++
+            [%{type: :audio, uri: @audio_level_uri}]
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
@@ -90,6 +96,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       outbound_tracks: %{},
       # maps webrtc_track_id to InboundTrack
       inbound_tracks: %{},
+      # maps webrtc_track_id to VAD
+      inbound_tracks_vad: %{},
       mid_to_track_id: %{},
       track_id_to_metadata: %{},
       telemetry_label: opts.telemetry_label,
@@ -316,36 +324,37 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
     variant = EndpointExWebRTC.to_track_variant(rid)
 
-    actions =
-      with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
-           pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
-           true <- Map.has_key?(ctx.pads, pad) do
-        rtp =
-          packet
-          |> Map.from_struct()
-          |> Map.take([
-            :csrc,
-            :extensions,
-            :marker,
-            :padding_size,
-            :payload_type,
-            :sequence_number,
-            :ssrc,
-            :timestamp
-          ])
+    with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
+         {:ok, vad} <- Map.fetch(state.inbound_tracks_vad, webrtc_track_id),
+         pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
+         true <- Map.has_key?(ctx.pads, pad) do
+      rtp =
+        packet
+        |> Map.from_struct()
+        |> Map.take([
+          :csrc,
+          :extensions,
+          :marker,
+          :padding_size,
+          :payload_type,
+          :sequence_number,
+          :ssrc,
+          :timestamp
+        ])
 
-        buffer = %Buffer{
-          pts: packet.timestamp,
-          payload: packet.payload,
-          metadata: %{rtp: rtp}
-        }
+      buffer = %Buffer{
+        pts: packet.timestamp,
+        payload: packet.payload,
+        metadata: %{rtp: rtp}
+      }
 
-        [buffer: {pad, buffer}]
-      else
-        _other -> []
-      end
+      vad = VAD.update(vad, packet)
+      actions = VAD.maybe_send_event(vad, pad) ++ [buffer: {pad, buffer}]
 
-    {actions, state}
+      {actions, update_in(state.inbound_tracks_vad, &Map.put(&1, webrtc_track_id, vad))}
+    else
+      _other -> {[], state}
+    end
   end
 
   defp handle_webrtc_msg({:signaling_state_change, new_state}, _ctx, state) do
@@ -469,10 +478,16 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         Enum.map(removed_tracks, &Map.get(state.inbound_tracks, &1).track_id)
 
       inbound_tracks = Map.drop(state.inbound_tracks, removed_tracks)
+      inbound_tracks_vad = Map.drop(state.inbound_tracks_vad, removed_tracks)
       mid_to_track_id = Map.drop(state.mid_to_track_id, removed_mids)
 
       {[notify_parent: {:tracks_removed, removed_track_ids}],
-       %{state | inbound_tracks: inbound_tracks, mid_to_track_id: mid_to_track_id}}
+       %{
+         state
+         | inbound_tracks: inbound_tracks,
+           inbound_tracks_vad: inbound_tracks_vad,
+           mid_to_track_id: mid_to_track_id
+       }}
     end
   end
 
@@ -577,10 +592,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           variants: variants
         )
 
-      new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
+    new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
 
-      state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
-      do_make_tracks(tracks, transceivers, state, [engine_track | acc])
+    audio_extensions = ExWebRTC.PeerConnection.get_configuration(state.pc).audio_extensions
+    vad_extension = Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
+
+    state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
+
+    state =
+      update_in(
+        state.inbound_tracks_vad,
+        &Map.put(&1, rtc_track_id, EndpointExWebRTC.VAD.new(vad_extension.id))
+      )
+
+    do_make_tracks(tracks, transceivers, state, [engine_track | acc])
     end
   end
 end
