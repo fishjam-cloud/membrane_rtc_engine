@@ -325,7 +325,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     variant = EndpointExWebRTC.to_track_variant(rid)
 
     with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
-         {:ok, vad} <- Map.fetch(state.inbound_tracks_vad, webrtc_track_id),
          pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
          true <- Map.has_key?(ctx.pads, pad) do
       rtp =
@@ -348,10 +347,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         metadata: %{rtp: rtp}
       }
 
-      vad = VAD.update(vad, packet)
-      actions = VAD.maybe_send_event(vad, pad) ++ [buffer: {pad, buffer}]
+      {action, state} = maybe_update_vad(state, webrtc_track_id, pad, packet)
 
-      {actions, update_in(state.inbound_tracks_vad, &Map.put(&1, webrtc_track_id, vad))}
+      {action ++ [buffer: {pad, buffer}], state}
     else
       _other -> {[], state}
     end
@@ -594,18 +592,40 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
 
+    state =
+      state
+      |> update_in([:inbound_tracks], &Map.put(&1, rtc_track_id, new_inbound_track))
+      |> maybe_add_vad(track)
+
+    do_make_tracks(tracks, transceivers, state, [engine_track | acc])
+    end
+  end
+
+  defp maybe_add_vad(state, track) do
     audio_extensions = ExWebRTC.PeerConnection.get_configuration(state.pc).audio_extensions
     vad_extension = Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
 
-    state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
+    case track.kind do
+      :audio ->
+        update_in(
+          state.inbound_tracks_vad,
+          &Map.put(&1, track.id, EndpointExWebRTC.VAD.new(vad_extension.id))
+        )
 
-    state =
-      update_in(
-        state.inbound_tracks_vad,
-        &Map.put(&1, rtc_track_id, EndpointExWebRTC.VAD.new(vad_extension.id))
-      )
+      :video ->
+        state
+    end
+  end
 
-    do_make_tracks(tracks, transceivers, state, [engine_track | acc])
+  defp maybe_update_vad(state, id, pad, packet) do
+    with {:ok, vad} <- Map.fetch(state.inbound_tracks_vad, id) do
+      vad = VAD.update(vad, packet)
+      actions = VAD.maybe_send_event(vad, pad)
+      state = update_in(state.inbound_tracks_vad, &Map.put(&1, id, vad))
+
+      {actions, state}
+    else
+      :error -> {[], state}
     end
   end
 end
