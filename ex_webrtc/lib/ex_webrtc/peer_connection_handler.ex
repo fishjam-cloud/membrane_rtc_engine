@@ -80,7 +80,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
-    {:ok, pc} = PeerConnection.start_link(pc_options)
+    {:ok, pc} = PeerConnection.start(pc_options)
+    Process.monitor(pc)
 
     state = %{
       pc: pc,
@@ -98,7 +99,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       prev_transport_stats: nil
     }
 
-    unless is_nil(state.get_stats_interval),
+    if not is_nil(state.get_stats_interval),
       do: Process.send_after(self(), :get_stats, state.get_stats_interval)
 
     {[], state}
@@ -265,8 +266,39 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
+  def handle_info({:DOWN, _ref, :process, pc, reason}, _ctx, %{pc: pc} = state) do
+    case reason do
+      {:shutdown, :peer_closed_for_writing} ->
+        Membrane.Logger.debug(
+          "PeerConnection closed on client side. ExWebrtc reason: #{inspect(reason)}"
+        )
+
+        {[terminate: :normal], state}
+
+      :normal ->
+        # Reason normal means that `PeerConnection.close` function was invoked
+        # This is unexpected because PeerConnection is only closed on termination
+        Membrane.Logger.error("PeerConnection unexpectedly closed with reason: :normal")
+        {[terminate: {:crash, :peer_connection_closed}], state}
+
+      {:shutdown, reason} ->
+        Membrane.Logger.error(
+          "PeerConnection unexpectedly closed with reason: #{inspect(reason)}"
+        )
+
+        {[terminate: {:crash, reason}], state}
+
+      reason ->
+        Membrane.Logger.error("PeerConnection crashed with reason: #{inspect(reason)}")
+        {[terminate: reason], state}
+    end
+
+    {[], state}
+  end
+
+  @impl true
   def handle_terminate_request(_ctx, state) do
-    PeerConnection.close(state.pc)
+    if Process.alive?(state.pc), do: PeerConnection.close(state.pc)
 
     {[terminate: :normal], state}
   end
@@ -455,13 +487,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       {:ex_webrtc, pc, {:track, track}} ->
         transceivers = PeerConnection.get_transceivers(pc)
 
-        # based on spec in RTCTransciever track is always present
-        track_transciever =
+        track_transceiver =
           Enum.find(transceivers, &(&1.receiver.track.id == track.id))
 
         Membrane.Logger.info("new track #{inspect(track)}")
 
-        if is_nil(track_transciever) do
+        if is_nil(track_transceiver) do
           Logger.error(
             "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
             This is likely caused by incompatible codecs"
@@ -469,15 +500,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
           do_receive_new_tracks(acc)
         else
-          PeerConnection.set_transceiver_direction(pc, track_transciever.id, :sendrecv)
+          PeerConnection.set_transceiver_direction(pc, track_transceiver.id, :sendrecv)
 
           PeerConnection.replace_track(
             pc,
-            track_transciever.sender.id,
+            track_transceiver.sender.id,
             MediaStreamTrack.new(track.kind)
           )
 
-          PeerConnection.set_transceiver_direction(pc, track_transciever.id, :recvonly)
+          PeerConnection.set_transceiver_direction(pc, track_transceiver.id, :recvonly)
           do_receive_new_tracks([track | acc])
         end
     after
@@ -513,12 +544,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     track_id = Map.fetch!(state.mid_to_track_id, mid)
 
-    track_exists? =
+    track_already_exists? =
       state.inbound_tracks
       |> Map.values()
       |> Enum.find(&(&1.track_id == track_id))
 
-    if track_exists? do
+    if track_already_exists? do
       Membrane.Logger.error(
         "Engine track with id #{track_id} was already added. This track will be ignored otherwise it would cause engine crash. \
         WebRTC Track: #{inspect(track)}, with mid: #{mid}"
