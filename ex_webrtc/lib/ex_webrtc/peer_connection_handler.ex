@@ -210,20 +210,30 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     transceivers = PeerConnection.get_transceivers(state.pc)
 
-    removed_mids =
-      Enum.map(webrtc_track_ids, fn webrtc_track_id ->
-        transceiver =
-          Enum.find(
-            transceivers,
-            &(not is_nil(&1.sender.track) and &1.sender.track.id == webrtc_track_id)
-          )
+    Enum.each(webrtc_track_ids, fn webrtc_track_id ->
+      transceiver =
+        Enum.find(
+          transceivers,
+          &(not is_nil(&1.sender.track) and &1.sender.track.id == webrtc_track_id)
+        )
 
+      if not is_nil(transceiver) do
         :ok = PeerConnection.remove_track(state.pc, transceiver.sender.id)
-        transceiver.mid
-      end)
+      end
+    end)
 
     state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
-    state = update_in(state.mid_to_track_id, &Map.drop(&1, removed_mids))
+
+    state =
+      update_in(
+        state.mid_to_track_id,
+        fn mid_to_track ->
+          mid_to_track
+          |> Enum.filter(fn {_mid, id} -> id not in track_ids end)
+          |> Map.new()
+        end
+      )
+
     {[], state}
   end
 
