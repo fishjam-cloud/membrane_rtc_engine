@@ -539,12 +539,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_child_notification(
-        {:variant_switched, _new_variant, _reason},
-        :track_receiver,
+        {:voice_activity_changed, vad},
+        {:track_receiver, track_id},
         _ctx,
-        state
+        %{event_serializer: serializer} = state
       ) do
-    {[], state}
+    action = track_id |> serializer.voice_activity(vad) |> serializer.to_action()
+    {action, state}
   end
 
   @impl true

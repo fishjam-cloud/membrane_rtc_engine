@@ -50,13 +50,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     }
   ]
 
+  @audio_level_uri "urn:ietf:params:rtp-hdrext:ssrc-audio-level"
+
   defmodule InboundTrack do
     @moduledoc false
 
-    @enforce_keys [:track_id, :simulcast?]
+    @enforce_keys [:track_id, :simulcast?, :vad]
     defstruct @enforce_keys
 
-    @type t() :: %__MODULE__{track_id: Track.id(), simulcast?: boolean()}
+    @type t() :: %__MODULE__{
+            track_id: Track.id(),
+            simulcast?: boolean(),
+            vad: EndpointExWebRTC.VAD.t() | nil
+          }
   end
 
   @impl true
@@ -76,7 +82,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
         ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
         video_codecs: video_codecs,
-        controlling_process: self()
+        controlling_process: self(),
+        rtp_header_extensions:
+          PeerConnection.Configuration.default_rtp_header_extensions() ++
+            [%{type: :audio, uri: @audio_level_uri}]
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
@@ -316,36 +325,35 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
     variant = EndpointExWebRTC.to_track_variant(rid)
 
-    actions =
-      with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
-           pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
-           true <- Map.has_key?(ctx.pads, pad) do
-        rtp =
-          packet
-          |> Map.from_struct()
-          |> Map.take([
-            :csrc,
-            :extensions,
-            :marker,
-            :padding_size,
-            :payload_type,
-            :sequence_number,
-            :ssrc,
-            :timestamp
-          ])
+    with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
+         pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
+         true <- Map.has_key?(ctx.pads, pad) do
+      rtp =
+        packet
+        |> Map.from_struct()
+        |> Map.take([
+          :csrc,
+          :extensions,
+          :marker,
+          :padding_size,
+          :payload_type,
+          :sequence_number,
+          :ssrc,
+          :timestamp
+        ])
 
-        buffer = %Buffer{
-          pts: packet.timestamp,
-          payload: packet.payload,
-          metadata: %{rtp: rtp}
-        }
+      buffer = %Buffer{
+        pts: packet.timestamp,
+        payload: packet.payload,
+        metadata: %{rtp: rtp}
+      }
 
-        [buffer: {pad, buffer}]
-      else
-        _other -> []
-      end
+      {action, state} = maybe_update_vad(state, inbound_track, webrtc_track_id, pad, packet)
 
-    {actions, state}
+      {action ++ [buffer: {pad, buffer}], state}
+    else
+      _other -> {[], state}
+    end
   end
 
   defp handle_webrtc_msg({:signaling_state_change, new_state}, _ctx, state) do
@@ -577,10 +585,38 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           variants: variants
         )
 
-      new_inbound_track = %InboundTrack{track_id: track_id, simulcast?: simulcast?}
+      new_inbound_track = %InboundTrack{
+        track_id: track_id,
+        simulcast?: simulcast?,
+        vad: maybe_add_vad(state, track)
+      }
 
       state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
+
       do_make_tracks(tracks, transceivers, state, [engine_track | acc])
     end
+  end
+
+  defp maybe_add_vad(state, track) do
+    audio_extensions = ExWebRTC.PeerConnection.get_configuration(state.pc).audio_extensions
+    vad_extension = Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
+
+    case track.kind do
+      :audio -> EndpointExWebRTC.VAD.new(vad_extension.id)
+      :video -> nil
+    end
+  end
+
+  defp maybe_update_vad(state, %{vad: nil}, _id, _pad, _packet) do
+    {[], state}
+  end
+
+  defp maybe_update_vad(state, %{vad: vad}, id, pad, packet) do
+    vad = EndpointExWebRTC.VAD.update(vad, packet)
+    actions = EndpointExWebRTC.VAD.maybe_send_event(vad, pad)
+
+    state = update_in(state, [:inbound_tracks, id], &Map.put(&1, :vad, vad))
+
+    {actions, state}
   end
 end
