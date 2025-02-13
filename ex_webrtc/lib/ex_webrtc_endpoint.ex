@@ -144,7 +144,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       bin_input(pad)
       |> child({:track_receiver, track_id}, %TrackReceiver{
         track: track.engine_track,
-        initial_target_variant: :h
+        initial_target_variant: :low
       })
       |> via_in(pad)
       |> get_child(:connection_handler)
