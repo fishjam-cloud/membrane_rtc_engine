@@ -105,6 +105,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       get_stats_interval:
         Application.get_env(:membrane_rtc_engine_ex_webrtc, :get_stats_interval),
       peer_connection_signaling_state: nil,
+      connection_state: nil,
       prev_transport_stats: nil
     }
 
@@ -366,10 +367,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     end
   end
 
+  defp handle_webrtc_msg({:connection_state_change, connection_state}, _ctx, state) do
+    actions =
+      case {connection_state, state.peer_connection_signaling_state} do
+        {:connected, :stable} -> [notify_parent: :negotiation_done]
+        _other -> []
+      end
+
+    {actions, %{state | connection_state: connection_state}}
+  end
+
   defp handle_webrtc_msg({:signaling_state_change, new_state}, _ctx, state) do
     actions =
-      case {state.peer_connection_signaling_state, new_state} do
-        {:have_remote_offer, :stable} -> [notify_parent: :negotiation_done]
+      case {state.peer_connection_signaling_state, new_state, state.connection_state} do
+        {:have_remote_offer, :stable, :connected} -> [notify_parent: :negotiation_done]
         _other -> []
       end
 
@@ -390,7 +401,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg(msg, _ctx, state) do
-    Membrane.Logger.debug("Unexpected message from webrtc: #{inspect(msg)}")
+    Membrane.Logger.debug("Ignoring message from webrtc: #{inspect(msg)}")
     {[], state}
   end
 

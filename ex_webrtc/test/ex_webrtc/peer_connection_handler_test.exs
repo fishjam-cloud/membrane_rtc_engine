@@ -65,6 +65,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              engine_track
 
     PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -93,6 +94,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
 
     PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -125,6 +127,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
     )
 
+    PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
+
     assert_pipeline_notified(pipeline, :handler, {:new_tracks, tracks})
 
     assert length(tracks) == 2
@@ -146,8 +151,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              encoding: :OPUS,
              variants: [:high]
            } = engine_audio_track
-
-    PeerConnection.set_remote_description(pc, answer)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -176,6 +179,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     )
 
     PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -207,9 +211,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
     )
 
-    refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
-
     PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
+
+    refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -281,5 +286,23 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
     {engine_track, track}
+  end
+
+  defp connect_peer_connection(pipeline, pc) do
+    assert_pipeline_notified(pipeline, :handler, {:candidate, candidate})
+    PeerConnection.add_ice_candidate(pc, candidate)
+
+    receive do
+      {:ex_webrtc, ^pc, {:ice_candidate, candidate}} ->
+        Pipeline.notify_child(pipeline, :handler, {:candidate, candidate})
+    after
+      5000 -> raise "Unable to connect"
+    end
+
+    receive do
+      {:ex_webrtc, ^pc, {:connection_state_change, :connected}} -> :ok
+    after
+      5000 -> raise "Unable to connect"
+    end
   end
 end
