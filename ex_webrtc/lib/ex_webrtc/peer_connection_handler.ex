@@ -7,6 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   alias Membrane.Buffer
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Metrics
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler.InboundTrack
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
@@ -51,19 +52,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   ]
 
   @audio_level_uri "urn:ietf:params:rtp-hdrext:ssrc-audio-level"
-
-  defmodule InboundTrack do
-    @moduledoc false
-
-    @enforce_keys [:track_id, :simulcast?, :vad]
-    defstruct @enforce_keys
-
-    @type t() :: %__MODULE__{
-            track_id: Track.id(),
-            simulcast?: boolean(),
-            vad: EndpointExWebRTC.VAD.t() | nil
-          }
-  end
 
   @impl true
   def handle_init(_ctx, opts) do
@@ -116,7 +104,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(:output, {_track_id, _variant}) = pad, _ctx, state) do
+  def handle_pad_added(Pad.ref(:output, {track_id, variant}) = pad, _ctx, state) do
+    {webrtc_track_id, _inbound_track} =
+      Enum.find(state.inbound_tracks, fn {_id, track} -> track.track_id == track_id end)
+
+    state =
+      update_in(
+        state,
+        [:inbound_tracks, webrtc_track_id],
+        &InboundTrack.update_variant_state(&1, variant, :linked)
+      )
+
     {[stream_format: {pad, %Membrane.RTP{}}], state}
   end
 
@@ -333,37 +331,30 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     {[], state}
   end
 
-  defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
+  defp handle_webrtc_msg({:rtp, webrtc_track_id, rid, _packet} = msg, ctx, state) do
     variant = EndpointExWebRTC.to_track_variant(rid)
 
-    with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
-         pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
-         true <- Map.has_key?(ctx.pads, pad) do
-      rtp =
-        packet
-        |> Map.from_struct()
-        |> Map.take([
-          :csrc,
-          :extensions,
-          :marker,
-          :padding_size,
-          :payload_type,
-          :sequence_number,
-          :ssrc,
-          :timestamp
-        ])
+    case Map.get(state.inbound_tracks, webrtc_track_id) do
+      %InboundTrack{variants: %{^variant => :new}} = track ->
+        state =
+          update_in(
+            state,
+            [:inbound_tracks, webrtc_track_id],
+            &InboundTrack.update_variant_state(&1, variant, :ready)
+          )
 
-      buffer = %Buffer{
-        pts: packet.timestamp,
-        payload: packet.payload,
-        metadata: %{rtp: rtp}
-      }
+        {[
+           notify_parent: {:track_ready, track.track_id, variant, track.encoding}
+         ], state}
 
-      {action, state} = maybe_update_vad(state, inbound_track, webrtc_track_id, pad, packet)
+      %InboundTrack{variants: %{^variant => :ready}} ->
+        {[], state}
 
-      {action ++ [buffer: {pad, buffer}], state}
-    else
-      _other -> {[], state}
+      %InboundTrack{variants: %{^variant => :linked}} ->
+        forward_inbound_packet(msg, ctx, state)
+
+      _other ->
+        {[], state}
     end
   end
 
@@ -403,6 +394,41 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   defp handle_webrtc_msg(msg, _ctx, state) do
     Membrane.Logger.debug("Ignoring message from webrtc: #{inspect(msg)}")
     {[], state}
+  end
+
+  defp forward_inbound_packet({:rtp, webrtc_track_id, rid, packet}, ctx, state) do
+    variant = EndpointExWebRTC.to_track_variant(rid)
+
+    with {:ok, inbound_track} <- Map.fetch(state.inbound_tracks, webrtc_track_id),
+         pad <- Pad.ref(:output, {inbound_track.track_id, variant}),
+         true <- Map.has_key?(ctx.pads, pad) do
+      rtp =
+        packet
+        |> Map.from_struct()
+        |> Map.take([
+          :csrc,
+          :extensions,
+          :marker,
+          :padding_size,
+          :payload_type,
+          :sequence_number,
+          :ssrc,
+          :timestamp
+        ])
+
+      buffer = %Buffer{
+        pts: packet.timestamp,
+        payload: packet.payload,
+        metadata: %{rtp: rtp}
+      }
+
+      {action, inbound_track} = InboundTrack.maybe_update_vad(inbound_track, pad, packet)
+      state = put_in(state, [:inbound_tracks, webrtc_track_id], inbound_track)
+
+      {action ++ [buffer: {pad, buffer}], state}
+    else
+      _other -> {[], state}
+    end
   end
 
   defp pli_event(webrtc_track_id, state) do
@@ -606,11 +632,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           variants: variants
         )
 
-      new_inbound_track = %InboundTrack{
-        track_id: track_id,
-        simulcast?: simulcast?,
-        vad: maybe_add_vad(state, track)
-      }
+      new_inbound_track = InboundTrack.init(track_id, track, encoding, vad_extension(state))
 
       state = update_in(state.inbound_tracks, &Map.put(&1, rtc_track_id, new_inbound_track))
 
@@ -618,26 +640,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     end
   end
 
-  defp maybe_add_vad(state, track) do
+  defp vad_extension(state) do
     audio_extensions = ExWebRTC.PeerConnection.get_configuration(state.pc).audio_extensions
-    vad_extension = Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
-
-    case track.kind do
-      :audio -> EndpointExWebRTC.VAD.new(vad_extension.id)
-      :video -> nil
-    end
-  end
-
-  defp maybe_update_vad(state, %{vad: nil}, _id, _pad, _packet) do
-    {[], state}
-  end
-
-  defp maybe_update_vad(state, %{vad: vad}, id, pad, packet) do
-    vad = EndpointExWebRTC.VAD.update(vad, packet)
-    actions = EndpointExWebRTC.VAD.maybe_send_event(vad, pad)
-
-    state = update_in(state, [:inbound_tracks, id], &Map.put(&1, :vad, vad))
-
-    {actions, state}
+    Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
   end
 end
