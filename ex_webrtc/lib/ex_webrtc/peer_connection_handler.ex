@@ -555,15 +555,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
           do_receive_new_tracks(acc)
         else
-          PeerConnection.set_transceiver_direction(pc, track_transceiver.id, :sendrecv)
-
-          PeerConnection.replace_track(
-            pc,
-            track_transceiver.sender.id,
-            MediaStreamTrack.new(track.kind)
-          )
-
-          PeerConnection.set_transceiver_direction(pc, track_transceiver.id, :recvonly)
           do_receive_new_tracks([track | acc])
         end
     after
