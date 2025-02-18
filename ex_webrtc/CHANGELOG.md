@@ -24,3 +24,5 @@
 * Handle the same track added twice [#32](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/32)
 * Add voice activity detection [#33](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/33)
 * Fix track removed error in PeerConnectionHandler [#34](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/34)
+* Wait for PeerConnection to make a connection [#35](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/35)
+* Set track ready on first packet arrival [#36](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/36)
