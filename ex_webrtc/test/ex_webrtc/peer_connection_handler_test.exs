@@ -159,7 +159,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert Enum.all?(transceivers, &(&1.current_direction == :sendonly))
   end
 
-  # TODO: remove after fix in elixir webrtc
+  # FIXME: remove after fix in elixir webrtc
   @tag :skip
   test "peer removes track", %{pc: pc} do
     pipeline = start_pipeline()
@@ -189,7 +189,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert removed_tracks |> List.first() == engine_track.id
   end
 
-  # TODO: remove after fix in elixir webrtc
+  # FIXME: remove after fix in elixir webrtc
   @tag :skip
   test "peer adds incombatible video track" do
     {:ok, pc} = PeerConnection.start_link(video_codecs: [@vp8_codec])
