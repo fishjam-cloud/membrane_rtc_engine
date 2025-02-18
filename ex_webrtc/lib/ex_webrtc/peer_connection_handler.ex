@@ -360,8 +360,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   defp handle_webrtc_msg({:connection_state_change, connection_state}, _ctx, state) do
     actions =
-      case {connection_state, state.peer_connection_signaling_state} do
-        {:connected, :stable} -> [notify_parent: :negotiation_done]
+      case {connection_state, state.peer_connection_signaling_state, empty_connection?(state.pc)} do
+        {:connected, :stable, false} -> [notify_parent: :negotiation_done]
         _other -> []
       end
 
@@ -370,9 +370,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   defp handle_webrtc_msg({:signaling_state_change, new_state}, _ctx, state) do
     actions =
-      case {state.peer_connection_signaling_state, new_state, state.connection_state} do
-        {:have_remote_offer, :stable, :connected} -> [notify_parent: :negotiation_done]
-        _other -> []
+      case {state.peer_connection_signaling_state, new_state} do
+        {:have_remote_offer, :stable} ->
+          # `:negotiation_done` should be sent when `:signaling_state` is stable and `:connection_state` is connected
+          # but there is an egde case when an empty sdp is sent or no tracks are accepted
+          # then PeerConnection will never connect to the other peer so we have to return `:negotiation_done` immediatelly
+          if state.connection_state == :connected || empty_connection?(state.pc),
+            do: [notify_parent: :negotiation_done],
+            else: []
+
+        _other ->
+          []
       end
 
     {actions, %{state | peer_connection_signaling_state: new_state}}
@@ -634,5 +642,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   defp vad_extension(state) do
     audio_extensions = ExWebRTC.PeerConnection.get_configuration(state.pc).audio_extensions
     Enum.find(audio_extensions, &(&1.uri == @audio_level_uri))
+  end
+
+  defp empty_connection?(pc) do
+    pc
+    |> PeerConnection.get_transceivers()
+    |> Enum.all?(&(&1.direction == :inactive || &1.direction == :stopped))
   end
 end
