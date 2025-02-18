@@ -419,16 +419,22 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_child_notification({:new_tracks, tracks}, :connection_handler, _ctx, state) do
     Membrane.Logger.debug("new webrtc tracks: #{log_tracks(tracks)}")
 
-    tracks_ready =
-      Enum.flat_map(tracks, fn track ->
-        Enum.map(track.variants, &{:notify_parent, {:track_ready, track.id, &1, track.encoding}})
-      end)
-
     new_inbound_tracks = Map.new(tracks, fn track -> {track.id, track} end)
     state = update_in(state.inbound_tracks, &Map.merge(&1, new_inbound_tracks))
 
     new_tracks = [notify_parent: {:publish, {:new_tracks, tracks}}]
-    {new_tracks ++ tracks_ready, state}
+    {new_tracks, state}
+  end
+
+  @impl true
+  def handle_child_notification(
+        {:track_ready, id, _variant, _encoding} = msg,
+        :connection_handler,
+        _ctx,
+        state
+      ) do
+    Membrane.Logger.debug("Track ready, id: #{id}")
+    {[notify_parent: msg], state}
   end
 
   @impl true
