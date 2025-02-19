@@ -11,13 +11,18 @@ const data = document.querySelector("div#data") as HTMLElement;
 const getButtonsWithPrefix = (types: string[], prefix: string) => {
   return types.map(
     (type) =>
-      document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement
+      document.querySelector(`button#${prefix}-${type}`) as HTMLButtonElement,
   );
 };
 
 const startButtons = getButtonsWithPrefix(
   ["simulcast", "all", "all-update", "mic-only", "camera-only", "none"],
-  "start"
+  "start",
+);
+
+const [videoOffButton, videoOnButton] = getButtonsWithPrefix(
+  ["off", "on"],
+  "video",
 );
 
 const simulcastButtons = getButtonsWithPrefix(
@@ -29,17 +34,17 @@ const simulcastButtons = getButtonsWithPrefix(
     "peer-medium-variant",
     "peer-high-variant",
   ],
-  "simulcast"
+  "simulcast",
 );
 
 const simulcastStatsButtons: HTMLButtonElement[] = getButtonsWithPrefix(
   ["inbound-stats", "outbound-stats"],
-  "simulcast"
+  "simulcast",
 );
 
 const metadataButtons = getButtonsWithPrefix(
   ["update-peer", "update-track", "peer", "track"],
-  "metadata"
+  "metadata",
 );
 
 const [
@@ -81,6 +86,8 @@ statsButton.disabled = false;
 
 let room: Room | undefined;
 
+let videoCodec: "vp8" | null = "vp8";
+
 const simulcastPreferences = {
   width: { max: 1280, ideal: 1280, min: 1280 },
   height: { max: 720, ideal: 720, min: 720 },
@@ -106,7 +113,7 @@ async function start(media: string, simulcast = false) {
   startButtons.forEach((button) => (button.disabled = true));
   if (stopButton) stopButton.disabled = false;
 
-  room = new Room(constraints, updateMetadata, simulcast);
+  room = new Room(constraints, updateMetadata, simulcast, videoCodec);
 
   await room.join();
 }
@@ -132,7 +139,9 @@ function putStats(stats: string | object) {
   }
 }
 
-async function refreshStats(statsFunction: (room: Room) => string | object) {
+async function refreshStats(
+  statsFunction: (room: Room) => Promise<string | object>,
+) {
   if (!room || !room.webrtc || !room.webrtc.connectionManager?.getConnection) {
     data.innerHTML = `Room error. One of objects doesn't exists: Room ${!room}, WebRTC ${room?.webrtc}, PeerConnection ${room?.webrtc?.connectionManager?.getConnection()}`;
     return;
@@ -140,6 +149,13 @@ async function refreshStats(statsFunction: (room: Room) => string | object) {
   const stats = await statsFunction(room);
 
   putStats(stats);
+}
+
+function videoOff() {
+  videoCodec = null;
+}
+function videoOn() {
+  videoCodec = "vp8";
 }
 
 function toggleSimulcastVariant(button: HTMLButtonElement, rid: Variant) {
@@ -163,6 +179,8 @@ startMicOnlyButton.onclick = () => start("mic");
 startCameraOnlyButton.onclick = () => start("camera");
 startNoneButton.onclick = () => start("none");
 stopButton.onclick = stop;
+videoOffButton.onclick = videoOff;
+videoOnButton.onclick = videoOn;
 statsButton.onclick = () => {
   refreshStats(remoteStreamsStats);
 };

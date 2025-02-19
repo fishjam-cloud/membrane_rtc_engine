@@ -556,9 +556,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         Membrane.Logger.info("new track #{inspect(track)}")
 
         if is_nil(track_transceiver) do
-          Logger.error(
+          Logger.warning(
             "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
-            This is likely caused by incompatible codecs"
+            This is likely either caused by incompatible codecs or attempts to use video in an audio-only room"
           )
 
           do_receive_new_tracks(acc)
