@@ -159,8 +159,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert Enum.all?(transceivers, &(&1.current_direction == :sendonly))
   end
 
-  # FIXME: remove after fix in elixir webrtc
-  @tag :skip
   test "peer removes track", %{pc: pc} do
     pipeline = start_pipeline()
     {engine_track, track} = add_peer_video_track(pc, pipeline)
@@ -181,7 +179,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     )
 
     PeerConnection.set_remote_description(pc, answer)
-    connect_peer_connection(pipeline, pc)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
@@ -189,8 +186,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert removed_tracks |> List.first() == engine_track.id
   end
 
-  # FIXME: remove after fix in elixir webrtc
-  @tag :skip
   test "peer adds incombatible video track" do
     {:ok, pc} = PeerConnection.start_link(video_codecs: [@vp8_codec])
 
@@ -216,7 +211,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     )
 
     PeerConnection.set_remote_description(pc, answer)
-    connect_peer_connection(pipeline, pc)
+
+    # In this case PeerConnection won't return `:connected` state
+    # This is because there is no active transciever so there is no reason to connect with other peer
+    connect_peer_connection(pipeline, pc, false)
 
     refute_pipeline_notified(pipeline, :handler, {:new_tracks, _tracks})
 
@@ -286,13 +284,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert engine_track.id == track_id
 
     PeerConnection.set_remote_description(pc, answer)
+    connect_peer_connection(pipeline, pc)
 
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
     {engine_track, track}
   end
 
-  defp connect_peer_connection(pipeline, pc) do
+  defp connect_peer_connection(pipeline, pc, should_connect? \\ true) do
     assert_pipeline_notified(pipeline, :handler, {:candidate, candidate})
     PeerConnection.add_ice_candidate(pc, candidate)
 
@@ -303,10 +302,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
       5000 -> raise "Unable to connect"
     end
 
-    receive do
-      {:ex_webrtc, ^pc, {:connection_state_change, :connected}} -> :ok
-    after
-      5000 -> raise "Unable to connect"
+    if should_connect? do
+      receive do
+        {:ex_webrtc, ^pc, {:connection_state_change, :connected}} -> :ok
+      after
+        5000 -> raise "Unable to connect"
+      end
     end
   end
 end
