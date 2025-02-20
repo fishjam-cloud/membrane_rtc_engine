@@ -360,6 +360,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   defp handle_webrtc_msg({:connection_state_change, :failed}, _ctx, state) do
     Membrane.Logger.warning("Peer connection failed. #{inspect(state)}")
+    {[], state}
   end
 
   defp handle_webrtc_msg({:connection_state_change, connection_state}, _ctx, state) do
