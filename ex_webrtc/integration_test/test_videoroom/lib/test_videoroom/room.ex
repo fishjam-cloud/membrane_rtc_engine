@@ -9,15 +9,15 @@ defmodule TestVideoroom.Room do
   require Logger
 
   def start(opts) do
-    GenServer.start(__MODULE__, [], opts)
+    GenServer.start(__MODULE__, nil, opts)
   end
 
   def start_link(opts) do
-    GenServer.start_link(__MODULE__, [], opts)
+    GenServer.start_link(__MODULE__, nil, opts)
   end
 
-  def add_peer_channel(room, peer_channel_pid, peer_id) do
-    GenServer.call(room, {:add_peer_channel, peer_channel_pid, peer_id})
+  def add_peer_channel(room, peer_channel_pid, peer_id, video_codec) do
+    GenServer.call(room, {:add_peer_channel, peer_channel_pid, peer_id, video_codec})
   end
 
   def register_new_peer_listener(room, listener) do
@@ -25,12 +25,10 @@ defmodule TestVideoroom.Room do
   end
 
   @impl true
-  def init(room_id) do
+  def init(nil) do
     Logger.info("Spawning room process: #{inspect(self())}")
-
-    rtc_engine_options = [id: room_id]
-
-    {:ok, pid} = Membrane.RTC.Engine.start(rtc_engine_options, [])
+    
+    {:ok, pid} = Membrane.RTC.Engine.start([id: ""], [])
     Process.monitor(pid)
     Engine.register(pid, self())
 
@@ -38,8 +36,7 @@ defmodule TestVideoroom.Room do
      %{
        rtc_engine: pid,
        peer_channels: %{},
-       listeners: [],
-       room_id: room_id
+       listeners: []
      }}
   end
 
@@ -49,13 +46,13 @@ defmodule TestVideoroom.Room do
   end
 
   @impl true
-  def handle_call({:add_peer_channel, peer_channel_pid, peer_id}, _from, state) do
+  def handle_call({:add_peer_channel, peer_channel_pid, peer_id, video_codec}, _from, state) do
     state = put_in(state, [:peer_channels, peer_id], peer_channel_pid)
     Process.monitor(peer_channel_pid)
 
     endpoint = %ExWebRTC{
       rtc_engine: state.rtc_engine,
-      video_codec: :VP8,
+      video_codec: video_codec,
       event_serialization: Application.fetch_env!(:test_videoroom, :event_serialization)
     }
 
