@@ -10,9 +10,6 @@ parameters:
   engine-changed:
     type: boolean
     default: false
-  webrtc-changed:
-    type: boolean
-    default: false
   ex-webrtc-changed:
     type: boolean
     default: false
@@ -29,6 +26,9 @@ parameters:
     type: boolean
     default: false
   recording-changed:
+    type: boolean
+    default: false
+  forwarder-changed:
     type: boolean
     default: false
   integration-changed:
@@ -189,8 +189,6 @@ workflows:
       or:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
-        # TODO: remove once the HLS endpoint no longer depends on the WebRTC endpoint
-        - << pipeline.parameters.webrtc-changed >>
         - << pipeline.parameters.hls-changed >>
     jobs:
       - test_package:
@@ -205,8 +203,6 @@ workflows:
       or:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
-        # TODO: remove once the RTSP endpoint no longer depends on the WebRTC endpoint
-        - << pipeline.parameters.webrtc-changed >>
         - << pipeline.parameters.rtsp-changed >>
     jobs:
       - test_package:
@@ -219,8 +215,6 @@ workflows:
       or:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
-        # TODO: remove once the File endpoint no longer depends on the WebRTC endpoint
-        - << pipeline.parameters.webrtc-changed >>
         - << pipeline.parameters.file-changed >>
     jobs:
       - test_package:
@@ -233,8 +227,6 @@ workflows:
       or:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
-        # TODO: remove once the File endpoint no longer depends on the WebRTC endpoint
-        - << pipeline.parameters.webrtc-changed >>
         - << pipeline.parameters.sip-changed >>
     jobs:
       - test_package:
@@ -248,7 +240,7 @@ workflows:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
         # TODO: remove once the endpoint no longer depends on the WebRTC endpoint
-        - << pipeline.parameters.webrtc-changed >>
+        - << pipeline.parameters.ex-webrtc-changed >>
         - << pipeline.parameters.recording-changed >>
     jobs:
       - test_package:
@@ -256,16 +248,31 @@ workflows:
           workdir: ~/app/recording
           codecov_flag: recording
 
+  test-forwarder:
+    when:
+      or:
+        - << pipeline.parameters.repo-root-changed >>
+        - << pipeline.parameters.engine-changed >>
+        # TODO: remove once the endpoint no longer depends on the WebRTC endpoint
+        - << pipeline.parameters.ex-webrtc-changed >>
+        - << pipeline.parameters.forwarder-changed >>
+    jobs:
+      - test_package:
+          name: test_forwarder
+          workdir: ~/app/forwarder
+          codecov_flag: forwarder
+
   test-integration:
     when:
       or:
         - << pipeline.parameters.repo-root-changed >>
         - << pipeline.parameters.engine-changed >>
-        - << pipeline.parameters.webrtc-changed >>
+        - << pipeline.parameters.ex-webrtc-changed >>
         - << pipeline.parameters.hls-changed >>
         - << pipeline.parameters.rtsp-changed >>
         - << pipeline.parameters.file-changed >>
         - << pipeline.parameters.recording-changed >>
+        - << pipeline.parameters.forwarder-changed >>
         - << pipeline.parameters.integration-changed >>
     jobs:
       - test_integration:
@@ -341,6 +348,16 @@ workflows:
       - check_changelog_update:
           name: check_changelog_update_recording
           workdir: ~/app/recording
+
+  lint-forwarder:
+    when: << pipeline.parameters.forwarder-changed >>
+    jobs:
+      - lint_package:
+          name: lint_forwarder
+          workdir: ~/app/forwarder
+      - check_changelog_update:
+          name: check_changelog_update_forwarder
+          workdir: ~/app/forwarder
 
   lint-integration:
     when: << pipeline.parameters.integration-changed >>
