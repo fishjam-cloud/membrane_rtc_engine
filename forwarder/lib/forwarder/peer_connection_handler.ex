@@ -103,8 +103,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
          }}
 
       {:ok, response} ->
-        Membrane.Logger.error("Failed to exchange SDP, status: #{response.status}")
-        {[terminate: {:crash, {:broadcaster_response, response.status}}], state}
+        Membrane.Logger.error("Failed to exchange SDP, status: #{response.status_code}")
+        {[terminate: {:crash, {:broadcaster_response, response.status_code}}], state}
 
       {:error, error} ->
         Membrane.Logger.error("Failed to send SDP offer, reason: #{inspect(error.reason)}")
@@ -139,7 +139,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
 
         {:ok, response} ->
           Membrane.Logger.error(
-            "Failed to send ICE, status: #{response.status}, candidate: #{inspect(candidate)}"
+            "Failed to send ICE, status: #{response.status_code}, candidate: #{inspect(candidate)}"
           )
 
         {:error, error} ->
