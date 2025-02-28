@@ -28,7 +28,7 @@ defmodule TestVideoroom.Room do
   def init(nil) do
     Logger.info("Spawning room process: #{inspect(self())}")
     
-    {:ok, pid} = Membrane.RTC.Engine.start([id: ""], [])
+    {:ok, pid} = Membrane.RTC.Engine.start([], [])
     Process.monitor(pid)
     Engine.register(pid, self())
 

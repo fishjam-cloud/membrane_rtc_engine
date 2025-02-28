@@ -5,7 +5,7 @@ defmodule TestVideoroomWeb.RoomChannel do
 
   @impl true
   def join("room" = room_id, params, socket) do
-    video_codec = parse_codec(Map.get(params, "videoCodec"))
+    video_codec = params |> Map.get("videoCodec") |> parse_codec()
     case :global.whereis_name(room_id) do
       :undefined -> TestVideoroom.Room.start(name: {:global, room_id})
       pid -> {:ok, pid}
@@ -30,17 +30,9 @@ defmodule TestVideoroomWeb.RoomChannel do
   end
 
 
-  defp parse_codec("vp8") do
-    :VP8
-  end
-  
-  defp parse_codec("h264") do
-    :H264
-  end
-  
-  defp parse_codec(nil) do
-    nil
-  end
+  defp parse_codec("vp8"), do: :VP8
+  defp parse_codec("h264"), do: :H264
+  defp parse_codec(nil), do: nil
 
 
   defp join_room(room_id, room, socket, video_codec) do
