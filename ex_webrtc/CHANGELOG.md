@@ -28,3 +28,4 @@
 * Set track ready on first packet arrival [#36](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/36)
 * Remove unnecessary replace_track [#37](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/37)
 * Fix negotiation RC [#38](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/38)
+* Allow specifying audio-only endpoints [#39](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/39)

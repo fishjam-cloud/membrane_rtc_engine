@@ -75,6 +75,15 @@ defmodule TestVideoroom.Browser do
   def handle_call(:get_playwright, _from, state) do
     {:reply, state.browser, state}
   end
+  
+  @impl true
+  def handle_call({:join, button, ""} = action, _from, state) do
+    Logger.info("mustang: #{state.id}, action: #{inspect(action)}")
+
+    do_click(button, state)
+
+    {:reply, :ok, state}
+  end
 
   @impl true
   def handle_call({:join, button, params} = action, _from, state) do
@@ -83,9 +92,7 @@ defmodule TestVideoroom.Browser do
     url = Playwright.Page.url(state.page) <> params
     Playwright.Page.goto(state.page, url)
 
-    state.page
-    |> Playwright.Page.locator("[id=#{button}]")
-    |> Playwright.Locator.click()
+    do_click(button, state)
 
     {:reply, :ok, state}
   end
@@ -93,7 +100,8 @@ defmodule TestVideoroom.Browser do
   @impl true
   def handle_call({:click, button} = action, _from, state) do
     Logger.info("mustang: #{state.id}, action: #{inspect(action)}")
-    :ok = Playwright.Page.click(state.page, "[id=#{button}]")
+
+    do_click(button, state)
 
     {:reply, :ok, state}
   end
@@ -102,7 +110,7 @@ defmodule TestVideoroom.Browser do
   def handle_call({:get_stats, button} = action, from, state) do
     Logger.info("mustang: #{state.id}, action: #{inspect(action)}")
 
-    :ok = Playwright.Page.click(state.page, "[id=#{button}]")
+    do_click(button, state)
 
     Process.send_after(self(), {:do_get_stats, {:reply, from}}, @get_stats_duration)
 
@@ -113,7 +121,7 @@ defmodule TestVideoroom.Browser do
   def handle_cast({:fetch_stats_async, button} = action, state) do
     Logger.info("mustang: #{state.id}, action: #{inspect(action)}")
 
-    :ok = Playwright.Page.click(state.page, "[id=#{button}]")
+    do_click(button, state)
 
     Process.send_after(self(), {:do_get_stats, :async}, @get_stats_duration)
 
@@ -132,6 +140,10 @@ defmodule TestVideoroom.Browser do
     end
 
     {:noreply, state}
+  end
+
+  defp do_click(button, state) do
+    :ok = Playwright.Page.click(state.page, "[id=#{button}]")
   end
 
   defp get_stats(page) do

@@ -20,7 +20,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   alias Membrane.RTC.Engine.Notifications.TrackNotification
 
-  @type video_codec :: :H264 | :VP8
+  @type video_codec :: :H264 | :VP8 | nil
 
   @type track_variant :: :low | :medium | :high
 
@@ -107,7 +107,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
-        video_codecs: [opts.video_codec],
+        video_codecs:
+          if is_nil(opts.video_codec) do
+            []
+          else
+            [opts.video_codec]
+          end,
         telemetry_label: opts.telemetry_label
       })
     ]

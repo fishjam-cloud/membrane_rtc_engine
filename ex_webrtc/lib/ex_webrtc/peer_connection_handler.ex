@@ -358,6 +358,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
     end
   end
 
+  defp handle_webrtc_msg({:connection_state_change, :failed}, _ctx, state) do
+    Membrane.Logger.warning("Peer connection failed. #{inspect(state)}")
+    {[], state}
+  end
+
   defp handle_webrtc_msg({:connection_state_change, connection_state}, _ctx, state) do
     actions =
       case {connection_state, state.peer_connection_signaling_state, empty_connection?(state.pc)} do
@@ -556,9 +561,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         Membrane.Logger.info("new track #{inspect(track)}")
 
         if is_nil(track_transceiver) do
-          Logger.error(
+          Logger.warning(
             "No transceiver for incoming track #{track.id}, #{track.kind}, transceivers: #{inspect(transceivers)}. \
-            This is likely caused by incompatible codecs"
+            This is likely either caused by incompatible codecs or attempts to use video in an audio-only room"
           )
 
           do_receive_new_tracks(acc)
