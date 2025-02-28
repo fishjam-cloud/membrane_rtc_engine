@@ -25,7 +25,7 @@ defmodule TestVideoroom.Room do
   end
 
   @impl true
-  def init(nil) do
+  def init(_opts) do
     Logger.info("Spawning room process: #{inspect(self())}")
     
     {:ok, pid} = Membrane.RTC.Engine.start([], [])
