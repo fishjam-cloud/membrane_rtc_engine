@@ -41,6 +41,7 @@ defmodule Membrane.RTC.Engine.Integration.MixProject do
       {:membrane_rtc_engine_file, path: "../file"},
       {:membrane_rtc_engine_sip, path: "../sip"},
       {:membrane_rtc_engine_recording, path: "../recording"},
+      {:membrane_rtc_engine_forwarder, path: "../forwarder"},
 
       # Regular deps (for modules in `test/support/`)
       {:membrane_core, "~> 1.1.2"},
@@ -63,7 +64,8 @@ defmodule Membrane.RTC.Engine.Integration.MixProject do
 
       # Test deps
       {:excoveralls, "~> 0.16.0", only: :test, runtime: false},
-      {:mox, "~> 1.0", only: :test}
+      {:mox, "~> 1.0", only: :test},
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 
