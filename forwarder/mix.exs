@@ -51,8 +51,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
       {:membrane_core, "~> 1.1.2"},
       {:membrane_rtc_engine, path: "../engine"},
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
-      {:ex_webrtc, github: "elixir-webrtc/ex_webrtc"},
-      {:ex_ice, "~> 0.9.4", override: true},
+      {:ex_webrtc, "~> 0.8.1"},
+      {:ex_ice, "~> 0.9.4"},
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.2"},
 
@@ -60,7 +60,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.34", only: :dev, runtime: false},
       {:dialyxir, "~> 1.4", only: :dev, runtime: false},
-      {:excoveralls, "~> 0.16.0", only: :test, runtime: false}
+      {:excoveralls, "~> 0.16.0", only: :test, runtime: false},
+      {:bypass, "~> 2.1", only: :test}
     ]
   end
 

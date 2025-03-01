@@ -41,7 +41,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
       opts
       |> Map.update!(:telemetry_label, &(&1 ++ [endpoint_id: endpoint_id]))
       |> Map.merge(%{
-        tracks: %{video: nil, audio: nil},
+        forwarded_tracks: %{video: nil, audio: nil},
+        tracks: [],
+        forwarding?: false,
         endpoint_id: endpoint_id
       })
 
@@ -65,7 +67,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
 
   @impl true
   def handle_pad_added(Pad.ref(:input, track_id) = pad, _ctx, state) do
-    {_type, track} = Enum.find(state.tracks, fn {_type, track} -> track.id == track_id end)
+    {_type, track} =
+      Enum.find(state.forwarded_tracks, fn {_type, track} -> track.id == track_id end)
 
     track_receiver = %TrackReceiver{track: track, initial_target_variant: :h}
 
@@ -84,23 +87,32 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
   end
 
   @impl true
+  def handle_parent_notification({:new_tracks, _new_tracks}, _ctx, %{forwarding?: true} = state) do
+    {[], state}
+  end
+
+  @impl true
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, state) do
-    video_track = Enum.find(new_tracks, &(&1.type == :video))
-    audio_track = Enum.find(new_tracks, &(&1.type == :audio))
+    tracks = state.tracks ++ new_tracks
 
-    state = %{
-      state
-      | tracks: %{
-          video: state.tracks.video || video_track,
-          audio: state.tracks.audio || audio_track
-        }
-    }
+    video_track = Enum.find(tracks, &(&1.type == :video))
+    audio_track = Enum.find(tracks, &(&1.type == :audio))
 
-    if state.tracks.video && state.tracks.audio do
+    if audio_track && video_track do
       Membrane.Logger.info("Got audio and video track. Starting negotation with broadcaster...")
-      {[notify_child: {:connection_handler, {:start_negotiation, state.tracks}}], state}
+
+      state = %{
+        state
+        | forwarded_tracks: %{
+            video: video_track,
+            audio: audio_track
+          }
+      }
+
+      {[notify_child: {:connection_handler, {:start_negotiation, state.forwarded_tracks}}],
+       %{state | tracks: tracks, forwarding?: true}}
     else
-      {[], state}
+      {[], %{state | tracks: tracks}}
     end
   end
 
@@ -109,7 +121,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
     tracks_used? =
       tracks
       |> Enum.map(& &1.id)
-      |> Enum.any?(&(&1 in [state.tracks.video.id, state.tracks.audio.id]))
+      |> Enum.any?(&(&1 in [state.forwarded_tracks.video.id, state.forwarded_tracks.audio.id]))
 
     if tracks_used? do
       Membrane.Logger.info("Terminating because source tracks were removed")
@@ -117,6 +129,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
     else
       {[], state}
     end
+  end
+
+  def handle_parent_notification({:remove_tracks, remove_tracks}, _ctx, state) do
+    remove_tracks_ids = Enum.map(remove_tracks, & &1.id)
+    tracks = Enum.filter(state.tracks, &(&1.id not in remove_tracks_ids))
+
+    {[], %{state | tracks: tracks}}
   end
 
   @impl true
@@ -129,14 +148,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
   def handle_child_notification(:negotiation_done, :connection_handler, _ctx, state) do
     Membrane.Logger.info("Succesfully connected to broadcaster")
 
-    {:ok, _track} = Engine.subscribe(state.rtc_engine, state.endpoint_id, state.tracks.video.id)
-    {:ok, _track} = Engine.subscribe(state.rtc_engine, state.endpoint_id, state.tracks.audio.id)
+    {:ok, _track} =
+      Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.video.id)
+
+    {:ok, _track} =
+      Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.audio.id)
 
     {[], state}
   end
 
   @impl true
-  def handle_child_notification(msg, _element, _ctx, state) do
+  def handle_child_notification(msg, {:track_receiver, _track_id}, _ctx, state) do
     Membrane.Logger.debug("Ignoring child notification: #{inspect(msg)}")
     {[], state}
   end

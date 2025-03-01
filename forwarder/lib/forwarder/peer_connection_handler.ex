@@ -113,12 +113,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_parent_notification(msg, _ctx, state) do
-    Membrane.Logger.debug("Ignoring parent notification: #{inspect(msg)}")
-    {[], state}
-  end
-
-  @impl true
   def handle_info(
         {:ex_webrtc, _pc, {:ice_candidate, candidate}},
         _ctx,
@@ -130,16 +124,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   @impl true
   def handle_info({:ex_webrtc, _pc, {:ice_candidate, candidate}}, _ctx, state) do
     for c <- state.candidates ++ [candidate] do
-      body = candidate_to_json(c)
+      body = c |> ExWebRTC.ICECandidate.to_json() |> Jason.encode!()
       url = state.broadcaster_url |> URI.merge(state.patch_endpoint) |> to_string()
 
       case HTTPoison.patch(url, body, @ice_headers) do
         {:ok, %{status_code: 204}} ->
-          Membrane.Logger.debug("Successfully sent ICE candidate: #{inspect(candidate)}")
+          Membrane.Logger.debug("Successfully sent ICE candidate: #{inspect(c)}")
 
         {:ok, response} ->
           Membrane.Logger.error(
-            "Failed to send ICE, status: #{response.status_code}, candidate: #{inspect(candidate)}"
+            "Failed to send ICE, status: #{response.status_code}, candidate: #{inspect(c)}"
           )
 
         {:error, error} ->
@@ -153,8 +147,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   @impl true
   def handle_info({:ex_webrtc, _pc, {:connection_state_change, connection_state}}, _ctx, state) do
     actions =
-      case {connection_state, state.peer_connection_signaling_state, empty_connection?(state.pc)} do
-        {:connected, :stable, false} -> [notify_parent: :negotiation_done]
+      case {connection_state, state.peer_connection_signaling_state} do
+        {:connected, :stable} -> [notify_parent: :negotiation_done]
         _other -> []
       end
 
@@ -164,17 +158,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   @impl true
   def handle_info({:ex_webrtc, _pc, {:signaling_state_change, new_state}}, _ctx, state) do
     actions =
-      case {state.peer_connection_signaling_state, new_state} do
-        {:have_remote_offer, :stable} ->
-          # `:negotiation_done` should be sent when `:signaling_state` is stable and `:connection_state` is connected
-          # but there is an egde case when an empty sdp is sent or no tracks are accepted
-          # then PeerConnection will never connect to the other peer so we have to return `:negotiation_done` immediatelly
-          if state.connection_state == :connected || empty_connection?(state.pc),
-            do: [notify_parent: :negotiation_done],
-            else: []
-
-        _other ->
-          []
+      case {state.peer_connection_signaling_state, new_state, state.connection_state} do
+        {:have_remote_offer, :stable, :connected} -> [notify_parent: :negotiation_done]
+        _other -> []
       end
 
     {actions, %{state | peer_connection_signaling_state: new_state}}
@@ -259,9 +245,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         sequence_number: rtp.sequence_number,
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
-        csrc: rtp.csrc,
+        csrc: Map.get(rtp, :csrc, []),
         marker: rtp.marker,
-        padding: rtp.padding_size
+        padding: Map.get(rtp, :padding_size, 0)
       )
 
     extensions = rtp.extensions || []
@@ -278,31 +264,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     end
   end
 
-  defp empty_connection?(pc) do
-    if Process.alive?(pc) do
-      pc
-      |> PeerConnection.get_transceivers()
-      |> Enum.all?(&(&1.direction == :inactive || &1.direction == :stopped))
-    else
-      true
-    end
-  end
-
   defp sdp_headers(token) do
     [
       {"Accept", "application/sdp"},
       {"Content-Type", "application/sdp"},
       {"Authorization", "Bearer #{token}"}
     ]
-  end
-
-  defp candidate_to_json(c) do
-    Jason.encode!(%{
-      "candidate" => c.candidate,
-      "sdpMid" => c.sdp_mid,
-      "sdpMLineIndex" => c.sdp_m_line_index,
-      "usernameFragment" => c.username_fragment
-    })
   end
 
   defp to_mime_type(:VP8), do: "video/VP8"
