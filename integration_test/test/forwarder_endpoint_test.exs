@@ -5,6 +5,7 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
 
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint.Forwarder
+  alias Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer
   alias Membrane.RTC.Engine.Message
 
   @forwarder_id "forwarder"
