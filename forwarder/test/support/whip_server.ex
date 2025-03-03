@@ -6,7 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
   @offer_path "/api/whip"
   @ice_path "api/resource/id"
 
-  @spec init(Keyword.t()) :: Bypass.t()
+  @spec init(Keyword.t()) :: {pid(), Bypass.t()}
   def init(opts \\ []) do
     handle_offer = Keyword.get(opts, :offer, true)
     handle_ice = Keyword.get(opts, :ice, true)
@@ -22,7 +22,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
       do: handle_ice(bypass, pc),
       else: handle_error(bypass, "PATCH", @ice_path)
 
-    bypass
+    {pc, bypass}
   end
 
   @spec address(Bypass.t()) :: String.t()

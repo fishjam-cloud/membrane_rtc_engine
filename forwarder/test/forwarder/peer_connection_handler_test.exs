@@ -11,7 +11,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandlerTest do
   @endpoint_id "forwarder_endpoint"
 
   test "peers adds an audio and video tracks" do
-    server = WHIPServer.init()
+    {_pc, server} = WHIPServer.init()
     pipeline = start_pipeline(server)
 
     tracks = %{video: create_track(:video), audio: create_track(:audio)}
@@ -22,7 +22,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandlerTest do
   end
 
   test "whip server returns error on sdp offer" do
-    server = WHIPServer.init(offer: false, ice: false)
+    {_pc, server} = WHIPServer.init(offer: false, ice: false)
     pipeline = start_pipeline(server)
 
     tracks = %{video: create_track(:video), audio: create_track(:audio)}
@@ -33,7 +33,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandlerTest do
   end
 
   test "whip server returns error on ice candidate" do
-    server = WHIPServer.init(ice: false)
+    {_pc, server} = WHIPServer.init(ice: false)
     pipeline = start_pipeline(server)
 
     tracks = %{video: create_track(:video), audio: create_track(:audio)}

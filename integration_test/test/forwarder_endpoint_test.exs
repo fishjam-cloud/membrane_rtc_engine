@@ -17,7 +17,7 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
   @tracks_added_delay 500
 
   setup do
-    server = WHIPServer.init()
+    {_pc, server} = WHIPServer.init()
     {:ok, pid} = Engine.start_link([id: "test_rtc"], [])
 
     Engine.register(pid, self())

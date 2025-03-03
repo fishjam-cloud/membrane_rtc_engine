@@ -5,6 +5,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
   import Membrane.Testing.Assertions
   import Membrane.RTC.Engine.Endpoint.Forwarder.TrackHelper
 
+  alias ExWebRTC.PeerConnection
   alias Membrane.RTC.Engine.Endpoint.Forwarder
   alias Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer
   alias Membrane.Testing.Pipeline
@@ -12,10 +13,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
   @forwarder_id {"endpoint_id", "forwarder"}
 
   setup do
-    server = WHIPServer.init()
+    {pc, server} = WHIPServer.init()
     pipeline = start_pipeline(server)
 
-    {:ok, pipeline: pipeline}
+    {:ok, pipeline: pipeline, pc: pc}
   end
 
   test "Forwarder subscribes when audio and video tracks are added", %{pipeline: pipeline} do
@@ -66,6 +67,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
 
     remove_tracks(pipeline, new_tracks)
     assert_pipeline_crash_group_down(pipeline, :forwarder_group)
+  end
+
+  test "Forwarder will crash if PeerConnection disconnects", %{pipeline: pipeline, pc: pc} do
+    new_tracks = [create_track(:audio), create_track(:video)]
+
+    add_new_tracks(pipeline, new_tracks)
+    assert_forwarder_subscribe()
+
+    PeerConnection.close(pc)
+
+    assert_pipeline_crash_group_down(pipeline, :forwarder_group, 20_000)
   end
 
   defp add_new_tracks(pipeline, new_tracks) do

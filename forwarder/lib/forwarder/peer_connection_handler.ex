@@ -201,8 +201,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         Membrane.Logger.error("PeerConnection crashed with reason: #{inspect(reason)}")
         {[terminate: reason], state}
     end
-
-    {[], state}
   end
 
   defp spawn_peer_connection() do
