@@ -356,6 +356,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/phoenix@npm:^1.6.6":
+  version: 1.6.6
+  resolution: "@types/phoenix@npm:1.6.6"
+  checksum: 10c0/4dfcb3fd36341ed5500de030291af14163c599857e00d2d4ff065d4c4600317d5d20aa170913fb9609747a09436e3add44db7d0c709bdf80f36cddcc67a42021
+  languageName: node
+  linkType: hard
+
 "@types/yauzl@npm:^2.9.1":
   version: 2.10.3
   resolution: "@types/yauzl@npm:2.10.3"
@@ -1551,6 +1558,7 @@ __metadata:
   dependencies:
     "@eslint/js": "npm:^9.13.0"
     "@fishjam-cloud/webrtc-client": "https://github.com/fishjam-cloud/web-client-sdk.git#workspace=@fishjam-cloud/webrtc-client"
+    "@types/phoenix": "npm:^1.6.6"
     esbuild: "npm:^0.24.0"
     eslint: "npm:^9.13.0"
     globals: "npm:^15.11.0"

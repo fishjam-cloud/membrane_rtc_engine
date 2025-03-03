@@ -189,7 +189,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   test "peer adds incombatible video track" do
     {:ok, pc} = PeerConnection.start_link(video_codecs: [@vp8_codec])
 
-    pipeline = Pipeline.start_link_supervised!(spec: get_pc_handler(video_codecs: [:H264]))
+    pipeline = Pipeline.start_link_supervised!(spec: get_pc_handler(video_codec: :H264))
 
     track_id = UUID.uuid4()
     mid_to_track_id = %{"0" => track_id}
@@ -223,15 +223,43 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert [] = PeerConnection.get_transceivers(pc)
   end
 
-  defp start_pipeline() do
-    Pipeline.start_link_supervised!(spec: get_pc_handler())
+  test "peer adds video track to handler with no video codecs", %{pc: pc} do
+    pipeline = start_pipeline(video_codec: nil)
+    track_id = UUID.uuid4()
+    mid_to_track_id = %{"0" => track_id}
+    track_id_to_metadata = %{track_id => @track_metadata}
+    track = MediaStreamTrack.new(:video, [MediaStreamTrack.generate_stream_id()])
+    {:ok, _transceiver} = PeerConnection.add_transceiver(pc, track, direction: :sendonly)
+    {:ok, offer} = PeerConnection.create_offer(pc)
+    :ok = PeerConnection.set_local_description(pc, offer)
+
+    media_event = sdp_offer(offer, mid_to_track_id, track_id_to_metadata)
+
+    outbound_tracks = %{}
+    Pipeline.notify_child(pipeline, :handler, {:offer, media_event, outbound_tracks})
+
+    assert_pipeline_notified(
+      pipeline,
+      :handler,
+      {:answer, %{type: :answer, sdp: _sdp} = answer, _new_mid_to_track_id}
+    )
+
+    PeerConnection.set_remote_description(pc, answer)
+
+    assert_pipeline_notified(pipeline, :handler, :negotiation_done)
+
+    assert PeerConnection.get_transceivers(pc) == []
   end
 
-  defp get_pc_handler(options \\ []) do
+  defp start_pipeline(options \\ [video_codec: :VP8]) do
+    Pipeline.start_link_supervised!(spec: get_pc_handler(options))
+  end
+
+  defp get_pc_handler(options) do
     [
       child(:handler, %PeerConnectionHandler{
         endpoint_id: @endpoint_id,
-        video_codecs: Keyword.get(options, :video_codecs)
+        video_codec: Keyword.get(options, :video_codec)
       })
     ]
   end

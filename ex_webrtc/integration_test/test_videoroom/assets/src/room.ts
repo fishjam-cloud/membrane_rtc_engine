@@ -11,7 +11,6 @@ import {
 
 import { WebRTCEndpoint } from "@fishjam-cloud/webrtc-client";
 
-// @ts-ignore
 import { Push, Socket } from "phoenix";
 import {
   addVideoElement,
@@ -68,7 +67,8 @@ export class Room {
   constructor(
     contraints: MediaStreamConstraints,
     updateMetadata: boolean,
-    simulcast: boolean
+    simulcast: boolean,
+    videoCodec: "vp8" | null,
   ) {
     this.constraints = contraints;
     this.updateMetadataOnStart = updateMetadata;
@@ -78,7 +78,9 @@ export class Room {
     this.socket = new Socket("/socket");
     this.socket.connect();
     this.displayName = "someone";
-    this.webrtcChannel = this.socket.channel("room");
+    this.webrtcChannel = this.socket.channel("room", {
+      videoCodec,
+    });
 
     this.webrtcChannel.onError(() => {
       this.socketOff();
@@ -115,7 +117,7 @@ export class Room {
       async (endpointId: string, otherEndpoints: Endpoint[]) => {
         this.endpointId = endpointId;
         this.endpoints = otherEndpoints.filter(
-          (endpoint) => endpoint.id != this.endpointId
+          (endpoint) => endpoint.id != this.endpointId,
         );
         this.endpoints.forEach((endpoint) => {
           const displayName =
@@ -130,13 +132,13 @@ export class Room {
             track,
             { peer: this.displayName, kind: track.kind },
             this.simulcastConfig,
-            this.bandwidth
+            this.bandwidth,
           );
           if (this.updateMetadataOnStart) {
             this.webrtc.updateTrackMetadata(trackId, "updatedMetadataOnStart");
           }
         }
-      }
+      },
     );
     this.webrtc.on("connectionError", () => {
       throw `Endpoint denied.`;
@@ -170,7 +172,7 @@ export class Room {
         addVideoElement(
           endpoint.id,
           endpoint.metadata as EndpointMetadata,
-          false
+          false,
         );
       }
     });
@@ -231,7 +233,7 @@ export class Room {
 
   public disableSimulcastVariant = (rid: Variant) => {
     const [trackId, _] = Array.from(
-      this.webrtc.getLocalEndpoint().tracks
+      this.webrtc.getLocalEndpoint().tracks,
     ).filter((track) => {
       const [_, trackContext] = track;
       return trackContext.track?.kind === "video";
@@ -241,7 +243,7 @@ export class Room {
 
   public enableSimulcastVariant = (rid: Variant) => {
     const [trackId, _] = Array.from(
-      this.webrtc.getLocalEndpoint().tracks
+      this.webrtc.getLocalEndpoint().tracks,
     ).filter((track) => {
       const [_, trackContext] = track;
       return trackContext.track?.kind === "video";
@@ -252,7 +254,7 @@ export class Room {
 
   public getEndpointRemoteTrackCtx = (
     endpointId: string,
-    kind: TrackKind
+    kind: TrackKind,
   ): TrackContext => {
     const tracksCtxs = Array.from(Object.values(this.webrtc.getRemoteTracks()));
     console.log(
@@ -260,12 +262,12 @@ export class Room {
       tracksCtxs,
       endpointId,
       this.endpointId,
-      kind
+      kind,
     );
 
     const trackCtx = tracksCtxs.find(
       (trackCtx) =>
-        trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind
+        trackCtx.endpoint.id === endpointId && trackCtx.track?.kind === kind,
     );
     return trackCtx!;
   };
@@ -274,12 +276,12 @@ export class Room {
     if (this.constraints.audio != false || this.constraints.video != false) {
       try {
         this.localStream = await navigator.mediaDevices.getUserMedia(
-          this.constraints
+          this.constraints,
         );
       } catch (error) {
         console.error(error);
         setErrorMessage(
-          "Failed to setup video room, make sure to grant camera and microphone permissions"
+          "Failed to setup video room, make sure to grant camera and microphone permissions",
         );
         throw "error";
       }
@@ -306,7 +308,7 @@ export class Room {
 
   private updateParticipantsList = (): void => {
     const participantsNames = this.endpoints.map(
-      (e) => e.metadata as EndpointMetadata
+      (e) => e.metadata as EndpointMetadata,
     );
 
     if (this.displayName) {

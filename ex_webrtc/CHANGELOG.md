@@ -29,3 +29,4 @@
 * Remove unnecessary replace_track [#37](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/37)
 * Fix negotiation RC [#38](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/38)
 * Update ex_webrtc dependency [#40](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/40)
+* Allow specifying audio-only endpoints [#39](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/39)
