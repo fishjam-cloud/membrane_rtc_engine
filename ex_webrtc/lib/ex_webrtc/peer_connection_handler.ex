@@ -59,7 +59,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       [
         ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
         ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
-        video_codecs: [Keyword.get(@video_codecs, opts.video_codec)],
+        video_codecs: Keyword.get_values(@video_codecs, opts.video_codec),
         controlling_process: self(),
         rtp_header_extensions:
           PeerConnection.Configuration.default_rtp_header_extensions() ++
