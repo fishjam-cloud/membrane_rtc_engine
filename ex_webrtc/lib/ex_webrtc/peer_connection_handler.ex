@@ -16,9 +16,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
                 spec: String.t(),
                 description: "ID of the parent endpoint"
               ],
-              video_codecs: [
-                spec: [EndpointExWebRTC.video_codec()] | nil,
-                description: "Allowed video codecs"
+              video_codec: [
+                spec: EndpointExWebRTC.video_codec() | nil,
+                description: "Chosen video codec or nil to disable video"
               ],
               telemetry_label: [
                 spec: Keyword.t(),
@@ -55,21 +55,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_init(_ctx, opts) do
-    video_codecs =
-      if opts.video_codecs do
-        Enum.filter(@video_codecs, fn {codec, _params} ->
-          codec in opts.video_codecs
-        end)
-      else
-        @video_codecs
-      end
-      |> Enum.map(fn {_codec, params} -> params end)
-
     pc_options =
       [
         ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
         ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
-        video_codecs: video_codecs,
+        video_codecs: [Keyword.get(@video_codecs, opts.video_codec)],
         controlling_process: self(),
         rtp_header_extensions:
           PeerConnection.Configuration.default_rtp_header_extensions() ++

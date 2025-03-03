@@ -107,12 +107,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: endpoint_id,
-        video_codecs:
-          if is_nil(opts.video_codec) do
-            []
-          else
-            [opts.video_codec]
-          end,
+        video_codec: opts.video_codec,
         telemetry_label: opts.telemetry_label
       })
     ]
