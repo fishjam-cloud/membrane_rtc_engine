@@ -640,8 +640,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp empty_connection?(pc) do
-    pc
-    |> PeerConnection.get_transceivers()
-    |> Enum.all?(&(&1.direction == :inactive || &1.direction == :stopped))
+    if Process.alive?(pc) do
+      pc
+      |> PeerConnection.get_transceivers()
+      |> Enum.all?(&(&1.direction == :inactive || &1.direction == :stopped))
+    else
+      true
+    end
   end
 end
