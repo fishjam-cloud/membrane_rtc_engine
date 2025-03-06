@@ -60,7 +60,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       {:jason, "~> 1.2"},
       {:elixir_uuid, "~> 1.2"},
       {:fishjam_protos,
-       github: "fishjam-cloud/protos", sparse: "fishjam_protos", ref: "FCE-1307/update-protos"},
+       github: "fishjam-cloud/protos",
+       sparse: "fishjam_protos",
+       ref: "6dcbc6525fb0c0e63adf8039c4e685176f76bcfa"},
 
       # Dev and test
       {:credo, "~> 1.6", only: :dev, runtime: false},
