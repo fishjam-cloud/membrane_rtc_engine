@@ -31,3 +31,4 @@
 * Update ex_webrtc dependency [#40](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/40)
 * Allow specifying audio-only endpoints [#39](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/39)
 * Fix `empty_connection?/1` calling terminated process [#41](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/41)
+* Update protos [#42](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/42)
