@@ -8,6 +8,7 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
   alias Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer
   alias Membrane.RTC.Engine.Message
 
+  @stream_id "stream_id"
   @forwarder_id "forwarder"
 
   @fixtures_dir "./test/fixtures/"
@@ -17,7 +18,7 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
   @tracks_added_delay 500
 
   setup do
-    {_pc, server} = WHIPServer.init()
+    {_pc, server} = WHIPServer.init(@stream_id)
     {:ok, pid} = Engine.start_link([id: "test_rtc"], [])
 
     Engine.register(pid, self())
@@ -95,8 +96,9 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
   defp create_forwarder_endpoint(rtc_engine, server) do
     %Forwarder{
       rtc_engine: rtc_engine,
-      broadcaster_url: WHIPServer.address(server),
-      broadcaster_token: "token"
+      broadcaster_url: WHIPServer.address(server, @stream_id),
+      broadcaster_token: "token",
+      stream_id: @stream_id
     }
   end
 end

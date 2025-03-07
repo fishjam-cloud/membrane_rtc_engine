@@ -26,6 +26,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
               broadcaster_token: [
                 spec: String.t(),
                 description: "Token allowing for streaming into broadcaster"
+              ],
+              stream_id: [
+                spec: String.t(),
+                description: "Id of forwarded stream"
               ]
 
   def_input_pad :input,
@@ -77,7 +81,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {:ok, offer} = PeerConnection.create_offer(state.pc)
     :ok = PeerConnection.set_local_description(state.pc, offer)
 
-    url = state.broadcaster_url |> URI.merge("/api/whip") |> to_string()
+    url = state.broadcaster_url |> URI.merge("/api/whip/#{state.stream_id}") |> to_string()
     headers = sdp_headers(state.broadcaster_token)
 
     case HTTPoison.post(url, offer.sdp, headers) do
