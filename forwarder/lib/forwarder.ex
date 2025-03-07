@@ -27,6 +27,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
               broadcaster_token: [
                 spec: String.t(),
                 description: "Token allowing for streaming into broadcaster"
+              ],
+              stream_id: [
+                spec: String.t(),
+                description: "Id of forwarded stream"
               ]
 
   def_input_pad :input,
@@ -58,6 +62,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
     [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: state.endpoint_id,
+        stream_id: state.stream_id,
         telemetry_label: state.telemetry_label,
         broadcaster_url: state.broadcaster_url,
         broadcaster_token: state.broadcaster_token

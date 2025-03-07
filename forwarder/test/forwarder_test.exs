@@ -10,10 +10,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
   alias Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer
   alias Membrane.Testing.Pipeline
 
+  @stream_id "stream_id"
   @forwarder_id {"endpoint_id", "forwarder"}
 
   setup do
-    {pc, server} = WHIPServer.init()
+    {pc, server} = WHIPServer.init(@stream_id)
     pipeline = start_pipeline(server)
 
     {:ok, pipeline: pipeline, pc: pc}
@@ -103,8 +104,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
         {[
            child(@forwarder_id, %Forwarder{
              rtc_engine: self(),
-             broadcaster_url: WHIPServer.address(server),
-             broadcaster_token: "token"
+             broadcaster_url: WHIPServer.address(server, @stream_id),
+             broadcaster_token: "token",
+             stream_id: @stream_id
            })
          ], group: :forwarder_group, crash_group_mode: :temporary}
     )

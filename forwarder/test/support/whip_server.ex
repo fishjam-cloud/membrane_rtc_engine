@@ -3,11 +3,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
 
   alias ExWebRTC.PeerConnection
 
-  @offer_path "/api/whip"
-  @ice_path "api/resource/id"
+  @offer_path "api/whip/"
+  @ice_path "api/resource/"
 
-  @spec init(Keyword.t()) :: {pid(), Bypass.t()}
-  def init(opts \\ []) do
+  @spec init(String.t(), Keyword.t()) :: {pid(), Bypass.t()}
+  def init(stream_id, opts \\ []) do
     handle_offer = Keyword.get(opts, :offer, true)
     handle_ice = Keyword.get(opts, :ice, true)
 
@@ -15,18 +15,18 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     bypass = Bypass.open()
 
     if handle_offer,
-      do: handle_offer(bypass, pc),
-      else: handle_error(bypass, "POST", @offer_path)
+      do: handle_offer(bypass, pc, stream_id),
+      else: handle_error(bypass, "POST", @offer_path, stream_id)
 
     if handle_ice,
-      do: handle_ice(bypass, pc),
-      else: handle_error(bypass, "PATCH", @ice_path)
+      do: handle_ice(bypass, pc, stream_id),
+      else: handle_error(bypass, "PATCH", @ice_path, stream_id)
 
     {pc, bypass}
   end
 
-  @spec address(Bypass.t()) :: String.t()
-  def address(bypass), do: "http://localhost:#{bypass.port}"
+  @spec address(Bypass.t(), String.t()) :: String.t()
+  def address(bypass, stream_id), do: "http://localhost:#{bypass.port}/#{stream_id}"
 
   @spec receive_media?() :: boolean()
   def receive_media?() do
@@ -37,8 +37,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     end
   end
 
-  defp handle_offer(bypass, pc) do
-    Bypass.stub(bypass, "POST", @offer_path, fn conn ->
+  defp handle_offer(bypass, pc, stream_id) do
+    Bypass.stub(bypass, "POST", @offer_path <> stream_id, fn conn ->
       {:ok, offer_sdp, conn} = Plug.Conn.read_body(conn)
       offer = %ExWebRTC.SessionDescription{type: :offer, sdp: offer_sdp}
 
@@ -49,14 +49,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
       answer = PeerConnection.get_local_description(pc)
 
       conn
-      |> Plug.Conn.put_resp_header("location", @ice_path)
+      |> Plug.Conn.put_resp_header("location", @ice_path <> stream_id)
       |> Plug.Conn.put_resp_content_type("application/sdp")
       |> Plug.Conn.resp(201, answer.sdp)
     end)
   end
 
-  defp handle_ice(bypass, pc) do
-    Bypass.stub(bypass, "PATCH", @ice_path, fn conn ->
+  defp handle_ice(bypass, pc, stream_id) do
+    Bypass.stub(bypass, "PATCH", @ice_path <> stream_id, fn conn ->
       {:ok, body, conn} = Plug.Conn.read_body(conn)
 
       candidate =
@@ -70,8 +70,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     end)
   end
 
-  defp handle_error(bypass, method, path) do
-    Bypass.stub(bypass, method, path, fn conn ->
+  defp handle_error(bypass, method, path, stream_id) do
+    Bypass.stub(bypass, method, path <> stream_id, fn conn ->
       Plug.Conn.resp(conn, 500, "")
     end)
   end
