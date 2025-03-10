@@ -185,28 +185,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {[], state}
   end
 
-  @impl true
-  def handle_info({:DOWN, _ref, :process, pc, reason}, _ctx, %{pc: pc} = state) do
-    case reason do
-      :normal ->
-        # Reason normal means that `PeerConnection.close` function was invoked
-        # This is unexpected because PeerConnection is only closed on termination
-        Membrane.Logger.error("PeerConnection unexpectedly closed with reason: :normal")
-        {[terminate: {:crash, :peer_connection_closed}], state}
-
-      {:shutdown, reason} ->
-        Membrane.Logger.error(
-          "PeerConnection unexpectedly closed with reason: #{inspect(reason)}"
-        )
-
-        {[terminate: {:crash, reason}], state}
-
-      reason ->
-        Membrane.Logger.error("PeerConnection crashed with reason: #{inspect(reason)}")
-        {[terminate: reason], state}
-    end
-  end
-
   defp spawn_peer_connection() do
     {:ok, pc} =
       [
@@ -215,7 +193,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         controlling_process: self()
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
-      |> PeerConnection.start()
+      |> PeerConnection.start_link()
 
     Process.monitor(pc)
 

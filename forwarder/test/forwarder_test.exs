@@ -17,6 +17,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
     {pc, server} = WHIPServer.init(@stream_id)
     pipeline = start_pipeline(server)
 
+    on_exit(fn -> WHIPServer.close(server) end)
+
     {:ok, pipeline: pipeline, pc: pc}
   end
 
@@ -79,6 +81,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
     PeerConnection.close(pc)
 
     assert_pipeline_crash_group_down(pipeline, :forwarder_group, 20_000)
+  end
+
+  test "PeerConnection disconnects when Forwarder crashes", %{pipeline: pipeline, pc: pc} do
+    new_tracks = [create_track(:audio), create_track(:video)]
+
+    add_new_tracks(pipeline, new_tracks)
+    assert_forwarder_subscribe()
+
+    remove_tracks(pipeline, new_tracks)
+
+    assert_pipeline_crash_group_down(pipeline, :forwarder_group)
+
+    WHIPServer.disconnected?(pc)
   end
 
   defp add_new_tracks(pipeline, new_tracks) do
