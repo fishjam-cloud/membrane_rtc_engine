@@ -11,7 +11,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     handle_offer = Keyword.get(opts, :offer, true)
     handle_ice = Keyword.get(opts, :ice, true)
 
-    {:ok, pc} = PeerConnection.start_link()
+    {:ok, pc} = PeerConnection.start()
+    Process.monitor(pc)
+
     bypass = Bypass.open()
 
     if handle_offer,
@@ -35,6 +37,20 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     after
       2_000 -> false
     end
+  end
+
+  @spec await_disconnect(pid()) :: :ok | :error
+  def await_disconnect(pc) do
+    receive do
+      {:DOWN, _ref, :process, ^pc, {:shutdown, :conn_state_failed}} -> :ok
+    after
+      20_000 -> :error
+    end
+  end
+
+  @spec close(Bypass.t()) :: :ok
+  def close(bypass) do
+    Bypass.down(bypass)
   end
 
   defp handle_offer(bypass, pc, stream_id) do
