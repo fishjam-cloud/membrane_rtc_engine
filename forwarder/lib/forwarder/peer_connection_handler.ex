@@ -195,8 +195,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
       |> PeerConnection.start_link()
 
-    Process.monitor(pc)
-
     pc
   end
 
