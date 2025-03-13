@@ -1,6 +1,6 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   @moduledoc false
-  use Membrane.Endpoint
+  use Membrane.Endpoint, flow_control_hints?: false
 
   require Membrane.Logger
 

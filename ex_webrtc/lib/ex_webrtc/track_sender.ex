@@ -6,7 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   # (will be removed after releasing new RTP plugin)
   # * tracks variants activity
 
-  use Membrane.Filter
+  use Membrane.Filter, flow_control_hints?: false
 
   require Membrane.Logger
 

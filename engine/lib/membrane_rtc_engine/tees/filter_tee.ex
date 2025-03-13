@@ -11,7 +11,7 @@ defmodule Membrane.RTC.Engine.FilterTee do
   # It is necessary for SRTP as they can update their ROCs
   # based on sequence numbers and when we drop to many packets we may roll it over.
 
-  use Membrane.Filter
+  use Membrane.Filter, flow_control_hints?: false
 
   def_options track_id: [
                 spec: String.t(),
