@@ -252,7 +252,9 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.Call do
         content_length: 0
       })
       |> Map.merge(override_headers)
-      |> update_in([:via], fn via -> [Tuple.append(via, %{"branch" => branch})] end)
+      |> update_in([:via], fn via ->
+        [Tuple.insert_at(via, tuple_size(via), %{"branch" => branch})]
+      end)
 
     if is_nil(state.route) do
       headers
