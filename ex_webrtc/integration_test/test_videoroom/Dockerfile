@@ -1,4 +1,4 @@
-FROM membraneframeworklabs/docker_membrane:v2.5.0
+FROM membraneframeworklabs/docker_membrane:v2.6.0
 
 WORKDIR /engine
 COPY engine/lib lib/
