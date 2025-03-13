@@ -10,7 +10,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
     [
       app: :membrane_rtc_engine_sip,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.16",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -55,7 +55,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
-      {:membrane_core, "~> 1.1.2"},
+      {:membrane_core, "~> 1.2"},
       {:membrane_tee_plugin, "~> 0.12.0"},
       {:membrane_file_plugin, "~> 0.17.0"},
       {:membrane_rtp_plugin, "~> 0.29.0"},

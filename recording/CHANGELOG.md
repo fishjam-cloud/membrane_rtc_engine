@@ -2,6 +2,7 @@
 
 ## 0.3.0-dev
 * Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
+* Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
 
 ## 0.2.0
 * Synchronize tracks based on RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

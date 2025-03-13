@@ -9,6 +9,7 @@
 * Rename `encoding` to `variant` when refering to simulcast layers [#15](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/15)
 * Use :protobuf as serializer in tests [#30](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/30)
 * Remove PeerConnection Supervisor [#32](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/32)  
+* Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
 
 ## 0.23.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)
