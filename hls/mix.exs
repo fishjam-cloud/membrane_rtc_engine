@@ -10,7 +10,7 @@ defmodule Membrane.RTC.Engine.Endpoint.HLS.MixProject do
     [
       app: :membrane_rtc_engine_hls,
       version: @version,
-      elixir: "~> 1.16",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
