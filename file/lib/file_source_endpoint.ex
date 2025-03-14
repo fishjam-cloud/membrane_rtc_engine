@@ -39,12 +39,12 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
                 description: "Configuration of the track being published"
               ],
               ssrc: [
-                spec: RTP.ssrc_t(),
+                spec: RTP.ssrc(),
                 description: "SSRC of RTP packets",
                 default: nil
               ],
               payload_type: [
-                spec: RTP.payload_type_t(),
+                spec: RTP.payload_type(),
                 description: "Payload type of RTP packets"
               ],
               playback_mode: [

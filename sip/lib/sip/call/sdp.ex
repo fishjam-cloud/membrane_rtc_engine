@@ -10,7 +10,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.Call.SDP do
   @username "Engine"
 
   @type session_params :: %{
-          rtp_payload_fmt: {RTP.payload_type_t(), %{encoding_name: term(), clock_rate: term()}},
+          rtp_payload_fmt: {RTP.payload_type(), %{encoding_name: term(), clock_rate: term()}},
           connection_data: ExSDP.ConnectionData.t(),
           port: 1..65_535
         }

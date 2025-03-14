@@ -30,7 +30,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Forwarder do
   @doc """
   Creates a new forwarder.
   """
-  @spec new(:H264 | :VP8 | :OPUS, Membrane.RTP.clock_rate_t()) :: t()
+  @spec new(:H264 | :VP8 | :OPUS, Membrane.RTP.clock_rate()) :: t()
   def new(codec, clock_rate)
 
   def new(:VP8, clock_rate) do

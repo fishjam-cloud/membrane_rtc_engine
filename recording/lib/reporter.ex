@@ -45,7 +45,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Recording.Reporter do
           start_timestamp: pos_integer(),
           start_timestamp_wallclock: pos_integer(),
           end_timestamp: pos_integer(),
-          clock_rate: Membrane.RTP.clock_rate_t(),
+          clock_rate: Membrane.RTP.clock_rate(),
           metadata: any(),
           origin: String.t()
         }
