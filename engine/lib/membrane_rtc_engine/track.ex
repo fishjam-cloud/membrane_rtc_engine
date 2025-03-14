@@ -73,7 +73,7 @@ defmodule Membrane.RTC.Engine.Track do
           encoding: encoding,
           variants: [variant()],
           disabled_variants: [variant()],
-          clock_rate: Membrane.RTP.clock_rate_t(),
+          clock_rate: Membrane.RTP.clock_rate(),
           fmtp: FMTP.t(),
           active?: boolean(),
           metadata: any(),
@@ -114,7 +114,7 @@ defmodule Membrane.RTC.Engine.Track do
           String.t(),
           String.t(),
           encoding(),
-          Membrane.RTP.clock_rate_t(),
+          Membrane.RTP.clock_rate(),
           FMTP.t(),
           opts_t()
         ) :: t

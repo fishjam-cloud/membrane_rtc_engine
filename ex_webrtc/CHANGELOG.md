@@ -33,3 +33,4 @@
 * Fix `empty_connection?/1` calling terminated process [#41](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/41)
 * Update protos [#42](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/42)
 * Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
+* Update membrane rtp plugins [#46](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/46)

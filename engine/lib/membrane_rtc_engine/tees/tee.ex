@@ -20,7 +20,7 @@ defmodule Membrane.RTC.Engine.Tee do
   alias Membrane.RTCP.SenderReportPacket
   alias Membrane.RTCPEvent
 
-  @supported_codecs [:H264, :VP8, :OPUS]
+  @supported_codecs [:H264, :VP8, :opus]
 
   def_options track: [
                 type: :struct,

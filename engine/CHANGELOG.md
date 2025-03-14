@@ -10,6 +10,7 @@
 * Use :protobuf as serializer in tests [#30](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/30)
 * Remove PeerConnection Supervisor [#32](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/32)  
 * Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
+* Update membrane rtp plugins [#46](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/46)
 
 ## 0.23.0
 * Add RTCP sender reports [#393](https://github.com/fishjam-dev/membrane_rtc_engine/pull/393)

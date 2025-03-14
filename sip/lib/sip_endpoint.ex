@@ -51,43 +51,47 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP do
   @audio_mixer_delay Time.milliseconds(200)
   @opus_sample_rate 48_000
 
-  def_output_pad :output,
+  def_output_pad(:output,
     accepted_format: Membrane.RTP,
     availability: :on_request
+  )
 
-  def_input_pad :input,
+  def_input_pad(:input,
     accepted_format: Membrane.RTP,
     availability: :on_request
+  )
 
-  def_options rtc_engine: [
-                spec: pid(),
-                description: "PID of parent Engine"
-              ],
-              registrar_credentials: [
-                spec: RegistrarCredentials.t(),
-                description: "Credentials needed to connect with the SIP registrar server"
-              ],
-              external_ip: [
-                spec: String.t(),
-                description:
-                  "External IPv4 address of the machine running the Endpoint, required for SDP negotiation"
-              ],
-              register_interval_ms: [
-                spec: non_neg_integer(),
-                description: """
-                Interval (in ms) in which keep-alive (keep-registered) REGISTER messages
-                will be sent to the SIP registrar server
-                """,
-                default: @register_interval_ms
-              ],
-              disconnect_if_alone: [
-                spec: boolean(),
-                description: """
-                Whether the Endpoint should disconnect from the call when all incoming tracks are removed,
-                i.e. when all other Endpoints publishing audio are removed from the Engine
-                """,
-                default: true
-              ]
+  def_options(
+    rtc_engine: [
+      spec: pid(),
+      description: "PID of parent Engine"
+    ],
+    registrar_credentials: [
+      spec: RegistrarCredentials.t(),
+      description: "Credentials needed to connect with the SIP registrar server"
+    ],
+    external_ip: [
+      spec: String.t(),
+      description:
+        "External IPv4 address of the machine running the Endpoint, required for SDP negotiation"
+    ],
+    register_interval_ms: [
+      spec: non_neg_integer(),
+      description: """
+      Interval (in ms) in which keep-alive (keep-registered) REGISTER messages
+      will be sent to the SIP registrar server
+      """,
+      default: @register_interval_ms
+    ],
+    disconnect_if_alone: [
+      spec: boolean(),
+      description: """
+      Whether the Endpoint should disconnect from the call when all incoming tracks are removed,
+      i.e. when all other Endpoints publishing audio are removed from the Engine
+      """,
+      default: true
+    ]
+  )
 
   @doc """
   Starts calling a specified number
@@ -129,8 +133,8 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP do
             sip_port: 1..65_535,
             outgoing_track: Track.t(),
             subscriber: Subscriber.t(),
-            outgoing_ssrc: Membrane.RTP.ssrc_t(),
-            first_ssrc: Membrane.RTP.ssrc_t() | nil,
+            outgoing_ssrc: Membrane.RTP.ssrc(),
+            first_ssrc: Membrane.RTP.ssrc() | nil,
             register_call_id: Call.id(),
             call_id: Call.id() | nil,
             phone_number: String.t() | nil,
@@ -176,9 +180,9 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP do
         :audio,
         Track.stream_id(),
         endpoint_id,
-        :OPUS,
+        :opus,
         @opus_sample_rate,
-        %ExSDP.Attribute.FMTP{pt: Membrane.RTP.PayloadFormat.get(:OPUS)}
+        %ExSDP.Attribute.FMTP{pt: Membrane.RTP.PayloadFormat.get(:opus)}
       )
 
     {register_call_id, _pid} = spawn_call(opts, RegisterCall)
@@ -262,7 +266,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP do
       |> child({:payloader, track_id}, %Membrane.RTP.PayloaderBin{
         payloader: Membrane.RTP.Opus.Payloader,
         ssrc: state.first_ssrc,
-        payload_type: Membrane.RTP.PayloadFormat.get(:OPUS),
+        payload_type: Membrane.RTP.PayloadFormat.get(:opus),
         clock_rate: @opus_sample_rate
       })
       |> via_in(Pad.ref(:input, {track_id, :high}))

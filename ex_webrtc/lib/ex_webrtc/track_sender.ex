@@ -35,34 +35,37 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
 
   @start_bitrate_estimation_timer {:start_timer, {:estimate_bitrate, Time.seconds(1)}}
 
-  def_options track: [
-                type: :struct,
-                spec: Membrane.RTC.Engine.Track.t(),
-                description: "Track this sender will maintain"
-              ],
-              variant_bitrates: [
-                spec: %{optional(Track.variant()) => non_neg_integer()},
-                description: "Bitrate of each variant of track maintained by this sender"
-              ],
-              telemetry_label: [
-                spec: Membrane.TelemetryMetrics.label(),
-                default: [],
-                description: "Label passed to Membrane.TelemetryMetrics functions"
-              ],
-              is_keyframe_fun: [
-                spec: (Membrane.Buffer.t(), Track.encoding() -> boolean()),
-                default: &Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender.keyframe?/2,
-                description:
-                  "Function checking whether a given buffer contains a keyframe in its payload."
-              ]
+  def_options(
+    track: [
+      type: :struct,
+      spec: Membrane.RTC.Engine.Track.t(),
+      description: "Track this sender will maintain"
+    ],
+    variant_bitrates: [
+      spec: %{optional(Track.variant()) => non_neg_integer()},
+      description: "Bitrate of each variant of track maintained by this sender"
+    ],
+    telemetry_label: [
+      spec: Membrane.TelemetryMetrics.label(),
+      default: [],
+      description: "Label passed to Membrane.TelemetryMetrics functions"
+    ],
+    is_keyframe_fun: [
+      spec: (Membrane.Buffer.t(), Track.encoding() -> boolean()),
+      default: &Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender.keyframe?/2,
+      description: "Function checking whether a given buffer contains a keyframe in its payload."
+    ]
+  )
 
-  def_input_pad :input,
+  def_input_pad(:input,
     availability: :on_request,
     accepted_format: Membrane.RTP
+  )
 
-  def_output_pad :output,
+  def_output_pad(:output,
     availability: :on_request,
     accepted_format: Membrane.RTP
+  )
 
   @impl true
   def handle_init(_ctx, %__MODULE__{
@@ -442,7 +445,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   @spec keyframe?(Membrane.Buffer.t(), Track.encoding()) :: boolean()
   def keyframe?(buffer, encoding) do
     case encoding do
-      :OPUS -> true
+      :opus -> true
       :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
       :VP8 -> Membrane.RTP.VP8.Utils.is_keyframe(buffer.payload)
     end

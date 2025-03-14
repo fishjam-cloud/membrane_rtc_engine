@@ -29,7 +29,7 @@ defmodule Membrane.RTC.Engine.FilterTee do
               ],
               codec: [
                 type: :atom,
-                spec: [:H264 | :VP8 | :OPUS],
+                spec: [:H264 | :VP8 | :opus],
                 description: "Codec of track #{inspect(__MODULE__)} will forward."
               ]
 

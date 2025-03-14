@@ -83,16 +83,10 @@ defmodule Membrane.RTC.Engine.Support.Sink do
           {:ok, _track} ->
             put_in(state, [:tracks, track.id], track)
 
-          {:error, :invalid_track_id} ->
-            Membrane.Logger.debug("""
-            Couldn't subscribe to the track: #{inspect(track.id)}. No such track.
-            It had to be removed just after publishing it. Ignoring.
-            """)
+          :ignored ->
+            Membrane.Logger.debug("Couldn't subscribe to the track: #{inspect(track.id)}.")
 
             state
-
-          {:error, reason} ->
-            raise "Couldn't subscribe to the track: #{inspect(track.id)}. Reason: #{inspect(reason)}"
         end
       end)
 

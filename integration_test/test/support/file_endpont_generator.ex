@@ -35,7 +35,7 @@ defmodule FileEndpointGenerator do
     audio_track_config = %FileEndpoint.TrackConfig{
       type: :audio,
       stream_id: Keyword.get(opts, :stream_id),
-      encoding: :OPUS,
+      encoding: :opus,
       clock_rate: 48_000,
       fmtp: %FMTP{
         pt: 108

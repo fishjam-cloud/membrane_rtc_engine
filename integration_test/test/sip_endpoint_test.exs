@@ -463,7 +463,7 @@ defmodule Membrane.RTC.SIPEndpointTest do
     track_config = %TrackConfig{
       type: :audio,
       stream_id: stream_id,
-      encoding: :OPUS,
+      encoding: :opus,
       clock_rate: 48_000,
       fmtp: nil,
       opts: [id: audio_track_id]

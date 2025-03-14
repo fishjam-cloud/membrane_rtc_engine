@@ -148,7 +148,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
              id: ^audio_track_id,
              type: :audio,
              origin: @endpoint_id,
-             encoding: :OPUS,
+             encoding: :opus,
              variants: [:high]
            } = engine_audio_track
 

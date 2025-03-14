@@ -393,7 +393,7 @@ defmodule Membrane.RTC.Engine.TeeTest do
   end
 
   defp build_opus_track() do
-    Track.new(:audio, @stream_id, @track_origin, :OPUS, 48_00, nil,
+    Track.new(:audio, @stream_id, @track_origin, :opus, 48_00, nil,
       id: @track_id,
       variants: [:high]
     )

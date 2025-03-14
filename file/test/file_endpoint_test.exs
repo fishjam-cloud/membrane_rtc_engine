@@ -159,7 +159,7 @@ defmodule Membrane.RTC.FileEndpointTest do
     encoding =
       case ext do
         "aac" -> :AAC
-        "ogg" -> :OPUS
+        "ogg" -> :opus
       end
 
     audio_track_config = %Endpoint.File.TrackConfig{

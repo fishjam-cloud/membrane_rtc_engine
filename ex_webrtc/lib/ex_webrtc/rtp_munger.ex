@@ -25,7 +25,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
     so it is contiguous until rollover
   """
   @type t() :: %__MODULE__{
-          clock_rate: Membrane.RTP.clock_rate_t(),
+          clock_rate: Membrane.RTP.clock_rate(),
           cache: Cache.t(),
           highest_incoming_seq_num: integer(),
           last_seq_num: integer(),
@@ -52,7 +52,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.RTPMunger do
   @doc """
   Creates new RTP munger.
   """
-  @spec new(Membrane.RTP.clock_rate_t()) :: t()
+  @spec new(Membrane.RTP.clock_rate()) :: t()
   def new(clock_rate) do
     %__MODULE__{clock_rate: clock_rate}
   end
