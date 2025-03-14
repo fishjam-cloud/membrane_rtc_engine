@@ -42,7 +42,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.Call.SDP do
            Enum.find(sdp.media, :no_audio_media, &(&1.type == :audio)),
          fmt when not is_binary(fmt) <- audio_media.fmt,
          common_pts when common_pts != [] <-
-           @accepted_payload_types -- @accepted_payload_types -- fmt,
+           @accepted_payload_types -- (@accepted_payload_types -- fmt),
          chosen_pt <- List.first(common_pts) do
       {:ok,
        %{

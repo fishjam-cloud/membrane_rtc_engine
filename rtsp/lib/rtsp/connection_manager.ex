@@ -87,7 +87,7 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP.ConnectionManager do
            {:ok, connection_status} <- setup_rtsp_connection(connection_status),
            {:ok, connection_status} <- start_keep_alive(connection_status),
            :ok <- play(connection_status) do
-        Membrane.Logger.debug(~s"""
+        Membrane.Logger.debug("""
         ConnectionManager processes:
           RTSP session: #{inspect(connection_status.rtsp_session)},
           Endpoint: #{inspect(connection_status.endpoint)},
@@ -168,7 +168,7 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP.ConnectionManager do
       when reason != :normal do
     Membrane.Logger.debug("ConnectionManager: Received DOWN message from #{inspect(pid)}")
 
-    Membrane.Logger.debug(~s"""
+    Membrane.Logger.debug("""
     ConnectionManager processes:
       RTSP session: #{inspect(rtsp_session)},
       RTSP keep alive: #{inspect(keep_alive)}

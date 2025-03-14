@@ -9,7 +9,7 @@ defmodule Membrane.RTC.Engine.MixProject do
     [
       app: :membrane_rtc_engine,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.1.2"},
+      {:membrane_core, "~> 1.2"},
       {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_rtp_format, "~> 0.8.0"},
       {:elixir_uuid, "~> 1.2"},

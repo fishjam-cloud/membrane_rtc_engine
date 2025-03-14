@@ -1,6 +1,6 @@
 defmodule Membrane.RTC.Engine.Tee do
   @moduledoc false
-  use Membrane.Filter
+  use Membrane.Filter, flow_control_hints?: false
 
   require Membrane.Logger
 

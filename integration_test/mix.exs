@@ -5,7 +5,7 @@ defmodule Membrane.RTC.Engine.Integration.MixProject do
     [
       app: :membrane_rtc_engine_integration_test,
       version: "0.1.0",
-      elixir: "~> 1.14",
+      elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -44,7 +44,7 @@ defmodule Membrane.RTC.Engine.Integration.MixProject do
       {:membrane_rtc_engine_forwarder, path: "../forwarder"},
 
       # Regular deps (for modules in `test/support/`)
-      {:membrane_core, "~> 1.1.2"},
+      {:membrane_core, "~> 1.2"},
       {:bundlex, "~> 1.3"},
       {:membrane_rtp_plugin, "~> 0.29.0"},
       {:membrane_rtp_h264_plugin, "~> 0.19.0"},

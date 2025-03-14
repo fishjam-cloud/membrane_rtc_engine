@@ -169,11 +169,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Recording do
 
   @impl true
   def handle_crash_group_down({module, track_id}, _ctx, state) do
-    error = "Sink #{module} of track #{track_id} crashed"
+    unless has_file_storage?(state.stores),
+      do: raise("Sink #{module} of track #{track_id} crashed")
 
-    unless has_file_storage?(state.stores), do: raise(error)
-
-    Membrane.Logger.warning(error)
+    Membrane.Logger.warning("Sink #{module} of track #{track_id} crashed")
 
     {[], state}
   end
@@ -241,11 +240,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Recording do
           }
 
           unless storage.save_object(config, opts) == :ok do
-            Membrane.Logger.error(%{
-              message: "Failed to save report",
-              object: "report.json",
-              storage: storage
-            })
+            Membrane.Logger.error("""
+            Failed to save report: report.json,
+            storage: #{inspect(storage)}
+            """)
           end
         end)
     end
