@@ -35,7 +35,7 @@ defmodule Membrane.RTC.Engine.ExWebRTC.TrackSenderTest do
            id: @track_id,
            variants: @variants
          ), false},
-        {Track.new(:audio, @stream_id, @track_origin, :OPUS, 48_000, nil, id: @track_id), true}
+        {Track.new(:audio, @stream_id, @track_origin, :opus, 48_000, nil, id: @track_id), true}
       ]
       |> Enum.each(fn {track, expected_is_keyframe_value} ->
         test_keyframe?(track, expected_is_keyframe_value)

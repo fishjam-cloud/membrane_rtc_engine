@@ -97,8 +97,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
 
   @impl true
   def handle_init(ctx, opts) do
-    unless Enum.any?([:H264, :OPUS], &(&1 == opts.track_config.encoding)) do
-      raise "Unsupported track codec: #{inspect(opts.track_config.encoding)}. The only supported codecs are :H264 and :OPUS."
+    unless Enum.any?([:H264, :opus], &(&1 == opts.track_config.encoding)) do
+      raise "Unsupported track codec: #{inspect(opts.track_config.encoding)}. The only supported codecs are :H264 and :opus."
     end
 
     {:endpoint, endpoint_id} = ctx.name
@@ -141,7 +141,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   @impl true
   def handle_pad_added(Pad.ref(:output, {_track_id, _rid}) = pad, _ctx, state) do
     actions =
-      if state.track.encoding == :OPUS and
+      if state.track.encoding == :opus and
            state.after_source_transformation == (&Function.identity/1) do
         build_pipeline_ogg_demuxer(state, pad)
       else
@@ -268,7 +268,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
         track: state.track,
         is_keyframe: fn buffer, track ->
           case track.encoding do
-            :OPUS -> true
+            :opus -> true
             :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
           end
         end,
@@ -278,7 +278,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
     end
   end
 
-  defp get_parser(%Track{encoding: :OPUS}) do
+  defp get_parser(%Track{encoding: :opus}) do
     fn link_builder ->
       child(link_builder, :parser, opus_parser())
     end

@@ -6,7 +6,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler.InboundTra
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC, as: EndpointExWebRTC
   alias Membrane.RTC.Engine.Track
 
-  @type encoding :: :OPUS | :VP8 | :H264
+  @type encoding :: :opus | :VP8 | :H264
   @type variant_state :: :new | :ready | :linked
   @type variants :: %{EndpointExWebRTC.track_variant() => variant_state()}
 

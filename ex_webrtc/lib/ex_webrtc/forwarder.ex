@@ -13,7 +13,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Forwarder do
   alias Membrane.RTCP.SenderReportPacket
 
   @opaque t() :: %__MODULE__{
-            codec: :H264 | :VP8 | :OPUS,
+            codec: :H264 | :VP8 | :opus,
             rtp_munger: RTPMunger.t(),
             vp8_munger: VP8Munger.t(),
             started?: boolean()
@@ -30,7 +30,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Forwarder do
   @doc """
   Creates a new forwarder.
   """
-  @spec new(:H264 | :VP8 | :OPUS, Membrane.RTP.clock_rate()) :: t()
+  @spec new(:H264 | :VP8 | :opus, Membrane.RTP.clock_rate()) :: t()
   def new(codec, clock_rate)
 
   def new(:VP8, clock_rate) do
@@ -48,8 +48,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.Forwarder do
     }
   end
 
-  def new(:OPUS, _clock_rate) do
-    %__MODULE__{codec: :OPUS}
+  def new(:opus, _clock_rate) do
+    %__MODULE__{codec: :opus}
   end
 
   @doc """
