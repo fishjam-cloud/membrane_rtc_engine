@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.MixProject do
   use Mix.Project
 
-  @version "0.24.0-dev"
+  @version "0.24.0"
   @github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @source_ref "engine-v#{@version}"
 

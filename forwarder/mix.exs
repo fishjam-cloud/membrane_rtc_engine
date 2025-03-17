@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "0.1.0"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/forwarder"
   @source_ref "forwarder-v#{@version}"
@@ -49,8 +49,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
   defp deps do
     [
       {:membrane_core, "~> 1.2"},
-      {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
+      {:membrane_rtc_engine, "~> 0.24.0"},
+      {:membrane_rtc_engine_ex_webrtc, "~> 0.1.0"},
       {:ex_webrtc, "~> 0.8.1"},
       {:ex_ice, "~> 0.9.4"},
       {:httpoison, "~> 2.0"},

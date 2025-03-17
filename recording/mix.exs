@@ -1,7 +1,7 @@
 defmodule Recording.MixProject do
   use Mix.Project
 
-  @version "0.3.0-dev"
+  @version "0.3.0"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/recording"
   @source_ref "recording-v#{@version}"
@@ -52,8 +52,8 @@ defmodule Recording.MixProject do
       {:elixir_uuid, "~> 1.2"},
 
       # Engine deps
-      {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
+      {:membrane_rtc_engine, "~> 0.24.0"},
+      {:membrane_rtc_engine_ex_webrtc, "~> 0.1.0"},
 
       # Membrane deps
       {:membrane_core, "~> 1.2"},

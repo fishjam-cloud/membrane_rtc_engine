@@ -37,7 +37,7 @@ the Engine), e.g.
 ```elixir
 def deps do
   [
-    {:membrane_rtc_engine, "~> 0.23.0"},
+    {:membrane_rtc_engine, "~> 0.24.0"},
     {:membrane_rtc_engine_ex_webrtc, github: "fishjam-cloud/membrane_rtc_engine", sparse: "ex_webrtc"}
   ]
 end
