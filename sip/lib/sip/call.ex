@@ -363,12 +363,12 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.Call do
       headers: %{
         to: to,
         record_route: record_route,
-        contact: [{_name, contact_uri, _params} | _] = contact
+        contact: [{_name, contact_uri, _params} | _rest] = contact
       }
     } = response
 
     route = Enum.reverse(record_route)
-    [{_name, first_hop_uri, _params} | _] = route
+    [{_name, first_hop_uri, _params} | _rest] = route
 
     loose_routing? = loose_routing?(first_hop_uri)
 
@@ -392,7 +392,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.Call do
     state = %{state | to: response.headers.to}
 
     if is_map_key(response.headers, :contact) do
-      [{_name, contact_uri, _params} | _] = response.headers.contact
+      [{_name, contact_uri, _params} | _rest] = response.headers.contact
 
       %{state | callee: contact_uri}
     else

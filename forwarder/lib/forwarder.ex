@@ -39,7 +39,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
 
   @impl true
   def handle_init(ctx, opts) do
-    {_, endpoint_id} = ctx.name
+    {:endpoint, endpoint_id} = ctx.name
 
     state =
       opts

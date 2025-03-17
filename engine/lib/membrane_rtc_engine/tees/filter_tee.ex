@@ -101,7 +101,7 @@ defmodule Membrane.RTC.Engine.FilterTee do
   def handle_parent_notification(:track_priorities_updated, _ctx, state) do
     forward_to =
       case :ets.lookup(state.ets_name, state.track_id) do
-        [{_track_id, endpoint_names} | _] ->
+        [{_track_id, endpoint_names} | _rest] ->
           MapSet.new(endpoint_names)
 
         [] ->

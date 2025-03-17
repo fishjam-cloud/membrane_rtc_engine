@@ -200,9 +200,9 @@ defmodule Membrane.RTC.OutgoingCallTest do
       assert Map.has_key?(params, "tag")
 
       [
-        {_, ^hop2, _},
-        {_, ^hop3, _},
-        {_, @other_callee, _}
+        {_display_name_1, ^hop2, params},
+        {_display_name_2, ^hop3, params},
+        {_display_name_3, @other_callee, params}
       ] = updated_headers.route
     end
 

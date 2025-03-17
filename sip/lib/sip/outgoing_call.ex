@@ -227,7 +227,7 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.OutgoingCall do
     %Sippet.Message{
       headers: %{
         to: to,
-        via: [{_, _, _, %{"branch" => branch}}],
+        via: [{{_major, _minor}, _protocol, {_host, _port}, %{"branch" => branch}}],
         cseq: {cseq, :invite}
       }
     } = response

@@ -1426,7 +1426,7 @@ defmodule Membrane.RTC.Engine do
 
   defp dispatch(message) do
     Registry.dispatch(get_registry_name(), self(), fn entries ->
-      for {_, pid} <- entries, do: send(pid, message)
+      for {_self, pid} <- entries, do: send(pid, message)
     end)
   end
 

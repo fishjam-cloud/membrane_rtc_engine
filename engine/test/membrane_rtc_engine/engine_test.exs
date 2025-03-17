@@ -274,7 +274,7 @@ defmodule Membrane.RTC.EngineTest do
 
       assert_receive {:track_variant_disabled, %Track{id: ^track_id}, :high}
 
-      [%Track{id: ^track_id, disabled_variants: disabled_variants} | _] =
+      [%Track{id: ^track_id, disabled_variants: disabled_variants} | _rest] =
         Engine.get_tracks(rtc_engine)
 
       assert [:high] = disabled_variants

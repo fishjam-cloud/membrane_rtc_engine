@@ -214,7 +214,7 @@ defmodule Membrane.RTC.Engine.DisplayManager do
   defp calculate_tracks_priority(notifications, endpoint_managers, ets_name) do
     ends_of_speech =
       case :ets.lookup(ets_name, :ends_of_speech) do
-        [{_key, ends_of_speech} | _] -> ends_of_speech
+        [{_key, ends_of_speech} | _rest] -> ends_of_speech
         [] -> %{}
       end
 
