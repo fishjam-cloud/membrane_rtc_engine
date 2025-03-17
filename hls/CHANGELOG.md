@@ -1,5 +1,7 @@
 # Changelog
 
+## 0.10.0-dev
+
 ## 0.9.0
 * Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)
 * Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
