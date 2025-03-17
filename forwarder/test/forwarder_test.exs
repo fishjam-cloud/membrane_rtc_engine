@@ -11,7 +11,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
   alias Membrane.Testing.Pipeline
 
   @stream_id "stream_id"
-  @forwarder_id {"endpoint_id", "forwarder"}
+  @forwarder_id {:endpoint, "forwarder"}
 
   setup do
     {pc, server} = WHIPServer.init(@stream_id)

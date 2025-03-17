@@ -41,7 +41,7 @@ defmodule Membrane.RTC.AuthTest do
     %Message{
       start_line: ^start_line,
       headers: %{
-        via: [{_, _, _, %{"branch" => new_branch}}],
+        via: [{{_major, _minor}, _protocol, {_host, _port}, %{"branch" => new_branch}}],
         call_id: @call_id,
         cseq: cseq,
         authorization: [{"Digest", digest_params}]

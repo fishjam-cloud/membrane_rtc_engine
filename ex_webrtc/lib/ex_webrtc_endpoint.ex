@@ -85,7 +85,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_init(ctx, opts) do
-    {_, endpoint_id} = ctx.name
+    {:endpoint, endpoint_id} = ctx.name
     Logger.metadata(endpoint_id: endpoint_id)
 
     opts = Map.update!(opts, :telemetry_label, &(&1 ++ [endpoint_id: endpoint_id]))
@@ -484,7 +484,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_child_notification(
         :negotiation_done,
         :connection_handler,
-        %{name: {_, endpoint_id}},
+        %{name: {:endpoint, endpoint_id}},
         %{negotiation?: true} = state
       ) do
     negotiated_tracks =
