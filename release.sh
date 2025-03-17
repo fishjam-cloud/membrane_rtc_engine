@@ -13,11 +13,11 @@ EOF
 }
 
 ## Global variables
-# The order of these repos is important: Engine must be released first, then WebRTC, then the rest
-REPOS="engine webrtc"
+# The order of these repos is important: Engine must be released first, then ex_webrtc, then the rest
+REPOS="engine ex_webrtc"
 for elixir_repo in */mix.exs; do
     repo="${elixir_repo%/mix.exs}"
-    [[ "$repo" =~ engine|webrtc|integration_test ]] || REPOS+=" $repo"
+    [[ "$repo" =~ engine|ex_webrtc|integration_test ]] || REPOS+=" $repo"
 done
 
 # How many stages the release consists of (how many times does this script have to be run)
@@ -123,9 +123,9 @@ stage1() {
     git pull
 
     NEW_ENGINE_VERSION=$(next_version $(read_version engine))
-    NEW_WEBRTC_VERSION=$(next_version $(read_version webrtc))
+    NEW_ex_webrtc_VERSION=$(next_version $(read_version ex_webrtc))
     NEW_ENGINE_DEP=$(dep engine $NEW_ENGINE_VERSION)
-    NEW_WEBRTC_DEP=$(dep webrtc $NEW_WEBRTC_VERSION)
+    NEW_ex_webrtc_DEP=$(dep ex_webrtc $NEW_ex_webrtc_VERSION)
 
     BRANCH="release-v$NEW_ENGINE_VERSION"
     echo "[RELEASE STAGE 1] 2. Checking out a new branch '$BRANCH'"
@@ -135,7 +135,7 @@ stage1() {
     # special handling of two READMEs which include both libs as an example
     echo "[RELEASE STAGE 1] 3. Updating versions in main READMEs "
     sed -i '' -E "s/$(dep engine ".*")/$NEW_ENGINE_DEP/" README.md engine/README.md
-    sed -i '' -E "s/$(dep webrtc ".*")/$NEW_WEBRTC_DEP/" README.md engine/README.md
+    sed -i '' -E "s/$(dep ex_webrtc ".*")/$NEW_ex_webrtc_DEP/" README.md engine/README.md
 
 
     echo "[RELEASE STAGE 1] 4. Updating repos"
@@ -156,8 +156,8 @@ stage1() {
         if [[ "$repo" != "engine" ]]; then
             sed -i '' -E "s/$(dep engine path)/$NEW_ENGINE_DEP/" $repo/mix.exs
 
-            if [[ "$repo" != "webrtc" ]]; then
-                sed -i '' -E "s/$(dep webrtc path)/$NEW_WEBRTC_DEP/" $repo/mix.exs
+            if [[ "$repo" != "ex_webrtc" ]]; then
+                sed -i '' -E "s/$(dep ex_webrtc path)/$NEW_ex_webrtc_DEP/" $repo/mix.exs
             fi
         fi
     done
@@ -249,8 +249,8 @@ stage3() {
         if [[ "$repo" != "engine" ]]; then
             sed -i '' -E "s/$(dep engine ".*")/$(dep engine path)/" $repo/mix.exs
 
-            if [[ "$repo" != "webrtc" ]]; then
-                sed -i '' -E "s/$(dep webrtc ".*")/$(dep webrtc path)/" $repo/mix.exs
+            if [[ "$repo" != "ex_webrtc" ]]; then
+                sed -i '' -E "s/$(dep ex_webrtc ".*")/$(dep ex_webrtc path)/" $repo/mix.exs
             fi
         fi
     done
