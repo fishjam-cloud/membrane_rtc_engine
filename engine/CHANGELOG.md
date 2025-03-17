@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.25.0-dev
+* Update README [#51](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/51)
 
 ## 0.24.0
 * Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)
