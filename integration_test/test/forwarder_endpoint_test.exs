@@ -9,6 +9,7 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
   alias Membrane.RTC.Engine.Message
 
   @stream_id "stream_id"
+  @video_codec :h264
   @forwarder_id "forwarder"
 
   @fixtures_dir "./test/fixtures/"
@@ -98,7 +99,8 @@ defmodule Membrane.RTC.ForwarderEndpointTest do
       rtc_engine: rtc_engine,
       broadcaster_url: WHIPServer.address(server, @stream_id),
       broadcaster_token: "token",
-      stream_id: @stream_id
+      stream_id: @stream_id,
+      video_codec: @video_codec
     }
   end
 end
