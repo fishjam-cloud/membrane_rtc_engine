@@ -9,6 +9,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandlerTest do
   alias Membrane.Testing.Pipeline
 
   @stream_id "stream_id"
+  @video_codec :h264
   @endpoint_id "forwarder_endpoint"
 
   test "peers adds an audio and video tracks" do
@@ -52,7 +53,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandlerTest do
              endpoint_id: @endpoint_id,
              broadcaster_url: WHIPServer.address(server, @stream_id),
              broadcaster_token: "token",
-             stream_id: @stream_id
+             stream_id: @stream_id,
+             video_codec: @video_codec
            })
          ], group: :handler_group, crash_group_mode: :temporary}
     )

@@ -31,6 +31,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
               stream_id: [
                 spec: String.t(),
                 description: "Id of forwarded stream"
+              ],
+              video_codec: [
+                spec: :h264 | :vp8,
+                description: "Video codec of forwarded video track"
               ]
 
   def_input_pad :input,
@@ -65,7 +69,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
         stream_id: state.stream_id,
         telemetry_label: state.telemetry_label,
         broadcaster_url: state.broadcaster_url,
-        broadcaster_token: state.broadcaster_token
+        broadcaster_token: state.broadcaster_token,
+        video_codec: state.video_codec
       })
     ]
   end

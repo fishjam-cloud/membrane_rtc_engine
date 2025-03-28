@@ -8,3 +8,4 @@
 * Fix dangling peer connections [#44](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/44)
 * Update membrane core [#45](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/45)
 * Update membrane rtp plugins [#46](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/46)
+* Send only one video codec when negotiating [#52](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/52)

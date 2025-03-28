@@ -30,6 +30,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
               stream_id: [
                 spec: String.t(),
                 description: "Id of forwarded stream"
+              ],
+              video_codec: [
+                spec: :h264 | :vp8,
+                description: "Video codec of forwarded video track"
               ]
 
   def_input_pad :input,
@@ -38,7 +42,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
 
   @impl true
   def handle_init(_ctx, opts) do
-    pc = spawn_peer_connection()
+    pc = spawn_peer_connection(opts)
 
     state =
       Map.merge(opts, %{
@@ -185,11 +189,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {[], state}
   end
 
-  defp spawn_peer_connection() do
+  defp spawn_peer_connection(opts) do
     {:ok, pc} =
       [
         ice_port_range: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_port_range),
         ice_servers: Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers),
+        video_codecs: [to_rtp_codec(opts.video_codec)],
         controlling_process: self()
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
@@ -197,6 +202,26 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
 
     pc
   end
+
+  defp to_rtp_codec(:h264),
+    do: %ExWebRTC.RTPCodecParameters{
+      payload_type: 98,
+      mime_type: "video/H264",
+      clock_rate: 90_000,
+      sdp_fmtp_line: %ExSDP.Attribute.FMTP{
+        pt: 98,
+        level_asymmetry_allowed: true,
+        packetization_mode: 1,
+        profile_level_id: 0x42E01F
+      }
+    }
+
+  defp to_rtp_codec(:vp8),
+    do: %ExWebRTC.RTPCodecParameters{
+      payload_type: 96,
+      mime_type: "video/VP8",
+      clock_rate: 90_000
+    }
 
   defp maybe_pli_event({webrtc_track_id, %ExRTCP.Packet.PayloadFeedback.PLI{}}, state) do
     case find_track_id(state.tracks, webrtc_track_id) do
