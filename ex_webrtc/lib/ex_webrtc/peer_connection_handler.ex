@@ -71,8 +71,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       ]
       |> Enum.filter(fn {_k, v} -> not is_nil(v) end)
 
-    {:ok, pc} = PeerConnection.start(pc_options)
-    Process.monitor(pc)
+    {:ok, pc} = PeerConnection.start_link(pc_options)
 
     state = %{
       pc: pc,
@@ -278,37 +277,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_info({:DOWN, _ref, :process, pc, reason}, _ctx, %{pc: pc} = state) do
-    case reason do
-      {:shutdown, :peer_closed_for_writing} ->
-        Membrane.Logger.debug(
-          "PeerConnection closed on client side. ExWebrtc reason: #{inspect(reason)}"
-        )
-
-        {[terminate: :normal], state}
-
-      :normal ->
-        # Reason normal means that `PeerConnection.close` function was invoked
-        # This is unexpected because PeerConnection is only closed on termination
-        Membrane.Logger.error("PeerConnection unexpectedly closed with reason: :normal")
-        {[terminate: {:crash, :peer_connection_closed}], state}
-
-      {:shutdown, reason} ->
-        Membrane.Logger.error(
-          "PeerConnection unexpectedly closed with reason: #{inspect(reason)}"
-        )
-
-        {[terminate: {:crash, reason}], state}
-
-      reason ->
-        Membrane.Logger.error("PeerConnection crashed with reason: #{inspect(reason)}")
-        {[terminate: reason], state}
-    end
-
-    {[], state}
-  end
-
-  @impl true
   def handle_terminate_request(_ctx, state) do
     if Process.alive?(state.pc), do: PeerConnection.close(state.pc)
 
@@ -353,8 +321,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   end
 
   defp handle_webrtc_msg({:connection_state_change, :failed}, _ctx, state) do
-    Membrane.Logger.warning("Peer connection failed. #{inspect(state)}")
-    {[], state}
+    Membrane.Logger.warning("Peer connection state changed to failed")
+
+    {[terminate: {:shutdown, :peer_connection_failed}], state}
   end
 
   defp handle_webrtc_msg({:connection_state_change, connection_state}, _ctx, state) do

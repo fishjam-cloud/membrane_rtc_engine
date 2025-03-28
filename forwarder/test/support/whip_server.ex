@@ -39,10 +39,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
     end
   end
 
-  @spec await_disconnect(pid()) :: :ok | :error
-  def await_disconnect(pc) do
+  @spec await_disconnect() :: :ok | :error
+  def await_disconnect() do
     receive do
-      {:DOWN, _ref, :process, ^pc, {:shutdown, :conn_state_failed}} -> :ok
+      {:ex_webrtc, _pc, {:connection_state_change, :failed}} -> :ok
     after
       20_000 -> :error
     end

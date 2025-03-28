@@ -153,6 +153,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   end
 
   @impl true
+  def handle_info({:ex_webrtc, _pc, {:connection_state_change, :failed}}, _ctx, state) do
+    Membrane.Logger.warning("Peer connection state changed to failed")
+
+    {[terminate: {:shutdown, :peer_connection_failed}], state}
+  end
+
+  @impl true
   def handle_info({:ex_webrtc, _pc, {:connection_state_change, connection_state}}, _ctx, state) do
     actions =
       case {connection_state, state.peer_connection_signaling_state} do
