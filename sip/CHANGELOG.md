@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.6.0-dev
+* Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 
 ## 0.5.0
 * Update deps [#5](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/5)

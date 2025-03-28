@@ -50,8 +50,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
     [
       {:membrane_rtc_engine, path: "../engine"},
       {:membrane_core, "~> 1.2"},
-      {:ex_webrtc, "~> 0.8.1"},
-      {:ex_ice, "~> 0.9.4"},
+      {:ex_webrtc, "~> 0.12.0"},
       {:membrane_rtp_plugin, "~> 0.30.0"},
       {:membrane_rtp_format, "~> 0.10.0"},
       {:membrane_rtp_vp8_plugin, "~> 0.9.0"},
