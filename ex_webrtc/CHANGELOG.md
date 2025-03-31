@@ -2,6 +2,7 @@
 
 ## 0.2.0-dev
 * Update README [#51](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/51)
+* Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 
 ## 0.1.0
 * Initial release [#406](https://github.com/fishjam-dev/membrane_rtc_engine/pull/406)
