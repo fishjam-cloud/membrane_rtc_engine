@@ -51,7 +51,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         candidates: [],
         patch_endpoint: nil,
         connection_state: nil,
-        peer_connection_signaling_state: nil
+        peer_connection_signaling_state: nil,
+        negotiation_done?: false
       })
 
     {[], state}
@@ -160,22 +161,36 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
   end
 
   @impl true
-  def handle_info({:ex_webrtc, _pc, {:connection_state_change, connection_state}}, _ctx, state) do
-    actions =
+  def handle_info(
+        {:ex_webrtc, _pc, {:connection_state_change, connection_state}},
+        _ctx,
+        %{negotiation_done?: false} = state
+      ) do
+    {actions, state} =
       case {connection_state, state.peer_connection_signaling_state} do
-        {:connected, :stable} -> [notify_parent: :negotiation_done]
-        _other -> []
+        {:connected, :stable} ->
+          {[notify_parent: :negotiation_done], %{state | negotiation_done?: true}}
+
+        _other ->
+          {[], state}
       end
 
     {actions, %{state | connection_state: connection_state}}
   end
 
   @impl true
-  def handle_info({:ex_webrtc, _pc, {:signaling_state_change, new_state}}, _ctx, state) do
-    actions =
+  def handle_info(
+        {:ex_webrtc, _pc, {:signaling_state_change, new_state}},
+        _ctx,
+        %{negotiation_done?: false} = state
+      ) do
+    {actions, state} =
       case {state.peer_connection_signaling_state, new_state, state.connection_state} do
-        {:have_remote_offer, :stable, :connected} -> [notify_parent: :negotiation_done]
-        _other -> []
+        {:have_remote_offer, :stable, :connected} ->
+          {[notify_parent: :negotiation_done], %{state | negotiation_done?: true}}
+
+        _other ->
+          {[], state}
       end
 
     {actions, %{state | peer_connection_signaling_state: new_state}}
