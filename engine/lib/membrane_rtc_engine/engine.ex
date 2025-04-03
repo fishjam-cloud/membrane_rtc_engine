@@ -133,6 +133,7 @@ defmodule Membrane.RTC.Engine do
     defstruct @enforce_keys ++
                 [
                   endpoints: %{},
+                  crashed_endpoints: %{},
                   pending_additions: %{},
                   pending_endpoints: %{},
                   pending_subscriptions: [],
@@ -147,6 +148,7 @@ defmodule Membrane.RTC.Engine do
             trace_context: map(),
             display_manager: pid() | nil,
             endpoints: %{Endpoint.id() => Endpoint.t()},
+            crashed_endpoints: %{Endpoint.id() => Endpoint.t()},
             pending_additions: %{Endpoint.id() => any()},
             pending_endpoints: %{Endpoint.id() => Endpoint.t()},
             pending_subscriptions: [Subscription.t()],
@@ -670,19 +672,22 @@ defmodule Membrane.RTC.Engine do
 
   @impl true
   def handle_crash_group_down(endpoint_id, ctx, state) do
-    case handle_remove_endpoint(endpoint_id, ctx, state) do
-      {{status, endpoint}, actions, state} when status in [:present, :pending] ->
-        dispatch(%Message.EndpointCrashed{
-          endpoint_id: endpoint_id,
-          endpoint_type: endpoint.type,
-          reason: Map.get(ctx, :crash_reason)
-        })
+    {actions, state} = ensure_endpoint_removed(endpoint_id, ctx, state)
 
-        {actions, state}
+    if Map.has_key?(state.crashed_endpoints, endpoint_id) do
+      {endpoint, state} = pop_in(state, [:crashed_endpoints, endpoint_id])
 
-      {:absent, actions, state} ->
-        Membrane.Logger.warning("Endpoint #{endpoint_id} crashed after removing from the state")
-        {actions, state}
+      dispatch(%Message.EndpointCrashed{
+        endpoint_id: endpoint_id,
+        endpoint_type: endpoint.type,
+        reason: Map.get(ctx, :crash_reason)
+      })
+
+      {actions, state}
+    else
+      Membrane.Logger.error("Endpoint #{endpoint_id} handled crash but did not terminate")
+
+      {actions, state}
     end
   end
 
@@ -694,17 +699,37 @@ defmodule Membrane.RTC.Engine do
   @impl true
   def handle_child_terminated(
         {:endpoint, endpoint_id},
-        _context,
+        context,
         %{pending_additions: pending_additions} = state
       )
       when is_map_key(pending_additions, endpoint_id) do
-    {{endpoint, opts}, state} = pop_in(state, [:pending_additions, endpoint_id])
-    handle_add_endpoint(endpoint, opts, state)
+    {endpoint, opts} = Map.get(pending_additions, endpoint_id)
+
+    {remove_actions, state} = ensure_endpoint_removed(endpoint_id, context, state)
+    {add_actions, state} = handle_add_endpoint(endpoint, opts, state)
+
+    {remove_actions ++ add_actions, state}
+  end
+
+  @impl true
+  def handle_child_terminated({_component, endpoint_id}, context, state) do
+    ensure_endpoint_removed(endpoint_id, context, state)
   end
 
   @impl true
   def handle_child_terminated(_child, _context, state) do
     {[], state}
+  end
+
+  defp ensure_endpoint_removed(endpoint_id, context, state) do
+    case handle_remove_endpoint(endpoint_id, context, state) do
+      {{_status, endpoint}, actions, state} ->
+        Membrane.Logger.warning("Endpoint #{endpoint_id} terminated unexpectedly")
+        {actions, put_in(state, [:crashed_endpoints, endpoint_id], endpoint)}
+
+      {:absent, actions, state} ->
+        {actions, state}
+    end
   end
 
   #
