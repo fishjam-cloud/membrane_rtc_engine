@@ -674,18 +674,12 @@ defmodule Membrane.RTC.Engine do
   def handle_crash_group_down(endpoint_id, ctx, state) do
     {actions, state} = ensure_endpoint_removed(endpoint_id, ctx, state)
 
-    if Map.has_key?(state.crashed_endpoints, endpoint_id) do
-      {endpoint, state} = pop_in(state, [:crashed_endpoints, endpoint_id])
-
+    with {endpoint, state} <- pop_in(state, [:crashed_endpoints, endpoint_id]) do
       dispatch(%Message.EndpointCrashed{
         endpoint_id: endpoint_id,
         endpoint_type: endpoint.type,
         reason: Map.get(ctx, :crash_reason)
       })
-
-      {actions, state}
-    else
-      Membrane.Logger.error("Endpoint #{endpoint_id} handled crash but did not terminate")
 
       {actions, state}
     end
