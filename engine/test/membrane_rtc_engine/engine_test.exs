@@ -1,18 +1,23 @@
 defmodule Membrane.RTC.EngineTest do
   use ExUnit.Case
 
+  import Membrane.ChildrenSpec
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Message, Track}
   alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
 
   alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, SinkEndpoint, TestEndpoint}
 
+  @crash_endpoint_id "crash-endpoint"
+  @track_endpoint_id "track-endpoint"
+
   setup do
     options = [
-      id: "test_rtc"
+      module: Membrane.RTC.Engine
     ]
 
-    {:ok, pid} = Engine.start_link(options, [])
+    pid = Membrane.Testing.Pipeline.start_link_supervised!(options)
+    assert_receive {Membrane.Testing.Pipeline, ^pid, :setup}
 
     Engine.register(pid, self())
 
@@ -569,8 +574,43 @@ defmodule Membrane.RTC.EngineTest do
       }
 
       assert String.contains?(message, "Error while handling action :some_invalid_action")
+    end
+  end
 
-      refute_receive _any
+  describe "engine handles crash groups properly" do
+    setup :setup_for_crash_tests
+
+    test "subscribe message not sent to crashing group", %{rtc_engine: rtc_engine} do
+      slow_endpoint = %TestEndpoint{rtc_engine: rtc_engine, delay_termination: 1_500}
+
+      spec = {
+        child({:longcrash, @crash_endpoint_id}, slow_endpoint),
+        group: @crash_endpoint_id, crash_group_mode: :temporary
+      }
+
+      Membrane.Testing.Pipeline.execute_actions(rtc_engine, spec: spec)
+
+      msg = {:execute_actions, [:some_invalid_action]}
+      :ok = Engine.message_endpoint(rtc_engine, @crash_endpoint_id, msg)
+
+      msg =
+        {:execute_actions,
+         notify_parent:
+           {:publish,
+            %Engine.Notifications.TrackNotification{
+              track_id: "traczek",
+              notification: {"subscriber", "check"}
+            }}}
+
+      Engine.message_endpoint(rtc_engine, @track_endpoint_id, msg)
+
+      assert_receive %Message.EndpointCrashed{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint,
+        reason: {%Membrane.ActionError{message: message}, _stack}
+      }
+
+      assert String.contains?(message, "Error while handling action :some_invalid_action")
     end
   end
 
@@ -582,10 +622,10 @@ defmodule Membrane.RTC.EngineTest do
   end
 
   defp setup_for_metadata_tests(%{rtc_engine: rtc_engine} = ctx) do
-    track = video_track("track-endpoint", "track1", "track-metadata")
+    track = video_track(@track_endpoint_id, "track1", "track-metadata")
 
     endpoint = %Endpoint{
-      id: "track-endpoint",
+      id: @track_endpoint_id,
       type: Endpoint.WebRTC,
       metadata: "original-metadata"
     }
@@ -635,6 +675,27 @@ defmodule Membrane.RTC.EngineTest do
       track_endpoint: track_endpoint,
       server_endpoint_id: server_endpoint_id,
       endpoint: endpoint
+    ]
+  end
+
+  defp setup_for_crash_tests(%{rtc_engine: rtc_engine}) do
+    crash_endpoint = %TestEndpoint{rtc_engine: rtc_engine}
+    track_endpoint = %TestEndpoint{rtc_engine: rtc_engine}
+
+    Engine.add_endpoint(rtc_engine, track_endpoint, id: @track_endpoint_id)
+    Engine.add_endpoint(rtc_engine, crash_endpoint, id: @crash_endpoint_id)
+
+    track = video_track(@track_endpoint_id, "traczek", nil)
+
+    Engine.message_endpoint(
+      rtc_engine,
+      @track_endpoint_id,
+      {:execute_actions, notify_parent: {:publish, {:new_tracks, [track]}}}
+    )
+
+    [
+      crash_endpoint: crash_endpoint,
+      track_endpoint: track_endpoint
     ]
   end
 
