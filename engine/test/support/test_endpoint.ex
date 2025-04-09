@@ -32,6 +32,8 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_init(_ctx, opts) do
     state = Map.from_struct(opts)
 
+    Process.flag(:trap_exit, true)
+
     {[], state}
   end
 
@@ -58,8 +60,26 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_terminate_request(_ctx, %{delay_termination: delay} = state) do
     # Allows to test race condtition connected to adding new endpoint
     # while the old one with the same id is in terminating state
-    Process.sleep(delay)
+    Process.send_after(self(), {:exit_now, :normal}, delay)
 
-    {[terminate: :normal], state}
+    {[], state}
+  end
+
+  def handle_info({:EXIT, _pid, reason}, _ctx, %{delay_termination: delay} = state)
+      when is_integer(delay) do
+    # Allows to test race condtition which occurs when a crash group
+    # is partially down, before handle_crash_group_down is called
+    Process.send_after(self(), {:exit_now, reason}, delay)
+    {[], state}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, reason}, _ctx, state) do
+    {[terminate: reason], state}
+  end
+
+  @impl true
+  def handle_info({:exit_now, reason}, _ctx, state) do
+    {[terminate: reason], state}
   end
 end
