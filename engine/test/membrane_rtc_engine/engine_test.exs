@@ -589,9 +589,9 @@ defmodule Membrane.RTC.EngineTest do
 
       assert_child_terminated(rtc_engine, {:endpoint, @crash_endpoint_id}, nil)
 
-      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
-
       assert Engine.get_endpoints(rtc_engine) |> Enum.map(& &1.id) == [@track_endpoint_id]
+
+      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
 
       assert_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, 600)
     end
@@ -601,8 +601,6 @@ defmodule Membrane.RTC.EngineTest do
       :ok = Engine.message_endpoint(rtc_engine, @crash_endpoint_id, msg)
 
       assert_child_terminated(rtc_engine, {:endpoint, @crash_endpoint_id}, nil)
-
-      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
 
       msg =
         {:execute_actions,
@@ -614,6 +612,8 @@ defmodule Membrane.RTC.EngineTest do
             }}}
 
       Engine.message_endpoint(rtc_engine, @track_endpoint_id, msg)
+
+      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
 
       assert_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, 600)
     end
