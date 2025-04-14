@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.RTSP.MixProject do
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
-      {:membrane_core, "~> 1.2"},
+      {:membrane_core, "~> 1.2.3"},
       {:membrane_rtp_plugin, "~> 0.30.0"},
       {:membrane_rtp_format, "~> 0.10.0"},
       {:membrane_rtp_h264_plugin, "~> 0.20.0"},

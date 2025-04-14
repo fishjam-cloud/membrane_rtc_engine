@@ -62,7 +62,7 @@ defmodule Membrane.RTC.Engine.Endpoint.HLS.MixProject do
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Regular deps
-      {:membrane_core, "~> 1.2"},
+      {:membrane_core, "~> 1.2.3"},
       {:membrane_aac_plugin, "~> 0.18.0"},
       {:membrane_opus_plugin, "~> 0.20.0"},
       {:membrane_aac_fdk_plugin, "~> 0.18.5"},
