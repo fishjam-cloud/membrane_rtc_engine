@@ -584,6 +584,7 @@ defmodule Membrane.RTC.EngineTest do
     setup :setup_for_crash_tests
 
     test "does not return endpoint that is currently crashing", %{rtc_engine: rtc_engine} do
+      add_slow_endpoint(rtc_engine, @crash_endpoint_id)
       msg = {:execute_actions, [:some_invalid_action]}
       :ok = Engine.message_endpoint(rtc_engine, @crash_endpoint_id, msg)
 
@@ -591,12 +592,21 @@ defmodule Membrane.RTC.EngineTest do
 
       assert Engine.get_endpoints(rtc_engine) |> Enum.map(& &1.id) == [@track_endpoint_id]
 
-      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
+      refute_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, nil)
 
-      assert_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, 600)
+      assert_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, 600)
+
+      assert_receive %Message.EndpointCrashed{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint,
+        reason: {%Membrane.ActionError{message: message}, _stack}
+      }
+
+      assert String.contains?(message, "Error while handling action :some_invalid_action")
     end
 
     test "does not send messages to crashing group", %{rtc_engine: rtc_engine, track: track} do
+      add_slow_endpoint(rtc_engine, @crash_endpoint_id)
       msg = {:execute_actions, [:some_invalid_action]}
       :ok = Engine.message_endpoint(rtc_engine, @crash_endpoint_id, msg)
 
@@ -613,9 +623,40 @@ defmodule Membrane.RTC.EngineTest do
 
       Engine.message_endpoint(rtc_engine, @track_endpoint_id, msg)
 
-      refute_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, nil)
+      refute_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, nil)
+      assert_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, 600)
 
-      assert_pipeline_crash_group_down(rtc_engine, @crash_endpoint_id, 600)
+      assert_receive %Message.EndpointCrashed{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint,
+        reason: {%Membrane.ActionError{message: message}, _stack}
+      }
+
+      assert String.contains?(message, "Error while handling action :some_invalid_action")
+    end
+
+    test "does not notify on crash while terminating", %{rtc_engine: rtc_engine} do
+      add_crashing_terminate_endpoint(rtc_engine, @crash_endpoint_id)
+
+      :ok = Engine.remove_endpoint(rtc_engine, @crash_endpoint_id)
+
+      Membrane.Testing.Pipeline.execute_actions(
+        rtc_engine,
+        remove_children: {:terminatecrash, @crash_endpoint_id}
+      )
+
+      assert_receive %Message.EndpointRemoved{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint
+      }
+
+      assert_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, nil)
+
+      assert_receive %Message.EndpointCrashed{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint,
+        reason: {:error, "Triggered crash in terminate request"}
+      }
     end
   end
 
@@ -683,12 +724,30 @@ defmodule Membrane.RTC.EngineTest do
     ]
   end
 
+  defp add_slow_endpoint(rtc_engine, endpoint_id) do
+    add_endpoint_to_group(rtc_engine, endpoint_id, :longcrash, delay_termination: 500)
+  end
+
+  defp add_crashing_terminate_endpoint(rtc_engine, endpoint_id) do
+    add_endpoint_to_group(rtc_engine, endpoint_id, :terminatecrash, crash_while_terminating: true)
+  end
+
+  defp add_endpoint_to_group(rtc_engine, endpoint_id, name, opts) do
+    opts = [rtc_engine: rtc_engine] ++ opts
+
+    spec = {
+      child({name, endpoint_id}, struct(TestEndpoint, opts)),
+      group: {endpoint_id, TestEndpoint}, crash_group_mode: :temporary
+    }
+
+    Membrane.Testing.Pipeline.execute_actions(rtc_engine, spec: spec)
+  end
+
   defp setup_for_crash_tests(%{rtc_engine: rtc_engine}) do
     track_id = "traczek"
 
     crash_endpoint = %TestEndpoint{rtc_engine: rtc_engine}
     track_endpoint = %TestEndpoint{rtc_engine: rtc_engine}
-    slow_endpoint = %TestEndpoint{rtc_engine: rtc_engine, delay_termination: 500}
     track = video_track(@track_endpoint_id, track_id, nil)
 
     Engine.add_endpoint(rtc_engine, track_endpoint, id: @track_endpoint_id)
@@ -717,13 +776,6 @@ defmodule Membrane.RTC.EngineTest do
     )
 
     {:ok, _track} = Engine.subscribe(rtc_engine, @crash_endpoint_id, track.id, [])
-
-    spec = {
-      child({:longcrash, @crash_endpoint_id}, slow_endpoint),
-      group: @crash_endpoint_id, crash_group_mode: :temporary
-    }
-
-    Membrane.Testing.Pipeline.execute_actions(rtc_engine, spec: spec)
 
     [
       crash_endpoint: crash_endpoint,

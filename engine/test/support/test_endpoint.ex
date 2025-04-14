@@ -18,6 +18,11 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
                 spec: pos_integer(),
                 default: nil,
                 description: "Delay of endpoint termination in milliseconds"
+              ],
+              crash_while_terminating: [
+                spec: boolean(),
+                default: nil,
+                description: "Whether the endpoint should crash while terminating"
               ]
 
   def_input_pad :input,
@@ -52,6 +57,11 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   end
 
   @impl true
+  def handle_terminate_request(_ctx, %{crash_while_terminating: true} = state) do
+    {[terminate: {:error, "Triggered crash in terminate request"}], state}
+  end
+
+  @impl true
   def handle_terminate_request(_ctx, %{delay_termination: nil} = state) do
     {[terminate: :normal], state}
   end
@@ -63,6 +73,10 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
     Process.send_after(self(), {:exit_now, :normal}, delay)
 
     {[], state}
+  end
+
+  def handle_info({:EXIT, _pid, _reason}, _ctx, %{crash_while_terminating: true} = state) do
+    {[terminate: {:error, "Triggered crash in exit"}], state}
   end
 
   def handle_info({:EXIT, _pid, reason}, _ctx, %{delay_termination: delay} = state)
