@@ -635,7 +635,7 @@ defmodule Membrane.RTC.EngineTest do
       assert String.contains?(message, "Error while handling action :some_invalid_action")
     end
 
-    test "does not notify on crash while terminating", %{rtc_engine: rtc_engine} do
+    test "does dispatch message when crash happens during termination", %{rtc_engine: rtc_engine} do
       add_crashing_terminate_endpoint(rtc_engine, @crash_endpoint_id)
 
       :ok = Engine.remove_endpoint(rtc_engine, @crash_endpoint_id)
@@ -656,6 +656,58 @@ defmodule Membrane.RTC.EngineTest do
         endpoint_id: @crash_endpoint_id,
         endpoint_type: TestEndpoint,
         reason: {:error, "Triggered crash in terminate request"}
+      }
+    end
+
+    test "creates new endpoint if there was a pending addition", %{
+      rtc_engine: rtc_engine
+    } do
+      add_crashing_terminate_endpoint(rtc_engine, @crash_endpoint_id)
+
+      assert_receive %Message.EndpointAdded{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint
+      }
+
+      :ok =
+        Engine.message_endpoint(
+          rtc_engine,
+          @crash_endpoint_id,
+          {:update_state, %{delay_termination: 500}}
+        )
+
+      :ok = Engine.remove_endpoint(rtc_engine, @crash_endpoint_id)
+
+      :ok =
+        Engine.add_endpoint(rtc_engine, %TestEndpoint{rtc_engine: rtc_engine},
+          id: @crash_endpoint_id
+        )
+
+      refute_child_terminated(rtc_engine, {:endpoint, @crash_endpoint_id}, nil)
+
+      assert_receive %Message.EndpointRemoved{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint
+      }
+
+      refute_receive %Message.EndpointAdded{endpoint_id: @crash_endpoint_id}
+
+      Membrane.Testing.Pipeline.execute_actions(
+        rtc_engine,
+        remove_children: {:terminatecrash, @crash_endpoint_id}
+      )
+
+      assert_pipeline_crash_group_down(rtc_engine, {@crash_endpoint_id, TestEndpoint}, 600)
+
+      assert_receive %Message.EndpointCrashed{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint,
+        reason: {:error, "Triggered crash in terminate request"}
+      }
+
+      assert_receive %Message.EndpointAdded{
+        endpoint_id: @crash_endpoint_id,
+        endpoint_type: TestEndpoint
       }
     end
   end

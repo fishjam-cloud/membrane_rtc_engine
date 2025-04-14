@@ -46,6 +46,10 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_parent_notification({:execute_actions, actions}, _ctx, state), do: {actions, state}
 
   @impl true
+  def handle_parent_notification({:update_state, new_state}, _ctx, old_state),
+    do: {[], Map.merge(old_state, new_state)}
+
+  @impl true
   def handle_parent_notification(_message, _ctx, %{owner: nil} = state) do
     {[], state}
   end
