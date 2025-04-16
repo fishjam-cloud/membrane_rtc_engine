@@ -56,7 +56,7 @@ defmodule Recording.MixProject do
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
 
       # Membrane deps
-      {:membrane_core, "~> 1.2"},
+      {:membrane_core, "~> 1.2.3"},
       {:membrane_stream_plugin, "~> 0.4.0"},
       {:membrane_tee_plugin, "~> 0.12.0"},
       {:membrane_file_plugin, "~> 0.17.0"},

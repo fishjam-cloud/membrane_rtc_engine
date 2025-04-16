@@ -18,6 +18,11 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
                 spec: pos_integer(),
                 default: nil,
                 description: "Delay of endpoint termination in milliseconds"
+              ],
+              crash_while_terminating: [
+                spec: boolean(),
+                default: nil,
+                description: "Whether the endpoint should crash while terminating"
               ]
 
   def_input_pad :input,
@@ -32,11 +37,17 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_init(_ctx, opts) do
     state = Map.from_struct(opts)
 
+    Process.flag(:trap_exit, true)
+
     {[], state}
   end
 
   @impl true
   def handle_parent_notification({:execute_actions, actions}, _ctx, state), do: {actions, state}
+
+  @impl true
+  def handle_parent_notification({:update_state, new_state}, _ctx, old_state),
+    do: {[], Map.merge(old_state, new_state)}
 
   @impl true
   def handle_parent_notification(_message, _ctx, %{owner: nil} = state) do
@@ -50,6 +61,11 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   end
 
   @impl true
+  def handle_terminate_request(_ctx, %{crash_while_terminating: true} = state) do
+    {[terminate: {:error, "Triggered crash in terminate request"}], state}
+  end
+
+  @impl true
   def handle_terminate_request(_ctx, %{delay_termination: nil} = state) do
     {[terminate: :normal], state}
   end
@@ -58,8 +74,30 @@ defmodule Membrane.RTC.Engine.Support.TestEndpoint do
   def handle_terminate_request(_ctx, %{delay_termination: delay} = state) do
     # Allows to test race condtition connected to adding new endpoint
     # while the old one with the same id is in terminating state
-    Process.sleep(delay)
+    Process.send_after(self(), {:exit_now, :normal}, delay)
 
-    {[terminate: :normal], state}
+    {[], state}
+  end
+
+  def handle_info({:EXIT, _pid, _reason}, _ctx, %{crash_while_terminating: true} = state) do
+    {[terminate: {:error, "Triggered crash in exit"}], state}
+  end
+
+  def handle_info({:EXIT, _pid, reason}, _ctx, %{delay_termination: delay} = state)
+      when is_integer(delay) do
+    # Allows to test race condtition which occurs when a crash group
+    # is partially down, before handle_crash_group_down is called
+    Process.send_after(self(), {:exit_now, reason}, delay)
+    {[], state}
+  end
+
+  @impl true
+  def handle_info({:EXIT, _pid, reason}, _ctx, state) do
+    {[terminate: reason], state}
+  end
+
+  @impl true
+  def handle_info({:exit_now, reason}, _ctx, state) do
+    {[terminate: reason], state}
   end
 end

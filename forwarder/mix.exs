@@ -48,7 +48,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.2"},
+      {:membrane_core, "~> 1.2.3"},
       {:membrane_rtc_engine, path: "../engine"},
       {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
       {:ex_webrtc, "~> 0.12.0"},

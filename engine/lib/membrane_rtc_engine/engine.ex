@@ -669,21 +669,14 @@ defmodule Membrane.RTC.Engine do
   end
 
   @impl true
-  def handle_crash_group_down(endpoint_id, ctx, state) do
-    case handle_remove_endpoint(endpoint_id, ctx, state) do
-      {{status, endpoint}, actions, state} when status in [:present, :pending] ->
-        dispatch(%Message.EndpointCrashed{
-          endpoint_id: endpoint_id,
-          endpoint_type: endpoint.type,
-          reason: Map.get(ctx, :crash_reason)
-        })
+  def handle_crash_group_down({endpoint_id, endpoint_type}, ctx, state) do
+    dispatch(%Message.EndpointCrashed{
+      endpoint_id: endpoint_id,
+      endpoint_type: endpoint_type,
+      reason: Map.get(ctx, :crash_reason)
+    })
 
-        {actions, state}
-
-      {:absent, actions, state} ->
-        Membrane.Logger.warning("Endpoint #{endpoint_id} crashed after removing from the state")
-        {actions, state}
-    end
+    {[], state}
   end
 
   @impl true
@@ -694,17 +687,44 @@ defmodule Membrane.RTC.Engine do
   @impl true
   def handle_child_terminated(
         {:endpoint, endpoint_id},
-        _context,
+        context,
         %{pending_additions: pending_additions} = state
       )
       when is_map_key(pending_additions, endpoint_id) do
+    {remove_actions, state} = remove_crashed_endpoint(endpoint_id, context, state)
     {{endpoint, opts}, state} = pop_in(state, [:pending_additions, endpoint_id])
-    handle_add_endpoint(endpoint, opts, state)
+    {add_actions, state} = handle_add_endpoint(endpoint, opts, state)
+
+    {remove_actions ++ add_actions, state}
+  end
+
+  @impl true
+  def handle_child_terminated(_child, %{exit_reason: :normal}, state) do
+    {[], state}
+  end
+
+  @impl true
+  def handle_child_terminated({_component, endpoint_id}, context, state) do
+    remove_crashed_endpoint(endpoint_id, context, state)
   end
 
   @impl true
   def handle_child_terminated(_child, _context, state) do
     {[], state}
+  end
+
+  defp remove_crashed_endpoint(endpoint_id, context, state) do
+    case handle_remove_endpoint(endpoint_id, context, state) do
+      {{:present, endpoint}, actions, state} ->
+        Membrane.Logger.warning(
+          "Endpoint #{endpoint_id} of type #{endpoint.type} terminated unexpectedly"
+        )
+
+        {actions, state}
+
+      _other ->
+        {[], state}
+    end
   end
 
   #
@@ -989,9 +1009,13 @@ defmodule Membrane.RTC.Engine do
         &Endpoint.update_track_encoding(&1, track_id, encoding)
       )
 
+    endpoint = Map.get(state.endpoints, endpoint_id)
+
     spec =
       {links,
-       group: endpoint_id, crash_group_mode: :temporary, log_metadata: [rtc_engine: state.id]}
+       group: {endpoint_id, endpoint.type},
+       crash_group_mode: :temporary,
+       log_metadata: [rtc_engine: state.id]}
 
     {[spec: spec], state}
   end
@@ -1114,7 +1138,7 @@ defmodule Membrane.RTC.Engine do
     spec = {
       child(endpoint_name, endpoint_entry),
       node: opts[:node],
-      group: endpoint_id,
+      group: {endpoint_id, endpoint_module},
       crash_group_mode: :temporary,
       log_metadata: [rtc_engine: state.id]
     }

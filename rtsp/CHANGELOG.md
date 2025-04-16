@@ -2,6 +2,7 @@
 
 ## 0.10.0-dev
 * Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
+* Update membrane core [#55](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/55)
 
 ## 0.9.0
 * Update membrane_rtp_h264_plugin [#1](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/1)
