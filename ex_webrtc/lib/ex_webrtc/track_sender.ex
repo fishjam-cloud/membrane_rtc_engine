@@ -375,23 +375,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
     set_variant_unmuted(variant, tracker, state)
   end
 
-  defp set_variant_muted(variant, tracker, state) do
-    pad = Pad.ref(:output, {state.track.id, variant})
-
-    {actions, tracker, state} =
-      case VariantTracker.set_variant_muted(tracker) do
-        {:ok, tracker} ->
-          {[], tracker, state}
-
-        {:status_changed, tracker, :muted} ->
-          event = %TrackVariantPaused{variant: variant, reason: :muted}
-          {[event: {pad, event}], tracker, state}
-      end
-
-    state = put_in(state, [:trackers, variant], tracker)
-    {actions, state}
-  end
-
   defp set_variant_unmuted(variant, tracker, state) do
     pad = Pad.ref(:output, {state.track.id, variant})
 
