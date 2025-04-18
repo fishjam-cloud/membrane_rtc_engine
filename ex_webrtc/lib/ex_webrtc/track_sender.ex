@@ -360,19 +360,19 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   end
 
   @impl true
-  def handle_parent_notification(:mute_track, _ctx, state) do
-    state.trackers
-    |> Enum.flat_map_reduce(state, fn {variant, tracker}, state ->
-      set_variant_muted(variant, tracker, state)
-    end)
-  end
-
-  @impl true
   def handle_parent_notification(:unmute_track, _ctx, state) do
-    state.trackers
-    |> Enum.flat_map_reduce(state, fn {variant, tracker}, state ->
-      set_variant_unmuted(variant, tracker, state)
-    end)
+    # For the `:unmute_track` event, only the lowest variant should be unmuted.
+    # This is because browsers like Chrome will initially send only the lowest variant when using simulcast.
+    # After probing the network connection, other variants will be enabled by the browser.
+    # Subsequently, they will also be automatically enabled by `VariantTracker`.
+    {variant, tracker} =
+      Enum.min_by(state.trackers, fn
+        {:high, _tracker} -> 3
+        {:medium, _tracker} -> 2
+        {:low, _tracker} -> 1
+      end)
+
+    set_variant_unmuted(variant, tracker, state)
   end
 
   defp set_variant_muted(variant, tracker, state) do
