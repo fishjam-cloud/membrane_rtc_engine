@@ -144,7 +144,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       bin_input(pad)
       |> child({:track_receiver, track_id}, %TrackReceiver{
         track: track.engine_track,
-        initial_target_variant: :h
+        initial_target_variant: :high
       })
       |> via_in(pad)
       |> get_child(:connection_handler)
@@ -408,6 +408,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     msg = {:variant_bitrates, data.bitrates}
 
     {[notify_child: {{:track_sender, data.track_id}, msg}], state}
+  end
+
+  defp handle_media_event(:unmute_track, %{track_id: track_id}, _ctx, state) do
+    {[notify_child: {{:track_sender, track_id}, :unmute_track}], state}
   end
 
   defp handle_media_event(type, event, _ctx, state) do
