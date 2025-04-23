@@ -100,7 +100,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.VariantTracker do
 
   @spec set_variant_unmuted(t()) :: {:ok, t()} | {:status_changed, t(), :active}
   def set_variant_unmuted(tracker) do
-    if tracker.status == :muted do
+    if tracker.status == :muted or tracker.status == :inactive do
       Membrane.Logger.debug("Variant #{inspect(tracker.variant)} is unmuted.")
       tracker = %__MODULE__{tracker | status: :active, activity_cycles: 0}
       {:status_changed, tracker, :active}

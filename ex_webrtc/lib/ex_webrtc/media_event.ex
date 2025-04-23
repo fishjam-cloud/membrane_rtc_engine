@@ -17,6 +17,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
     SdpOffer,
     SetTargetTrackVariant,
     TrackBitrates,
+    UnmuteTrack,
     UpdateEndpointMetadata,
     UpdateTrackMetadata
   }
@@ -284,6 +285,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MediaEvent do
         bitrates: parse_bitrates(bitrates)
       }
     })
+  end
+
+  defp do_decode(%UnmuteTrack{track_id: track_id}) do
+    {:ok, %{type: :unmute_track, data: %{track_id: track_id}}}
   end
 
   defp do_decode(_event), do: @err_invalid_event

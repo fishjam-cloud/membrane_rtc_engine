@@ -58,7 +58,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       {:ex_sdp, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:elixir_uuid, "~> 1.2"},
-      {:fishjam_protos, "~> 0.1.0"},
+      {:fishjam_protos, "~> 0.2.0"},
 
       # Dev and test
       {:credo, "~> 1.6", only: :dev, runtime: false},
