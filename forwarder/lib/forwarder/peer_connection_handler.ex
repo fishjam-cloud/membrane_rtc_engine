@@ -27,9 +27,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
                 spec: String.t(),
                 description: "Token allowing for streaming into broadcaster"
               ],
-              stream_id: [
+              whip_endpoint: [
                 spec: String.t(),
-                description: "Id of forwarded stream"
+                description: "WHIP endpoint path"
               ],
               video_codec: [
                 spec: :h264 | :vp8,
@@ -86,7 +86,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {:ok, offer} = PeerConnection.create_offer(state.pc)
     :ok = PeerConnection.set_local_description(state.pc, offer)
 
-    url = state.broadcaster_url |> URI.merge("/api/whip/#{state.stream_id}") |> to_string()
+    url = state.broadcaster_url |> URI.merge(state.whip_endpoint) |> to_string()
     headers = sdp_headers(state.broadcaster_token)
 
     case HTTPoison.post(url, offer.sdp, headers) do

@@ -30,6 +30,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer do
   @spec address(Bypass.t(), String.t()) :: String.t()
   def address(bypass, stream_id), do: "http://localhost:#{bypass.port}/#{stream_id}"
 
+  @spec whip_endpoint(String.t()) :: String.t()
+  def whip_endpoint(stream_id), do: @offer_path <> stream_id
+
   @spec receive_media?() :: boolean()
   def receive_media?() do
     receive do

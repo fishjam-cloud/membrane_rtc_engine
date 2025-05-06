@@ -5,6 +5,7 @@
 * Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 * Fix forwarder linking to the same pad twice [#54](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/54)
 * Update membrane core [#55](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/55)
+* Add whip endpoint option to forwarder [#57](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/57)
 
 ## 0.1.0
 * Initial release [#40](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/40)

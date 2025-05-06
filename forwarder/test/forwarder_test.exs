@@ -122,7 +122,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
              rtc_engine: self(),
              broadcaster_url: WHIPServer.address(server, @stream_id),
              broadcaster_token: "token",
-             stream_id: @stream_id,
+             whip_endpoint: WHIPServer.whip_endpoint(@stream_id),
              video_codec: @video_codec
            })
          ], group: :forwarder_group, crash_group_mode: :temporary}

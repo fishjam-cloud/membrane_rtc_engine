@@ -28,9 +28,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
                 spec: String.t(),
                 description: "Token allowing for streaming into broadcaster"
               ],
-              stream_id: [
+              whip_endpoint: [
                 spec: String.t(),
-                description: "Id of forwarded stream"
+                description: "WHIP endpoint path"
               ],
               video_codec: [
                 spec: :h264 | :vp8,
@@ -66,7 +66,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
     [
       child(:connection_handler, %PeerConnectionHandler{
         endpoint_id: state.endpoint_id,
-        stream_id: state.stream_id,
+        whip_endpoint: state.whip_endpoint,
         telemetry_label: state.telemetry_label,
         broadcaster_url: state.broadcaster_url,
         broadcaster_token: state.broadcaster_token,
