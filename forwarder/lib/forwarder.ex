@@ -158,13 +158,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
   def handle_child_notification(:negotiation_done, :connection_handler, _ctx, state) do
     Membrane.Logger.info("Succesfully connected to broadcaster")
 
-    {:ok, _track} =
-      Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.video.id)
-
-    {:ok, _track} =
-      Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.audio.id)
-
-    {[], state}
+    with {:ok, _track} <-
+           Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.video.id),
+         {:ok, _track} <-
+           Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.audio.id) do
+      {[], state}
+    else
+      # If one of the tracks was removed during negotiation, subscribe will return :ignored
+      :ignored -> {[terminate: {:shutdown, :tracks_removed}], state}
+    end
   end
 
   @impl true

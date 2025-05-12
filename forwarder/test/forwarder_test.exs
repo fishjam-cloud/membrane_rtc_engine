@@ -7,6 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
 
   alias ExWebRTC.PeerConnection
   alias Membrane.RTC.Engine.Endpoint.Forwarder
+  alias Membrane.RTC.Engine.Endpoint.Forwarder.TestPipeline
   alias Membrane.RTC.Engine.Endpoint.Forwarder.WHIPServer
   alias Membrane.Testing.Pipeline
 
@@ -70,7 +71,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
     assert_forwarder_subscribe()
 
     remove_tracks(pipeline, new_tracks)
-    assert_pipeline_crash_group_down(pipeline, :forwarder_group)
+
+    assert_receive({:group_crash, :forwarder_group, {:shutdown, :tracks_removed}}, 20_000)
   end
 
   test "Forwarder will crash if PeerConnection disconnects", %{pipeline: pipeline, pc: pc} do
@@ -81,7 +83,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
 
     PeerConnection.close(pc)
 
-    assert_pipeline_crash_group_down(pipeline, :forwarder_group, 20_000)
+    assert_receive(
+      {:group_crash, :forwarder_group,
+       {:membrane_child_crash, :connection_handler, {:shutdown, :peer_connection_failed}}},
+      20_000
+    )
   end
 
   test "PeerConnection disconnects when Forwarder crashes", %{pipeline: pipeline} do
@@ -92,9 +98,22 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
 
     remove_tracks(pipeline, new_tracks)
 
-    assert_pipeline_crash_group_down(pipeline, :forwarder_group)
+    assert_receive({:group_crash, :forwarder_group, {:shutdown, :tracks_removed}}, 20_000)
 
     assert :ok = WHIPServer.await_disconnect()
+  end
+
+  test "Forwarder will crash with `:tracks_removed` when track is removed during negotiation", %{
+    pipeline: pipeline
+  } do
+    new_tracks = [create_track(:audio), create_track(:video)]
+
+    add_new_tracks(pipeline, new_tracks)
+
+    assert_receive({:subscribe, {endpoint_pid, ref}, "forwarder", _track_id, _opts}, 2000)
+    send(endpoint_pid, {ref, {:error, :invalid_track_id}})
+
+    assert_receive({:group_crash, :forwarder_group, {:shutdown, :tracks_removed}}, 20_000)
   end
 
   defp add_new_tracks(pipeline, new_tracks) do
@@ -116,16 +135,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ForwarderTest do
 
   defp start_pipeline(server) do
     Pipeline.start_link_supervised!(
-      spec:
-        {[
-           child(@forwarder_id, %Forwarder{
-             rtc_engine: self(),
-             broadcaster_url: WHIPServer.address(server, @stream_id),
-             broadcaster_token: "token",
-             whip_endpoint: WHIPServer.whip_endpoint(@stream_id),
-             video_codec: @video_codec
-           })
-         ], group: :forwarder_group, crash_group_mode: :temporary}
+      module: TestPipeline,
+      custom_args: %{
+        spec:
+          {[
+             child(@forwarder_id, %Forwarder{
+               rtc_engine: self(),
+               broadcaster_url: WHIPServer.address(server, @stream_id),
+               broadcaster_token: "token",
+               whip_endpoint: WHIPServer.whip_endpoint(@stream_id),
+               video_codec: @video_codec
+             })
+           ], group: :forwarder_group, crash_group_mode: :temporary},
+        owner: self()
+      }
     )
   end
 end
