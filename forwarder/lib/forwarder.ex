@@ -165,7 +165,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
       {[], state}
     else
       # If one of the tracks was removed during negotiation, subscribe will return :ignored
-      # also :ignored is returned when the track_id is invalid, but this is highly unlikely
       :ignored -> {[terminate: {:shutdown, :tracks_removed}], state}
     end
   end
