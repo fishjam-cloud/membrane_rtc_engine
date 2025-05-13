@@ -139,7 +139,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(:output, {_track_id, _rid}) = pad, _ctx, state) do
+  def handle_pad_added(Pad.ref(:output, {track_id, _rid}) = pad, _ctx, state) do
+    IO.inspect("PAD ADDED FOR TRACK: #{track_id}")
     actions =
       if state.track.encoding == :opus and
            state.after_source_transformation == (&Function.identity/1) do
