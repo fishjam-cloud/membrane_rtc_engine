@@ -60,7 +60,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
 
   @impl true
   def handle_buffer(Pad.ref(:input, track_id), buffer, _ctx, state) do
-    IO.inspect(:rtp, label: :track_id)
+    IO.inspect(:rtp, label: inspect(track_id))
     webrtc_track = Map.fetch!(state.tracks, track_id)
     packet = to_webrtc_packet(buffer)
 
