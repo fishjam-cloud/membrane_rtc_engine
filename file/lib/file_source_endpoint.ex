@@ -153,7 +153,8 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   end
 
   @impl true
-  def handle_element_end_of_stream(:track_sender, _pad, _ctx, state) do
+  def handle_element_end_of_stream(:track_sender, pad, _ctx, state) do
+    IO.inspect(pad, label: :finished)
     actions =
       if state.autoend,
         do: [

@@ -90,7 +90,6 @@ defmodule Membrane.RTC.Engine.Support.StaticTrackSender do
   @impl true
   def handle_buffer(:input, buffer, _ctx, state) do
     buffer = add_is_keyframe_flag(buffer, state)
-    IO.inspect("RTP SENDER", label: :rtp)
     {[buffer: {:output, buffer}, redemand: :output], state}
   end
 
