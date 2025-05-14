@@ -78,6 +78,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
 
   @impl true
   def handle_parent_notification({:start_negotiation, tracks}, _ctx, state) do
+    IO.inspect("Negotiation started #{inspect(self())}", label: :negotiation)
     video_track = MediaStreamTrack.new(:video, [tracks.video.stream_id])
     audio_track = MediaStreamTrack.new(:audio, [tracks.audio.stream_id])
 
@@ -170,6 +171,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {actions, state} =
       case {connection_state, state.peer_connection_signaling_state} do
         {:connected, :stable} ->
+          IO.inspect("Negotiation done 1: #{inspect(self())}", label: :negotiation)
+
           {[notify_parent: :negotiation_done], %{state | negotiation_done?: true}}
 
         _other ->
@@ -188,6 +191,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {actions, state} =
       case {state.peer_connection_signaling_state, new_state, state.connection_state} do
         {:have_remote_offer, :stable, :connected} ->
+          IO.inspect("Negotiation done 2: #{inspect(self())}", label: :negotiation)
           {[notify_parent: :negotiation_done], %{state | negotiation_done?: true}}
 
         _other ->

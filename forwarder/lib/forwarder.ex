@@ -162,10 +162,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder do
            Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.video.id),
          {:ok, _track} <-
            Engine.subscribe(state.rtc_engine, state.endpoint_id, state.forwarded_tracks.audio.id) do
+      IO.inspect("SUBSCRIBED #{inspect(self())}", label: :negotiation)
+
       {[], state}
     else
       # If one of the tracks was removed during negotiation, subscribe will return :ignored
-      :ignored -> {[terminate: {:shutdown, :tracks_removed}], state}
+      :ignored ->
+        IO.inspect("NOT SUBSCRIBED #{inspect(self())}", label: :negotiation)
+        {[terminate: {:shutdown, :tracks_removed}], state}
     end
   end
 
