@@ -278,7 +278,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   @impl true
   def handle_terminate_request(_ctx, state) do
-    if Process.alive?(state.pc), do: PeerConnection.close(state.pc)
+    if Process.alive?(state.pc), do: PeerConnection.stop(state.pc)
 
     {[terminate: :normal], state}
   end
