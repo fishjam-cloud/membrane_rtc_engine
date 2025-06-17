@@ -7,6 +7,7 @@
 * Update membrane core [#55](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/55)
 * Add whip endpoint option to forwarder [#57](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/57)
 * Fix forwarder subscription RC [#58](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/58)
+* Update ex_webrtc [#60](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/60)
 
 ## 0.1.0
 * Initial release [#40](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/40)
