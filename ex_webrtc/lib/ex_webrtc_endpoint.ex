@@ -359,11 +359,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   defp handle_media_event(
          :set_target_track_variant,
          %{track_id: track_id, variant: variant},
-         _ctx,
+         ctx,
          state
-       ) do
+       )
+       when is_map_key(ctx.children, {:track_receiver, track_id}) do
     msg = {:set_target_variant, variant}
     {[notify_child: {{:track_receiver, track_id}, msg}], state}
+  end
+
+  defp handle_media_event(:set_target_track_variant, %{track_id: track_id}, _ctx, state) do
+    Membrane.Logger.warning(
+      "Received set target variant media event for unknown track: #{track_id}"
+    )
+
+    {[], state}
   end
 
   defp handle_media_event(:update_endpoint_metadata, %{metadata: metadata}, _ctx, state) do
@@ -410,8 +419,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {[notify_child: {{:track_sender, data.track_id}, msg}], state}
   end
 
-  defp handle_media_event(:unmute_track, %{track_id: track_id}, _ctx, state) do
+  defp handle_media_event(:unmute_track, %{track_id: track_id}, ctx, state)
+       when is_map_key(ctx.children, {:track_sender, track_id}) do
     {[notify_child: {{:track_sender, track_id}, :unmute_track}], state}
+  end
+
+  defp handle_media_event(:unmute_track, %{track_id: track_id}, _ctx, state) do
+    Membrane.Logger.warning("Received unmute track media event for unknown track: #{track_id}")
+    {[], state}
   end
 
   defp handle_media_event(type, event, _ctx, state) do
