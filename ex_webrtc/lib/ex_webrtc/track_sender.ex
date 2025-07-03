@@ -360,6 +360,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackSender do
   end
 
   @impl true
+  def handle_parent_notification(:unmute_track, _ctx, state) when map_size(state.trackers) == 0 do
+    # The :unmute track command was received before the input was added, so this notification will be ignored.
+    {[], state}
+  end
+
+  @impl true
   def handle_parent_notification(:unmute_track, _ctx, state) do
     # For the `:unmute_track` event, only the lowest variant should be unmuted.
     # This is because browsers like Chrome will initially send only the lowest variant when using simulcast.
