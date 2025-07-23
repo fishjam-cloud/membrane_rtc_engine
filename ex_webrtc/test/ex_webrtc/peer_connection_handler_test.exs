@@ -253,6 +253,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert PeerConnection.get_transceivers(pc) == []
   end
 
+  # TODO: Remove this test once FCE-1769 is closed
   test "log error when transceiver cannot be found", %{pc: pc} do
     pipeline = start_pipeline()
     track_id = UUID.uuid4()

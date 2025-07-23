@@ -499,6 +499,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           :framerate
         ])
 
+      # TODO: Reduce verbosity of this log once FCE-1769 is closed
       Membrane.Logger.error(
         "Couldn't find transceiver for track #{inspect(log_track)}. Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}. Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}"
       )
