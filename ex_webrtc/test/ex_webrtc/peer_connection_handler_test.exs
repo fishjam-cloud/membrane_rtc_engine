@@ -1,6 +1,8 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   use ExUnit.Case, async: true
 
+  import ExUnit.CaptureLog
+
   import Membrane.ChildrenSpec
   import Membrane.Testing.Assertions
 
@@ -249,6 +251,28 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     assert_pipeline_notified(pipeline, :handler, :negotiation_done)
 
     assert PeerConnection.get_transceivers(pc) == []
+  end
+
+  # TODO: Remove this test once FCE-1769 is closed
+  test "log error when transceiver cannot be found", %{pc: pc} do
+    pipeline = start_pipeline()
+    track_id = UUID.uuid4()
+    mid_to_track_id = %{"0" => track_id}
+    track_id_to_metadata = %{track_id => @track_metadata}
+    {:ok, _transceiver} = PeerConnection.add_transceiver(pc, :audio, direction: :sendonly)
+
+    {:ok, offer} = PeerConnection.create_offer(pc)
+    :ok = PeerConnection.set_local_description(pc, offer)
+
+    media_event = sdp_offer(offer, mid_to_track_id, track_id_to_metadata)
+
+    track = engine_video_track()
+    outbound_tracks = %{track.id => track}
+
+    assert capture_log(fn ->
+             Pipeline.notify_child(pipeline, :handler, {:offer, media_event, outbound_tracks})
+             Process.sleep(100)
+           end) =~ "Couldn't find transceiver for track"
   end
 
   defp start_pipeline(options \\ [video_codec: :VP8]) do

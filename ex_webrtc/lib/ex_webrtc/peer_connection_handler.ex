@@ -162,6 +162,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
   @impl true
   def handle_parent_notification({:offer, event, new_outbound_tracks}, _ctx, state) do
     %{sdp_offer: offer, mid_to_track_id: mid_to_track_id} = event
+    state = Map.put(state, :last_sdp_offer, offer)
 
     state = update_in(state.mid_to_track_id, &Map.merge(&1, mid_to_track_id))
 
@@ -475,7 +476,34 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
       {[{engine_track.id, track.id, transceiver.mid}], outbound_transceivers}
     else
-      Membrane.Logger.error("Couldn't find transceiver for track #{engine_track.id}")
+      log_transceivers =
+        state.pc
+        |> PeerConnection.get_transceivers()
+        |> Enum.map(fn t ->
+          Map.take(t, [:direction, :current_direction, :id, :kind, :mid, :stopped, :stopping])
+        end)
+
+      log_track =
+        Map.take(engine_track, [
+          :type,
+          :stream_id,
+          :id,
+          :origin,
+          :encoding,
+          :variants,
+          :disabled_variants,
+          :clock_rate,
+          :active?,
+          :metadata,
+          :ctx,
+          :framerate
+        ])
+
+      # TODO: Reduce verbosity of this log once FCE-1769 is closed
+      Membrane.Logger.error(
+        "Couldn't find transceiver for track #{inspect(log_track)}. Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}. Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}"
+      )
+
       {[], outbound_transceivers}
     end
   end

@@ -6,6 +6,7 @@
 * Fix freeze after unmuting video track [#56](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/56)
 * Update ex_webrtc [#60](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/60)
 * Fix media event handling [#61](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/61)
+* Add transceiver debug log [#62](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/62)
 
 ## 0.1.0
 * Initial release [#406](https://github.com/fishjam-dev/membrane_rtc_engine/pull/406)
