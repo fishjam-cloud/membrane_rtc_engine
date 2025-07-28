@@ -636,13 +636,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> Map.values()
       |> Enum.map(& &1.engine_track.type)
 
-    IO.inspect(tracks_types, label: :tracks_types)
-
     %{
       audio: Enum.count(tracks_types, &(&1 == :audio)) + state.removed_tracks.audio,
       video: Enum.count(tracks_types, &(&1 == :video)) + state.removed_tracks.video
     }
-    |> IO.inspect(label: :media_count)
   end
 
   defp get_offer_data(%{event_serializer: serializer} = state) do
