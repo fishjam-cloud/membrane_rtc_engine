@@ -612,7 +612,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     Membrane.Logger.warning("Subscription for track #{track_id} failed")
 
-    # TODO: add test, checking that number of removed tracks is correct in case of failed subscription
     state =
       update_in(state, [:removed_tracks, track.engine_track.type], fn count -> count + 1 end)
 
