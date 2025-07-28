@@ -271,7 +271,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
 
     assert capture_log(fn ->
              Pipeline.notify_child(pipeline, :handler, {:offer, media_event, outbound_tracks})
-             Process.sleep(100)
+             Process.sleep(500)
            end) =~ "Couldn't find transceiver for track"
   end
 
