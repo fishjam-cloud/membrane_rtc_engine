@@ -610,7 +610,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {track_id, track} =
       Enum.find(state.outbound_tracks, fn {_id, t} -> t.subscribe_ref == subscribe_ref end)
 
-    # TODO: add to removed tracks
+    # TODO: add test, checking that number of removed tracks is correct in case of failed subscription
+    state =
+      update_in(state, [:removed_tracks, track.engine_track.type], fn count -> count + 1 end)
 
     state = update_in(state.outbound_tracks, &Map.delete(&1, track_id))
     actions = build_track_removed_actions([track.engine_track], state)
@@ -634,10 +636,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> Map.values()
       |> Enum.map(& &1.engine_track.type)
 
+    IO.inspect(tracks_types, label: :tracks_types)
+
     %{
       audio: Enum.count(tracks_types, &(&1 == :audio)) + state.removed_tracks.audio,
       video: Enum.count(tracks_types, &(&1 == :video)) + state.removed_tracks.video
     }
+    |> IO.inspect(label: :media_count)
   end
 
   defp get_offer_data(%{event_serializer: serializer} = state) do
