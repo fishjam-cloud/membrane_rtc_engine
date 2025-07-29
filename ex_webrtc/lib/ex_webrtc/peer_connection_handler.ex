@@ -504,7 +504,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
           Map.take(t, [:direction, :current_direction, :id, :kind, :mid, :stopped, :stopping])
         end)
 
-      # TODO: Reduce verbosity of this log once FCE-1769 is closed
+      # TODO: Reduce verbosity of this log once the cause
+      # of the bug is determined
       Membrane.Logger.error(
         "Couldn't find transceiver for track #{inspect(log_track)}. Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}. Outbound transceivers: #{inspect(log_outbound_transceivers)} Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}"
       )
