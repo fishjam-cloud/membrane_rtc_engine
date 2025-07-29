@@ -7,6 +7,7 @@
 * Update ex_webrtc [#60](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/60)
 * Fix media event handling [#61](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/61)
 * Add transceiver debug log [#62](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/62)
+* Fix track_types count when subscription fails [#63](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/63)
 
 ## 0.1.0
 * Initial release [#406](https://github.com/fishjam-dev/membrane_rtc_engine/pull/406)

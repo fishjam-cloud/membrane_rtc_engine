@@ -15,9 +15,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     VariantBitrate
   }
 
+  alias Server.MediaEvent.OfferData
+
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint
   alias Membrane.RTC.Engine.Message
+  alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, SessionDescription}
 
@@ -102,6 +105,52 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       refute_receive %Message.EndpointCrashed{endpoint_id: @endpoint_id}, 500
     end
 
+    test "returns correct number of track types in case of failed subscription", %{
+      rtc_engine: rtc_engine
+    } do
+      send_media_event(rtc_engine, @connect_event)
+      assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
+
+      track =
+        Track.new(:video, Track.stream_id(), "fake_endpoint_id", :H264, 90_000, nil,
+          id: UUID.uuid4()
+        )
+
+      message = {:new_tracks, [track]}
+      :ok = Engine.message_endpoint(rtc_engine, @endpoint_id, message)
+
+      assert {:tracks_added, %Server.MediaEvent.TracksAdded{}} = receive_media_event()
+
+      assert {:offer_data, %OfferData{tracks_types: %OfferData.TrackTypes{audio: 0, video: 1}}} =
+               receive_media_event()
+
+      {pc, offer} = spawn_peer_connection(outbound_video?: false, inbound_video?: true)
+
+      offer_event = {:sdp_offer, %SdpOffer{sdp: offer.sdp}}
+      send_media_event(rtc_engine, offer_event)
+
+      assert {:sdp_answer, %Server.MediaEvent.SdpAnswer{sdp: answer}} = receive_media_event()
+      PeerConnection.set_remote_description(pc, %SessionDescription{type: :answer, sdp: answer})
+
+      assert_receive {:ex_webrtc, ^pc, {:connection_state_change, :connected}}, 500
+
+      # The subscription fails, because the endpoint and track don't exists, so track is removed
+      assert received_track_removed?()
+
+      send_media_event(rtc_engine, @renegotiate_tracks_event)
+
+      assert {:offer_data, %OfferData{tracks_types: %OfferData.TrackTypes{audio: 0, video: 1}}} =
+               receive_media_event()
+    end
+
+    defp received_track_removed?() do
+      case receive_media_event() do
+        {:tracks_removed, %Server.MediaEvent.TracksRemoved{}} -> true
+        {:candidate, %Fishjam.MediaEvents.Candidate{}} -> received_track_removed?()
+        _media_event -> false
+      end
+    end
+
     # Creates `ExWebRTC.PeerConnection` with one video track and connects it to the `Endpoint.ExWebRTC`
     defp connect_peer(rtc_engine) do
       send_media_event(rtc_engine, @connect_event)
@@ -132,11 +181,17 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     end
 
     # Creates `ExWebRTC.PeerConnection` with one video track
-    defp spawn_peer_connection() do
+    defp spawn_peer_connection(opts \\ []) do
       {:ok, pc} = PeerConnection.start_link()
 
-      video_track = MediaStreamTrack.new(:video)
-      {:ok, _sender} = PeerConnection.add_track(pc, video_track)
+      if Keyword.get(opts, :outbound_video?, true) do
+        video_track = MediaStreamTrack.new(:video)
+        {:ok, _sender} = PeerConnection.add_track(pc, video_track)
+      end
+
+      if Keyword.get(opts, :inbound_video?, false) do
+        {:ok, _transceiver} = PeerConnection.add_transceiver(pc, :video, direction: :recvonly)
+      end
 
       {:ok, offer} = PeerConnection.create_offer(pc)
       :ok = PeerConnection.set_local_description(pc, offer)

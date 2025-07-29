@@ -610,7 +610,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {track_id, track} =
       Enum.find(state.outbound_tracks, fn {_id, t} -> t.subscribe_ref == subscribe_ref end)
 
-    # TODO: add to removed tracks
+    Membrane.Logger.warning("Subscription for track #{track_id} failed")
+
+    state =
+      update_in(state, [:removed_tracks, track.engine_track.type], fn count -> count + 1 end)
 
     state = update_in(state.outbound_tracks, &Map.delete(&1, track_id))
     actions = build_track_removed_actions([track.engine_track], state)
