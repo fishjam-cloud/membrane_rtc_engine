@@ -30,14 +30,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
           }
         }
 
-  def_options rtc_engine: [
-                spec: pid(),
-                description: "Pid of parent Engine"
-              ]
+  def_options(
+    rtc_engine: [
+      spec: pid(),
+      description: "Pid of parent Engine"
+    ]
+  )
 
-  def_input_pad :input,
+  def_input_pad(:input,
     accepted_format: _any,
     availability: :on_request
+  )
 
   @doc """
   Subscribe transcoder endpoint to tracks from given endpoint.
@@ -118,12 +121,21 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
 
   @impl true
   def handle_child_notification(
-        {:track_data, _track_id, _data} = msg,
+        {:track_data, track_id, data},
         :track_data_publisher,
         _ctx,
-        state
+        %{subscriber: subscriber} = state
       ) do
-    {[notify_parent: {:forward_to_parent, msg}], state}
+    case Subscriber.get_track(subscriber, track_id) do
+      nil ->
+        {[], state}
+
+      track ->
+        {[
+           notify_parent:
+             {:forward_to_parent, {:track_data, track_id, track.type, track.metadata, data}}
+         ], state}
+    end
   end
 
   @impl true
