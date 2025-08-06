@@ -117,7 +117,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
   end
 
   @impl true
-  def handle_child_notification({:track_data, _data} = msg, :track_data_publisher, _ctx, state) do
+  def handle_child_notification(
+        {:track_data, _track_id, _data} = msg,
+        :track_data_publisher,
+        _ctx,
+        state
+      ) do
     {[notify_parent: {:forward_to_parent, msg}], state}
   end
 

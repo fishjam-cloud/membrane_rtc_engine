@@ -51,14 +51,14 @@ defmodule Membrane.RTC.Engine.Endpoint.TranscoderEndpointTest do
     assert_receive %Engine.Message.EndpointMessage{
                      endpoint_id: :transcoder,
                      endpoint_type: Transcoder,
-                     message: {:track_data, {^mono_track_id, _data}}
+                     message: {:track_data, ^mono_track_id, _data}
                    },
                    1000
 
     assert_receive %Engine.Message.EndpointMessage{
                      endpoint_id: :transcoder,
                      endpoint_type: Transcoder,
-                     message: {:track_data, {^stereo_track_id, _data}}
+                     message: {:track_data, ^stereo_track_id, _data}
                    },
                    1000
   end
@@ -79,7 +79,7 @@ defmodule Membrane.RTC.Engine.Endpoint.TranscoderEndpointTest do
     refute_receive %Engine.Message.EndpointMessage{
                      endpoint_id: :transcoder,
                      endpoint_type: Transcoder,
-                     message: {:track_data, {^mono_track_id, _data}}
+                     message: {:track_data, ^mono_track_id, _data}
                    },
                    1000
   end

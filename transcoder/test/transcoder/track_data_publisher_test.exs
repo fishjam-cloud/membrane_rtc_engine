@@ -56,7 +56,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
     assert_pipeline_notified(
       pipeline,
       :publisher,
-      {:track_data, {^track_id, %Membrane.Buffer{payload: ^payload}}}
+      {:track_data, ^track_id, %Membrane.Buffer{payload: ^payload}}
     )
   end
 end
