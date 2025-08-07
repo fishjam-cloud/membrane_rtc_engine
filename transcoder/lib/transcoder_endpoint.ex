@@ -30,17 +30,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
           }
         }
 
-  def_options(
-    rtc_engine: [
-      spec: pid(),
-      description: "Pid of parent Engine"
-    ]
-  )
+  def_options rtc_engine: [
+                spec: pid(),
+                description: "Pid of parent Engine"
+              ]
 
-  def_input_pad(:input,
+  def_input_pad :input,
     accepted_format: _any,
     availability: :on_request
-  )
 
   @doc """
   Subscribe transcoder endpoint to tracks from given endpoint.
