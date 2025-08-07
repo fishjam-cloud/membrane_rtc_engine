@@ -14,9 +14,9 @@ defmodule Membrane.RTC.Engine.Subscriber.Manual do
 
     new_subscribed_tracks =
       tracks
-      |> Enum.filter(fn track -> track.type in subscriptions_state.track_types end)
       |> Enum.filter(fn track ->
-        MapSet.member?(subscriptions_state.endpoints, track.origin) and
+        track.type in subscriptions_state.track_types and
+          MapSet.member?(subscriptions_state.endpoints, track.origin) and
           track.id not in subscribed_tracks
       end)
       |> Subscriber.subscribe_for_tracks(
@@ -34,9 +34,9 @@ defmodule Membrane.RTC.Engine.Subscriber.Manual do
     valid_tracks =
       subscriptions_state.rtc_engine
       |> Engine.get_tracks()
-      |> Enum.filter(fn track -> track.type in subscriptions_state.track_types end)
       |> Enum.filter(fn track ->
-        MapSet.member?(subscriptions_state.endpoints, track.origin) and
+        track.type in subscriptions_state.track_types and
+          MapSet.member?(subscriptions_state.endpoints, track.origin) and
           not is_map_key(subscriptions_state.tracks, track.id)
       end)
 
