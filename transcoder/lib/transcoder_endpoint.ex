@@ -37,18 +37,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
     ]
   )
 
-  def_input_pad(:input,
+  def_input_pad :input,
     accepted_format: _any,
     availability: :on_request
-  )
 
   @doc """
   Subscribe transcoder endpoint to tracks from given endpoint.
   """
   @spec subscribe(
           engine :: pid(),
-          transcoder_id :: any(),
-          endpoint_id :: any(),
+          transcoder_id :: String.t(),
+          endpoint_id :: String.t(),
           opts :: [format: output_format(), sample_rate: output_sample_rate()]
         ) :: :ok
   def subscribe(engine, transcoder_id, endpoint_id, opts) do
@@ -128,7 +127,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
       ) do
     case Subscriber.get_track(subscriber, track_id) do
       nil ->
-        {[], state}
+        raise("Received track data notification for unknown track #{inspect(track_id)}")
 
       track ->
         {[
