@@ -19,7 +19,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
     %{pipeline: pipeline}
   end
 
-  test "parent receives notifications", %{pipeline: pipeline} do
+  test "parent receives track data notifications", %{pipeline: pipeline} do
     pad1 = Pad.ref(:input, :track1)
     payload1 = [1, 2, 3, 4]
     source1 = %Testing.Source{output: payload1}

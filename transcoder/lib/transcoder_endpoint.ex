@@ -37,9 +37,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
     ]
   )
 
-  def_input_pad :input,
+  def_input_pad(:input,
     accepted_format: _any,
     availability: :on_request
+  )
 
   @doc """
   Subscribe transcoder endpoint to tracks from given endpoint.
@@ -61,7 +62,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
     subscriber = %Subscriber{
       endpoint_id: endpoint_id,
       subscribe_mode: :manual,
-      rtc_engine: opts.rtc_engine
+      rtc_engine: opts.rtc_engine,
+      track_types: [:audio]
     }
 
     state = %{
@@ -88,23 +90,23 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
          depayloader when depayloader != nil <- Track.get_depayloader(track),
          decoder when decoder != nil <- get_decoder(encoding) do
       spec =
-        bin_input(pad)
-        |> child({:track_receiver, track_id}, %TrackReceiver{
-          track: track,
-          initial_target_variant: :high
-        })
-        |> child({:depayloader, track_id}, depayloader)
-        |> child({:opus_decoder, track_id}, decoder)
-        |> child({:mixer, track_id}, %Membrane.FFmpeg.SWResample.Converter{
-          input_stream_format: nil,
-          output_stream_format: %Membrane.RawAudio{
-            channels: 1,
-            sample_format: :s16le,
-            sample_rate: output.sample_rate
-          }
-        })
-        |> via_in(pad)
-        |> get_child(:track_data_publisher)
+        {bin_input(pad)
+         |> child({:track_receiver, track_id}, %TrackReceiver{
+           track: track,
+           initial_target_variant: :high
+         })
+         |> child({:depayloader, track_id}, depayloader)
+         |> child({:opus_decoder, track_id}, decoder)
+         |> child({:mixer, track_id}, %Membrane.FFmpeg.SWResample.Converter{
+           input_stream_format: nil,
+           output_stream_format: %Membrane.RawAudio{
+             channels: 1,
+             sample_format: :s16le,
+             sample_rate: output.sample_rate
+           }
+         })
+         |> via_in(pad)
+         |> get_child(:track_data_publisher), group: {:transcoding_group, track_id}}
 
       Membrane.Logger.info("Subscribed to track #{inspect(track_id)}")
       {[spec: spec], state}
@@ -116,6 +118,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
 
         {[], state}
     end
+  end
+
+  @impl true
+  def handle_pad_removed(Pad.ref(:input, track_id), _ctx, state) do
+    {[remove_children: {:transcoding_group, track_id}], state}
   end
 
   @impl true
@@ -139,6 +146,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
 
   @impl true
   def handle_child_notification(
+        {:track_finished, track_id},
+        :track_data_publisher,
+        _ctx,
+        %{subscriber: subscriber} = state
+      ) do
+    subscriber = Subscriber.remove_track(subscriber, track_id)
+    {[], %{state | subscriber: subscriber}}
+  end
+
+  @impl true
+  def handle_child_notification(
         {:variant_switched, _variant, _reason},
         {:track_receiver, _track_id},
         _ctx,
@@ -158,6 +176,20 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
     subscriber = Subscriber.handle_new_tracks(tracks, state.subscriber)
 
     {[], %{state | subscriber: subscriber}}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:endpoint_removed, endpoint_id},
+        _ctx,
+        %{subscriber: subscriber, outputs: outputs} = state
+      ) do
+    subscriber = Subscriber.remove_endpoints(subscriber, [endpoint_id])
+    outputs = Map.delete(outputs, endpoint_id)
+
+    Membrane.Logger.info("Removed subscription for endpoint #{inspect(endpoint_id)}")
+
+    {[], %{state | subscriber: subscriber, outputs: outputs}}
   end
 
   @impl true

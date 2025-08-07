@@ -91,7 +91,34 @@ defmodule Membrane.RTC.SubscriberTest do
     assert ^state = Subscriber.add_endpoints(["test1"], state)
   end
 
-  defp create_track(endpoint_id) do
+  test "Track type filtering" do
+    video_track = create_track("test1", :video)
+    audio_track = create_track("test2", :audio)
+    audio_track_id = audio_track.id
+    inital_tracks = [video_track, audio_track]
+
+    assert {:ok, mock_engine} = MockEngine.start_link(inital_tracks)
+
+    state = %Subscriber{
+      subscribe_mode: :auto,
+      endpoint_id: "test-endpoint",
+      rtc_engine: mock_engine,
+      track_types: [:audio]
+    }
+
+    assert ^state = Subscriber.handle_new_tracks([video_track], state)
+
+    state = Subscriber.handle_new_tracks([audio_track], state)
+    assert %{tracks: %{^audio_track_id => ^audio_track}} = state
+  end
+
+  defp create_track(endpoint_id, :video) do
     Track.new(:video, Track.stream_id(), endpoint_id, :VP8, nil, nil)
   end
+
+  defp create_track(endpoint_id, :audio) do
+    Track.new(:audio, Track.stream_id(), endpoint_id, :opus, nil, nil)
+  end
+
+  defp create_track(endpoint_id), do: create_track(endpoint_id, :video)
 end
