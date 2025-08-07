@@ -3,6 +3,7 @@
 ## 0.25.0-dev
 * Update README [#51](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/51)
 * Fix race condition in crash group handling [#55](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/55)
+* Allow `Subscriber` to filter based on track types [#65](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/65)
 
 ## 0.24.0
 * Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)

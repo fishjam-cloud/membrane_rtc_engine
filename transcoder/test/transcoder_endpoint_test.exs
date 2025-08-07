@@ -4,10 +4,10 @@ defmodule Membrane.RTC.Engine.Endpoint.TranscoderEndpointTest do
   import ExUnit.CaptureLog
 
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Track
   alias Membrane.RTC.Engine.Endpoint.File
   alias Membrane.RTC.Engine.Endpoint.Transcoder
   alias Membrane.RTC.Engine.Support.FakeSourceEndpoint
+  alias Membrane.RTC.Engine.Track
 
   @fixtures_dir "./test/fixtures/"
   @opus_mono_path Path.join(@fixtures_dir, "mono.ogg")
