@@ -11,6 +11,7 @@ defmodule Membrane.RTC.Engine.Subscriber.Automatic do
   def handle_new_tracks(tracks, subscriptions_state) do
     new_subscribed_tracks =
       tracks
+      |> Enum.filter(fn track -> track.type in subscriptions_state.track_types end)
       |> Subscriber.subscribe_for_tracks(
         subscriptions_state.endpoint_id,
         subscriptions_state.rtc_engine

@@ -30,17 +30,19 @@ defmodule Membrane.RTC.Engine.Subscriber do
   * `tracks` - map of tracks on which that endpoint subscribed
   * `endpoints` - set of endpoints, endpoint will try to subscribe on tracks of these endpoints.
   Used only in `:manual` mode.
+  * `track_types` - if provided, only subscribe to tracks with type in `track_types`
   """
   @type t() :: %__MODULE__{
           endpoint_id: Endpoint.id(),
           rtc_engine: pid(),
           subscribe_mode: :auto | :manual,
           tracks: tracks_t(),
-          endpoints: MapSet.t()
+          endpoints: MapSet.t(),
+          track_types: [:audio | :video]
         }
 
   @enforce_keys [:subscribe_mode, :rtc_engine, :endpoint_id]
-  defstruct @enforce_keys ++ [tracks: %{}, endpoints: MapSet.new()]
+  defstruct @enforce_keys ++ [tracks: %{}, endpoints: MapSet.new(), track_types: [:audio, :video]]
 
   @doc """
   Callback invoked when a new tracks are added by engine.
@@ -152,5 +154,16 @@ defmodule Membrane.RTC.Engine.Subscriber do
 
   def add_endpoints(endpoints, %{subscribe_mode: :manual} = subscriptions_state) do
     Manual.add_endpoints(endpoints, subscriptions_state)
+  end
+
+  @doc """
+  Remove endpoints for subscriber, this will prevent new tracks from being subscribed.
+  Already subscribed tracks will remain subscribed and must be removed manually.
+  It makes sense only to use this method when subscriber is in mode `:manual`.
+  """
+  @spec remove_endpoints(state :: t(), endpoints :: [Endpoint.id()]) :: t()
+  def remove_endpoints(state, endpoints) do
+    endpoints = MapSet.new(endpoints)
+    Map.update!(state, :endpoints, &MapSet.difference(&1, endpoints))
   end
 end
