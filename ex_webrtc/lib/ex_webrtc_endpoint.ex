@@ -278,7 +278,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     new_tracks =
       new_tracks
-      |> Enum.reject(&(&1.origin in ignored_endpoints))
+      |> Enum.reject(&(&1.origin in state.ignored_endpoints))
       |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
     outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
