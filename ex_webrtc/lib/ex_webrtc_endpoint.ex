@@ -276,7 +276,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: true} = state) do
     Membrane.Logger.debug("new parent queued tracks: #{log_tracks(new_tracks)}")
 
-    new_tracks = Map.new(new_tracks, &{&1.id, %Track{status: :pending, engine_track: &1}})
+    new_tracks =
+      new_tracks
+      |> Enum.reject(&(&1.origin in ignored_endpoints))
+      |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
+
     outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
 
     tracks_added = get_new_tracks_actions(new_tracks, state)
