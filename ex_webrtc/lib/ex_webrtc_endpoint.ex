@@ -51,6 +51,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
               event_serialization: [
                 spec: :json | :protobuf,
                 description: "Serialization method for encoding and decoding Media Events"
+              ],
+              ignored_endpoints: [
+                spec: [Endpoint.id()],
+                default: [],
+                description: "List of endpoint IDs to ignore when sending Media Events"
               ]
 
   def_input_pad :input,
@@ -168,24 +173,30 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         ctx,
         %{event_serializer: serializer} = state
       ) do
-    {:endpoint, endpoint_id} = ctx.name
+    case Enum.reject(endpoints, &(&1.id in state.ignored_endpoints)) do
+      [] ->
+        {[], state}
 
-    log_endpoints =
-      Enum.map(endpoints, fn endpoint ->
-        endpoint |> Map.from_struct() |> Map.delete(:inbound_tracks)
-      end)
+      endpoints ->
+        {:endpoint, endpoint_id} = ctx.name
 
-    Membrane.Logger.info("endpoint ready, endpoints: #{inspect(log_endpoints)}")
+        log_endpoints =
+          Enum.map(endpoints, fn endpoint ->
+            endpoint |> Map.from_struct() |> Map.delete(:inbound_tracks)
+          end)
 
-    action =
-      endpoint_id
-      |> serializer.connected(
-        endpoints,
-        Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers, [])
-      )
-      |> serializer.to_action()
+        Membrane.Logger.info("endpoint ready, endpoints: #{inspect(log_endpoints)}")
 
-    {action, state}
+        action =
+          endpoint_id
+          |> serializer.connected(
+            endpoints,
+            Application.get_env(:membrane_rtc_engine_ex_webrtc, :ice_servers, [])
+          )
+          |> serializer.to_action()
+
+        {action, state}
+    end
   end
 
   @impl true
@@ -194,9 +205,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
-    Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
-    {action, state}
+    if endpoint.id in state.ignored_endpoints do
+      {[], state}
+    else
+      action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
+      Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
+      {action, state}
+    end
   end
 
   @impl true
@@ -205,20 +220,30 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
-    {action, state}
+    if endpoint_id in state.ignored_endpoints do
+      {[], state}
+    else
+      action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
+      {action, state}
+    end
   end
 
   @impl true
   def handle_parent_notification(
-        {:track_metadata_updated, track},
+        {:track_metadata_updated, %Engine.Track{origin: endpoint_id} = track},
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    event =
-      track.origin |> serializer.track_updated(track.id, track.metadata) |> serializer.to_action()
+    if endpoint_id in state.ignored_endpoints do
+      {[], state}
+    else
+      event =
+        endpoint_id
+        |> serializer.track_updated(track.id, track.metadata)
+        |> serializer.to_action()
 
-    {event, state}
+      {event, state}
+    end
   end
 
   @impl true
@@ -239,8 +264,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
-    {event, state}
+    if endpoint.id in state.ignored_endpoints do
+      {[], state}
+    else
+      event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
+      {event, state}
+    end
   end
 
   @impl true
@@ -258,7 +287,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, state) do
     Membrane.Logger.debug("new parent tracks: #{log_tracks(new_tracks)}")
 
-    new_tracks = Map.new(new_tracks, &{&1.id, %Track{status: :pending, engine_track: &1}})
+    new_tracks =
+      new_tracks
+      |> Enum.reject(&(&1.origin in state.ignored_endpoints))
+      |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
     new_tracks =
       state.outbound_tracks
@@ -269,13 +301,20 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
 
     tracks_added = get_new_tracks_actions(new_tracks, state)
-    offer_data = get_offer_data(state)
 
-    {tracks_added ++ offer_data, %{state | negotiation?: true}}
+    case tracks_added do
+      [] ->
+        {[], state}
+
+      tracks_added ->
+        offer_data = get_offer_data(state)
+        {tracks_added ++ offer_data, %{state | negotiation?: true}}
+    end
   end
 
   @impl true
   def handle_parent_notification({:remove_tracks, tracks}, _ctx, state) do
+    tracks = Enum.reject(tracks, &(&1.origin in state.ignored_endpoints))
     track_ids = Enum.map(tracks, & &1.id)
 
     state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
