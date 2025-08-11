@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 description: "Serialization method for encoding and decoding Media Events"
               ],
               ignored_endpoints: [
-                spec: [Endpoint.id()],
+                spec: [Engine.Endpoint.id()],
                 default: [],
                 description: "List of endpoint IDs to ignore"
               ]
