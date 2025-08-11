@@ -150,7 +150,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     end
 
     test "omit ignored endpoints", %{rtc_engine: engine} do
-      track = Track.new(:video, Track.stream_id(), :test_endpoint, :H264, 90_000, nil)
+      track =
+        Track.new(:video, Track.stream_id(), :test_endpoint, :H264, 90_000, nil,
+          variants: [:low, :high]
+        )
+
       track_id = track.id
 
       ignored_source = %FakeSourceEndpoint{
@@ -162,6 +166,38 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert_receive %Message.EndpointAdded{endpoint_id: @ignored_endpoint_id}, 500
       :ok = Engine.message_endpoint(engine, @ignored_endpoint_id, :start)
       assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:update_endpoint_metadata, %{}}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:update_track_metadata, track_id, %{}}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:disable_track_variant, track_id, :low}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:enable_track_variant, track_id, :low}
+        )
+
+      assert_receive %Message.EndpointMetadataUpdated{endpoint_id: @ignored_endpoint_id}, 500
+      assert_receive %Message.TrackMetadataUpdated{track_id: ^track_id}
+
       :ok = Engine.remove_endpoint(engine, @ignored_endpoint_id)
       assert_receive %Message.EndpointRemoved{endpoint_id: @ignored_endpoint_id}, 500
 

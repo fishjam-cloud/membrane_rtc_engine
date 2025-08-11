@@ -173,7 +173,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         ctx,
         %{event_serializer: serializer} = state
       ) do
-    case Enum.reject(endpoints, &(&1.id in state.ignored_endpoints)) do
+    case Enum.reject(endpoints, &should_ignore?(&1, state)) do
       [] ->
         {[], state}
 
@@ -205,7 +205,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if endpoint.id in state.ignored_endpoints do
+    if should_ignore?(endpoint, state) do
       {[], state}
     else
       action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
@@ -220,7 +220,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if endpoint_id in state.ignored_endpoints do
+    if should_ignore?(endpoint_id, state) do
       {[], state}
     else
       action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
@@ -230,15 +230,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
-        {:track_metadata_updated, %Engine.Track{origin: endpoint_id} = track},
+        {:track_metadata_updated, track},
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if endpoint_id in state.ignored_endpoints do
+    if should_ignore?(track, state) do
       {[], state}
     else
       event =
-        endpoint_id
+        track.origin
         |> serializer.track_updated(track.id, track.metadata)
         |> serializer.to_action()
 
@@ -264,7 +264,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if endpoint.id in state.ignored_endpoints do
+    if should_ignore?(endpoint, state) do
       {[], state}
     else
       event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
@@ -278,7 +278,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     new_tracks =
       new_tracks
-      |> Enum.reject(&(&1.origin in state.ignored_endpoints))
+      |> Enum.reject(&should_ignore?(&1, state))
       |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
     outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
@@ -293,7 +293,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
     new_tracks =
       new_tracks
-      |> Enum.reject(&(&1.origin in state.ignored_endpoints))
+      |> Enum.reject(&should_ignore?(&1, state))
       |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
     new_tracks =
@@ -318,7 +318,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification({:remove_tracks, tracks}, _ctx, state) do
-    tracks = Enum.reject(tracks, &(&1.origin in state.ignored_endpoints))
+    tracks = Enum.reject(tracks, &should_ignore?(&1, state))
     track_ids = Enum.map(tracks, & &1.id)
 
     state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
@@ -356,6 +356,15 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_parent_notification(_msg, _ctx, state) do
     {[], state}
   end
+
+  defp should_ignore?(%Engine.Endpoint{id: endpoint_id}, state),
+    do: endpoint_id in state.ignored_endpoints
+
+  defp should_ignore?(%Engine.Track{origin: endpoint_id}, state),
+    do: endpoint_id in state.ignored_endpoints
+
+  defp should_ignore?(endpoint_id, state),
+    do: endpoint_id in state.ignored_endpoints
 
   defp log_tracks(tracks) do
     tracks
