@@ -55,7 +55,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
               ignored_endpoints: [
                 spec: [Endpoint.id()],
                 default: [],
-                description: "List of endpoint IDs to ignore when sending Media Events"
+                description: "List of endpoint IDs to ignore"
               ]
 
   def_input_pad :input,
