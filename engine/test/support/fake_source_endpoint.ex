@@ -11,18 +11,21 @@ defmodule Membrane.RTC.Engine.Support.FakeSourceEndpoint do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Support.{StaticTrackSender, TestSource}
 
-  def_options rtc_engine: [
-                spec: pid(),
-                description: "Pid of parent Engine"
-              ],
-              track: [
-                spec: Engine.Track.t(),
-                description: "Track to publish"
-              ]
+  def_options(
+    rtc_engine: [
+      spec: pid(),
+      description: "Pid of parent Engine"
+    ],
+    track: [
+      spec: Engine.Track.t(),
+      description: "Track to publish"
+    ]
+  )
 
-  def_output_pad :output,
+  def_output_pad(:output,
     accepted_format: _any,
     availability: :on_request
+  )
 
   @impl true
   def handle_init(_ctx, opts) do
@@ -78,6 +81,34 @@ defmodule Membrane.RTC.Engine.Support.FakeSourceEndpoint do
   @impl true
   def handle_parent_notification({:remove_tracks, _list}, _ctx, state) do
     {[], state}
+  end
+
+  @impl true
+  def handle_parent_notification({:update_endpoint_metadata, _metadata} = msg, _ctx, state) do
+    {[notify_parent: msg], state}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:update_track_metadata, _track_id, _metadata} = msg,
+        _ctx,
+        state
+      ) do
+    {[notify_parent: msg], state}
+  end
+
+  @impl true
+  def handle_parent_notification({:enable_track_variant, _track_id, _metadata} = msg, _ctx, state) do
+    {[notify_parent: msg], state}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:disable_track_variant, _track_id, _metadata} = msg,
+        _ctx,
+        state
+      ) do
+    {[notify_parent: msg], state}
   end
 
   @impl true

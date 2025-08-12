@@ -9,7 +9,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisher do
 
   @impl true
   def handle_buffer(Pad.ref(:input, track_id), buffer, _ctx, state) do
-    {[notify_parent: {:track_data, track_id, buffer}], state}
+    {[notify_parent: {:track_data, track_id, Membrane.Payload.to_binary(buffer.payload)}], state}
   end
 
   @impl true

@@ -20,6 +20,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint
   alias Membrane.RTC.Engine.Message
+  alias Membrane.RTC.Engine.Support.FakeSourceEndpoint
   alias Membrane.RTC.Engine.Track
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, SessionDescription}
@@ -27,13 +28,18 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
   @endpoint_id "endpoint_id"
   @connect_event {:connect, %Connect{metadata_json: Jason.encode!("")}}
   @renegotiate_tracks_event {:renegotiate_tracks, %RenegotiateTracks{}}
+  @ignored_endpoint_id "ignored_id"
 
   setup do
     {:ok, pid} = Engine.start_link([], [])
 
     Engine.register(pid, self())
 
-    endpoint = %Endpoint.ExWebRTC{rtc_engine: pid, event_serialization: :protobuf}
+    endpoint = %Endpoint.ExWebRTC{
+      rtc_engine: pid,
+      event_serialization: :protobuf,
+      ignored_endpoints: [@ignored_endpoint_id]
+    }
 
     Engine.add_endpoint(pid, endpoint, id: @endpoint_id)
 
@@ -49,7 +55,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     [rtc_engine: pid]
   end
 
-  describe "Send media event" do
+  describe "media events:" do
     # The `unmute_track` event is used to accelerate the unmuting of tracks that have been muted for an extended period.
     # Each time a track is unmuted on the client side, the client SDK sends an unmute event.
     # Due to this, testing it in the `ex_webrtc` browser integration tests is challenging, thus we test it here.
@@ -141,6 +147,61 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
 
       assert {:offer_data, %OfferData{tracks_types: %OfferData.TrackTypes{audio: 0, video: 1}}} =
                receive_media_event()
+    end
+
+    test "omit ignored endpoints", %{rtc_engine: engine} do
+      track =
+        Track.new(:video, Track.stream_id(), :test_endpoint, :H264, 90_000, nil,
+          variants: [:low, :high]
+        )
+
+      track_id = track.id
+
+      ignored_source = %FakeSourceEndpoint{
+        rtc_engine: engine,
+        track: track
+      }
+
+      :ok = Engine.add_endpoint(engine, ignored_source, id: @ignored_endpoint_id)
+      assert_receive %Message.EndpointAdded{endpoint_id: @ignored_endpoint_id}, 500
+      :ok = Engine.message_endpoint(engine, @ignored_endpoint_id, :start)
+      assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:update_endpoint_metadata, %{}}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:update_track_metadata, track_id, %{}}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:disable_track_variant, track_id, :low}
+        )
+
+      :ok =
+        Engine.message_endpoint(
+          engine,
+          @ignored_endpoint_id,
+          {:enable_track_variant, track_id, :low}
+        )
+
+      assert_receive %Message.EndpointMetadataUpdated{endpoint_id: @ignored_endpoint_id}, 500
+      assert_receive %Message.TrackMetadataUpdated{track_id: ^track_id}
+
+      :ok = Engine.remove_endpoint(engine, @ignored_endpoint_id)
+      assert_receive %Message.EndpointRemoved{endpoint_id: @ignored_endpoint_id}, 500
+
+      refute_receive %Message.EndpointMessage{message: {:media_event, _any}}
     end
 
     defp received_track_removed?() do

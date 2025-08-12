@@ -136,7 +136,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
       track ->
         {[
            notify_parent:
-             {:forward_to_parent, {:track_data, track_id, track.type, track.metadata, data}}
+             {:forward_to_parent,
+              {:track_data, track.origin, track_id, track.type, track.metadata, data}}
          ], state}
     end
   end
@@ -155,6 +156,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
   @impl true
   def handle_child_notification(
         {:variant_switched, _variant, _reason},
+        {:track_receiver, _track_id},
+        _ctx,
+        state
+      ) do
+    {[], state}
+  end
+
+  @impl true
+  def handle_child_notification(
+        {:voice_activity_changed, _new_state},
         {:track_receiver, _track_id},
         _ctx,
         state
