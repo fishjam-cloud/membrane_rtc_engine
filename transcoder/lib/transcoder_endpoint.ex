@@ -164,6 +164,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
   end
 
   @impl true
+  def handle_child_notification(
+        {:voice_activity_changed, _new_state},
+        {:track_receiver, _track_id},
+        _ctx,
+        state
+      ) do
+    {[], state}
+  end
+
+  @impl true
   def handle_child_notification(msg, child, _ctx, state) do
     Membrane.Logger.warning("Unexpected notification #{inspect(msg)} from #{inspect(child)}")
     {[], state}
