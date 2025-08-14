@@ -4,8 +4,8 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   import ExUnit.CaptureLog
 
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Endpoint.File
   alias Membrane.RTC.Engine.Endpoint.Agent
+  alias Membrane.RTC.Engine.Endpoint.File
   alias Membrane.RTC.Engine.Support.FakeSourceEndpoint
   alias Membrane.RTC.Engine.Track
 

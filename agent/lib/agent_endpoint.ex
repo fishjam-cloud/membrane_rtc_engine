@@ -12,8 +12,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track, TrackReceiver}
-  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisher
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
 
   @type encoding_t() :: String.t()
 
