@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisher do
+defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisher do
   @moduledoc false
   use Membrane.Sink
 

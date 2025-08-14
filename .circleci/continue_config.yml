@@ -13,6 +13,9 @@ parameters:
   ex-webrtc-changed:
     type: boolean
     default: false
+  agent-changed:
+    type: boolean
+    default: false
   hls-changed:
     type: boolean
     default: false
@@ -184,6 +187,18 @@ workflows:
           codecov_flag: ex_webrtc
       - test_ex_webrtc_integration
 
+  test-agent:
+    when:
+      or:
+        - << pipeline.parameters.repo-root-changed >>
+        - << pipeline.parameters.engine-changed >>
+        - << pipeline.parameters.agent-changed >>
+    jobs:
+      - test_package:
+          name: test_agent
+          workdir: ~/app/agent
+          codecov_flag: agent
+
   test-hls:
     when:
       or:
@@ -300,6 +315,16 @@ workflows:
           name: check_changelog_update_ex_webrtc
           workdir: ~/app/ex_webrtc
 
+  lint-agent:
+    when: << pipeline.parameters.agent-changed >>
+    jobs:
+      - lint_package:
+          name: lint_agent
+          workdir: ~/app/agent
+      - check_changelog_update:
+          name: check_changelog_update_agent
+          workdir: ~/app/agent
+  
   lint-hls:
     when: << pipeline.parameters.hls-changed >>
     jobs:

@@ -1,8 +1,8 @@
-defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
+defmodule Membrane.RTC.Engine.Endpoint.Agent do
   @moduledoc """
   An Endpoint responsible for receiving data in one codec, transcoding it and publishing it to the engine parent process.
 
-  Currently, the Transcoder Endpoint only supports decoding to raw 16-bit PCM
+  Currently, the Agent Endpoint only supports decoding to raw 16-bit PCM
   with sample rate either 16kHz or 24kHz and 1 channel.
   """
 
@@ -12,8 +12,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
 
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track, TrackReceiver}
+  alias Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisher
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
-  alias Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisher
 
   @type encoding_t() :: String.t()
 
@@ -40,16 +40,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder do
     availability: :on_request
 
   @doc """
-  Subscribe transcoder endpoint to tracks from given endpoint.
+  Subscribe agent endpoint to tracks from given endpoint.
   """
   @spec subscribe(
           engine :: pid(),
-          transcoder_id :: String.t(),
+          agent_id :: String.t(),
           endpoint_id :: String.t(),
           opts :: [format: output_format(), sample_rate: output_sample_rate()]
         ) :: :ok
-  def subscribe(engine, transcoder_id, endpoint_id, opts) do
-    Engine.message_endpoint(engine, transcoder_id, {:subscribe, endpoint_id, opts})
+  def subscribe(engine, agent_id, endpoint_id, opts) do
+    Engine.message_endpoint(engine, agent_id, {:subscribe, endpoint_id, opts})
   end
 
   @impl true

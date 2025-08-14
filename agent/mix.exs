@@ -1,14 +1,14 @@
-defmodule Membrane.RTC.Engine.Endpoint.Transcoder.MixProject do
+defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
   use Mix.Project
 
   @version "0.1.0-dev"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
-  @github_url "#{@engine_github_url}/tree/master/transcoder"
-  @source_ref "transcoder-v#{@version}"
+  @github_url "#{@engine_github_url}/tree/master/agent"
+  @source_ref "agent-v#{@version}"
 
   def project do
     [
-      app: :membrane_rtc_engine_transcoder,
+      app: :membrane_rtc_engine_agent,
       version: @version,
       elixir: "~> 1.18",
       elixirc_paths: elixirc_paths(Mix.env()),
@@ -16,11 +16,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.MixProject do
       deps: deps(),
 
       # hex
-      description: "Transcoder Endpoint for Membrane RTC Engine",
+      description: "Agent Endpoint for Membrane RTC Engine",
       package: package(),
 
       # docs
-      name: "Membrane RTC Engine Transcoder Endpoint",
+      name: "Membrane RTC Engine Agent Endpoint",
       source_url: @github_url,
       homepage_url: "https://membrane.stream",
       docs: docs(),
@@ -85,7 +85,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.MixProject do
       extras: ["README.md", "CHANGELOG.md", "LICENSE"],
       formatters: ["html"],
       source_ref: @source_ref,
-      source_url_pattern: "#{@engine_github_url}/blob/#{@source_ref}/transcoder/%{path}#L%{line}",
+      source_url_pattern: "#{@engine_github_url}/blob/#{@source_ref}/agent/%{path}#L%{line}",
       nest_modules_by_prefix: [Membrane.RTC.Engine.Endpoint]
     ]
   end

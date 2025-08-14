@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
+defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisherTest do
   use ExUnit.Case, async: true
 
   import Membrane.ChildrenSpec
@@ -9,7 +9,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
   alias Membrane.Pad
   alias Membrane.Testing
 
-  alias Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisher
+  alias Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisher
 
   setup do
     pipeline = start_pipeline()
@@ -21,11 +21,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
 
   test "parent receives track data notifications", %{pipeline: pipeline} do
     pad1 = Pad.ref(:input, :track1)
-    payload1 = [1, 2, 3, 4]
+    payload1 = [1, 2, 3, 4] |> Enum.map(&<<&1>>)
     source1 = %Testing.Source{output: payload1}
 
     pad2 = Pad.ref(:input, :track2)
-    payload2 = [11, 12, 13, 14]
+    payload2 = [11, 12, 13, 14] |> Enum.map(&<<&1>>)
     source2 = %Testing.Source{output: payload2}
 
     Testing.Pipeline.execute_actions(pipeline,
@@ -56,7 +56,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Transcoder.TrackDataPublisherTest do
     assert_pipeline_notified(
       pipeline,
       :publisher,
-      {:track_data, ^track_id, payload}
+      {:track_data, ^track_id, ^payload}
     )
 
     assert is_binary(payload)
