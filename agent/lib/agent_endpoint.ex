@@ -1,9 +1,9 @@
 defmodule Membrane.RTC.Engine.Endpoint.Agent do
   @moduledoc """
-  An Endpoint responsible for receiving data in one codec, transcoding it and publishing it to the engine parent process.
+  An Endpoint responsible for allowing programmatic publishing and receiving tracks in a room.
 
-  Currently, the Agent Endpoint only supports decoding to raw 16-bit PCM
-  with sample rate either 16kHz or 24kHz and 1 channel.
+  Currently, the Agent Endpoint supports decoding audio track to raw 16-bit PCM
+  with 1 channel and 16kHz or 24kHz sample rate.
   """
 
   use Membrane.Bin
@@ -12,8 +12,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track, TrackReceiver}
-  alias Membrane.RTC.Engine.Endpoint.Agent.TrackDataPublisher
+  alias __MODULE__.{TrackDataPublisher, TrackDataForwarder, TrackUtils}
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
+
+  alias Fishjam.{AgentRequest, AgentResponse}
+  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
+  alias Fishjam.Notifications
+
+  # alias Membrane.RTP
+  alias Membrane.RTP.PayloaderBin
+
+  alias Membrane.RTC.Engine.Support.StaticTrackSender
 
   @type encoding_t() :: String.t()
 
@@ -65,11 +74,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
     state = %{
       subscriber: subscriber,
+      inputs: %{},
       outputs: %{}
     }
 
     spec = [
-      child(:track_data_publisher, TrackDataPublisher)
+      child(:track_data_publisher, TrackDataPublisher),
+      child(:track_data_forwarder, TrackDataForwarder)
     ]
 
     {[notify_parent: :ready, spec: spec], state}
@@ -118,6 +129,46 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   @impl true
+  def handle_pad_added(Pad.ref(:output, track_id) = pad, _ctx, state) do
+    track = Map.fetch!(state.inputs, track_id)
+
+    # track_sender = %TrackSender{
+    #   track: track,
+    #   variant_bitrates: Map.get(state.track_id_to_bitrates, track_id, %{})
+    # }
+
+    payloader = Membrane.RTP.PayloadFormat.get(track.encoding).payloader
+
+    payloader_bin = %PayloaderBin{
+      payloader: payloader,
+      ssrc: generate_ssrc(),
+      payload_type: track.payload_type,
+      clock_rate: track.sample_rate
+    }
+
+    encoder_fun = get_encoder_for(track.encoding)
+
+    spec =
+      get_child(:track_data_forwarder)
+      |> via_out(Pad.ref(:output, track_id))
+      |> encoder_fun.()
+      |> child(:payloader, payloader_bin)
+      |> child(:track_sender, %StaticTrackSender{
+        track: state.track,
+        is_keyframe: fn buffer, track ->
+          case track.encoding do
+            :opus -> true
+            :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
+          end
+        end,
+        wait_for_keyframe_request?: state.playback_mode == :wait_for_first_subscriber
+      })
+      |> bin_output(pad)
+
+    {[spec: spec], state}
+  end
+
+  @impl true
   def handle_pad_removed(Pad.ref(:input, track_id), _ctx, state) do
     {[remove_children: {:transcoding_group, track_id}], state}
   end
@@ -131,7 +182,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       ) do
     case Subscriber.get_track(subscriber, track_id) do
       nil ->
-        raise("Received track data notification for unknown track #{inspect(track_id)}")
+        raise(
+          "Received track data notification from endpoint for unknown track #{inspect(track_id)}"
+        )
 
       track ->
         {[
@@ -215,10 +268,85 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   @impl true
+  def handle_parent_notification({:agent_notification, request}, ctx, state) do
+    %AgentRequest{content: {_name, content}} = request
+    handle_agent_request(content, ctx, state)
+  end
+
+  @impl true
   def handle_parent_notification(_msg, _ctx, state) do
     {[], state}
   end
 
+  defp handle_agent_request(
+         %AddTrack{track: track, codec_params: codec_params} = request,
+         ctx,
+         state
+       ) do
+    {:endpoint, endpoint_id} = ctx.name
+
+    with :ok <- validate_track_id(track.id, state) do
+      new_track = TrackUtils.create_track(request, endpoint_id)
+      state = put_in(state, [:inputs, track.id], new_track)
+
+      actions = [
+        notify_child: {:track_data_forwarder, {:new_track, track.id, codec_params}},
+        notify_parent: {:publish, {:new_tracks, [new_track]}}
+      ]
+
+      {actions, state}
+    else
+      _error ->
+        raise("AddTrack request with invalid track_id #{inspect(track.id)}")
+    end
+  end
+
+  defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
+    with {%Notifications.Track{}, state} <- pop_in(state, [:inputs, track_id]) do
+      actions = [notify_parent: {:publish, {:removed_tracks, [track_id]}}]
+
+      {actions, state}
+    else
+      {nil, state} ->
+        Membrane.Logger.error("Requested removing non-existent track #{inspect(track_id)}")
+        {[], state}
+    end
+  end
+
+  defp handle_agent_request(
+         %TrackData{track_id: track_id, data: data},
+         _ctx,
+         %{inputs: inputs} = state
+       ) do
+    with true <- Map.has_key?(inputs, track_id) do
+      notification = {:track_data, track_id, data}
+
+      {[notify_child: {:track_data_forwarder, notification}], state}
+    else
+      false ->
+        raise("Received track data from remote for unknown track #{inspect(track_id)}")
+    end
+  end
+
   defp get_decoder(:opus), do: Membrane.Opus.Decoder
   defp get_decoder(_other), do: nil
+
+  defp get_encoder_for(:pcm_16), do: &child(&1, :encoder, Membrane.Opus.Encoder)
+  defp get_encoder_for(:opus), do: & &1
+
+  defp validate_track_id(track_id, %{subscriber: subscriber, inputs: inputs}) do
+    with {:ok, uuid} <- UUID.info(track_id),
+        4 <- Keyword.get(uuid, :version),
+         nil <- Subscriber.get_track(subscriber, track_id),
+         false <- Map.has_key?(inputs, track_id) do
+      :ok
+    else
+      _error ->
+        {:error, :invalid_track_id}
+    end
+  end
+
+  defp generate_ssrc() do
+    :crypto.strong_rand_bytes(4) |> :binary.decode_unsigned()
+  end
 end
