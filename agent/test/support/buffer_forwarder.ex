@@ -24,7 +24,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
 
   def_input_pad :input,
     accepted_format: _any,
-    availability: :always
+    availability: :always,
+    flow_control: :manual,
+    demand_unit: :buffers
+
+  @sample_interval 1
 
   @impl true
   def handle_init(_ctx, options) do
@@ -52,16 +56,30 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
 
     message_agent(:add_track, add_track, state)
 
-    {[], state}
+    Process.send_after(self(), :demand, @sample_interval)
+
+    {[demand: {:input, 1}], state}
   end
 
   @impl true
   def handle_buffer(_pad, buffer, _ctx, state) do
-    message_agent(:track_data, %TrackData{
-      track_id: state.track_id,
-      data: buffer.payload
-    }, state)
+    message_agent(
+      :track_data,
+      %TrackData{
+        track_id: state.track_id,
+        data: buffer.payload
+      },
+      state
+    )
+
     {[], state}
+  end
+
+  @impl true
+  def handle_info(:demand, _ctx, state) do
+    Process.send_after(self(), :demand, @sample_interval)
+
+    {[demand: {:input, 1}], state}
   end
 
   defp message_agent(name, message, state) do
@@ -69,7 +87,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
       content: {name, message}
     }
 
-    Engine.message_endpoint(state.rtc_engine, @agent_id,
-    {:agent_notification, request})
+    Engine.message_endpoint(state.rtc_engine, @agent_id, {:agent_notification, request})
   end
 end

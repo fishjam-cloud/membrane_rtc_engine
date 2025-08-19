@@ -24,6 +24,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   alias Membrane.RTC.Engine.Support.StaticTrackSender
 
+  alias Membrane.RawAudioParser
+
   @type encoding_t() :: String.t()
 
   @type output_format() :: :pcm16
@@ -45,6 +47,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
               ]
 
   def_input_pad :input,
+    accepted_format: _any,
+    availability: :on_request
+
+  def_output_pad :output,
     accepted_format: _any,
     availability: :on_request
 
@@ -129,39 +135,27 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   @impl true
-  def handle_pad_added(Pad.ref(:output, track_id) = pad, _ctx, state) do
-    track = Map.fetch!(state.inputs, track_id)
-
-    # track_sender = %TrackSender{
-    #   track: track,
-    #   variant_bitrates: Map.get(state.track_id_to_bitrates, track_id, %{})
-    # }
-
-    payloader = Membrane.RTP.PayloadFormat.get(track.encoding).payloader
+  def handle_pad_added(Pad.ref(:output, {track_id, :high}) = pad, _ctx, state) do
+    {track, codec_params} = Map.fetch!(state.inputs, track_id)
 
     payloader_bin = %PayloaderBin{
-      payloader: payloader,
+      payloader: Membrane.RTP.Opus.Payloader,
       ssrc: generate_ssrc(),
       payload_type: track.payload_type,
-      clock_rate: track.sample_rate
+      clock_rate: track.clock_rate
     }
 
-    encoder_fun = get_encoder_for(track.encoding)
+    encoder_fun = get_encoder_for(codec_params.encoding)
 
     spec =
       get_child(:track_data_forwarder)
       |> via_out(Pad.ref(:output, track_id))
+      |> child(:parser, %RawAudioParser{overwrite_pts?: true})
       |> encoder_fun.()
       |> child(:payloader, payloader_bin)
       |> child(:track_sender, %StaticTrackSender{
-        track: state.track,
-        is_keyframe: fn buffer, track ->
-          case track.encoding do
-            :opus -> true
-            :H264 -> Membrane.RTP.H264.Utils.keyframe?(buffer.payload)
-          end
-        end,
-        wait_for_keyframe_request?: state.playback_mode == :wait_for_first_subscriber
+        track: track,
+        is_keyframe: fn _buf, _end -> true end
       })
       |> bin_output(pad)
 
@@ -287,11 +281,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
     with :ok <- validate_track_id(track.id, state) do
       new_track = TrackUtils.create_track(request, endpoint_id)
-      state = put_in(state, [:inputs, track.id], new_track)
+      parsed_codec_params = TrackUtils.from_proto_codec_params(codec_params)
+      state = put_in(state, [:inputs, track.id], {new_track, parsed_codec_params})
 
       actions = [
         notify_child: {:track_data_forwarder, {:new_track, track.id, codec_params}},
-        notify_parent: {:publish, {:new_tracks, [new_track]}}
+        notify_parent: {:publish, {:new_tracks, [new_track]}},
+        notify_parent: {:track_ready, new_track.id, :high, :opus}
       ]
 
       {actions, state}
@@ -331,12 +327,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   defp get_decoder(:opus), do: Membrane.Opus.Decoder
   defp get_decoder(_other), do: nil
 
-  defp get_encoder_for(:pcm_16), do: &child(&1, :encoder, Membrane.Opus.Encoder)
+  defp get_encoder_for(:s16le), do: &child(&1, :encoder, Membrane.Opus.Encoder)
   defp get_encoder_for(:opus), do: & &1
 
   defp validate_track_id(track_id, %{subscriber: subscriber, inputs: inputs}) do
     with {:ok, uuid} <- UUID.info(track_id),
-        4 <- Keyword.get(uuid, :version),
+         4 <- Keyword.get(uuid, :version),
          nil <- Subscriber.get_track(subscriber, track_id),
          false <- Map.has_key?(inputs, track_id) do
       :ok

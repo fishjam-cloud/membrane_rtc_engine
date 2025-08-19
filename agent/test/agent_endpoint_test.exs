@@ -7,7 +7,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint.Agent
   alias Membrane.RTC.Engine.Endpoint.File
-  alias Membrane.RTC.Engine.Support.{FakeSinkEndpoint, FakeSourceEndpoint}
+  alias Membrane.RTC.Engine.Support.{TestSinkEndpoint, FakeSourceEndpoint}
   alias Membrane.RTC.Engine.Track
 
   alias Membrane.Testing
@@ -167,11 +167,11 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   describe "Forwarding track data" do
     test "Publishes added track to other endpoints", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
-      sink1 = create_sink_endpoint(engine)
-      sink2 = create_sink_endpoint(engine)
+      sink1 = create_sink_endpoint(:sink1, engine)
+      sink2 = create_sink_endpoint(:sink2, engine)
 
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
-      :ok = Engine.add_endpoint(engine, sink1, id: :sink1)
+      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
       :ok = Engine.add_endpoint(engine, sink2, id: :sink2)
 
       start_raw_audio_pipeline(engine)
@@ -179,18 +179,13 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: @agent_id,
                        track_id: @input_track_id
-                     },                     1000
+                     },
+                     1000
 
-      # assert_receive %Engine.Message.EndpointMessage{
-      #                  endpoint_id: @agent_id,
-      #                  endpoint_type: Agent,
-      #                  message:
-      #                    {:track_data, :stereo_sender, ^stereo_track_id, :audio, ^stereo_metadata,
-      #                     _data}
-      #                },
-      #                1000
+      assert count_sink_buffers(:sink1) > 50
+      assert count_sink_buffers(:sink2) > 50
 
-      refute_receive %Engine.Message.EndpointCrashed{}, 2000
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
     end
   end
 
@@ -198,8 +193,22 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     %Agent{rtc_engine: engine}
   end
 
-  defp create_sink_endpoint(engine) do
-    %FakeSinkEndpoint{rtc_engine: engine, owner: self()}
+  defp create_sink_endpoint(name, engine) do
+    test_process_pid = self()
+
+    handle_buffer = &send(test_process_pid, {:sink_buffer, name, &1})
+
+    %TestSinkEndpoint{rtc_engine: engine, owner: self(), handle_buffer: handle_buffer}
+  end
+
+  defp count_sink_buffers(name, count \\ 0) do
+    receive do
+      {:sink_buffer, ^name, %Membrane.Buffer{payload: payload}}
+      when is_binary(payload) ->
+        count_sink_buffers(name, count + 1)
+    after
+      100 -> count
+    end
   end
 
   defp create_file_endpoint(engine, file_path) do
@@ -219,12 +228,22 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   end
 
   defp start_raw_audio_pipeline(engine) do
-      Testing.Pipeline.start_link_supervised!(
-        spec: [
-          child(:file_source, %Membrane.File.Source{location: @raw_audio_file})
-          |> child(:parser, %Membrane.RawAudioParser{stream_format: %Membrane.RawAudio{channels: 1, sample_rate: @raw_audio_sample_rate, sample_format: :s16le}})
-          |> child(:forwarder, %BufferForwarder{rtc_engine: engine, sample_rate: @raw_audio_sample_rate, track_id: @input_track_id})
-        ]
-      )
+    Testing.Pipeline.start_link_supervised!(
+      spec: [
+        child(:file_source, %Membrane.File.Source{location: @raw_audio_file})
+        |> child(:parser, %Membrane.RawAudioParser{
+          stream_format: %Membrane.RawAudio{
+            channels: 1,
+            sample_rate: @raw_audio_sample_rate,
+            sample_format: :s16le
+          }
+        })
+        |> child(:buffer_forwarder, %BufferForwarder{
+          rtc_engine: engine,
+          sample_rate: @raw_audio_sample_rate,
+          track_id: @input_track_id
+        })
+      ]
+    )
   end
 end

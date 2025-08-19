@@ -24,7 +24,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
     }
   ]
 
-  def create_track(%AddTrack{track: %Notifications.Track{} = track, codec_params: params}, endpoint_id) do
+  def create_track(
+        %AddTrack{track: %Notifications.Track{} = track, codec_params: params},
+        endpoint_id
+      ) do
     track = from_proto_track(track)
     codec_params = from_proto_codec_params(params)
 
@@ -32,7 +35,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
       track.type,
       Track.stream_id(),
       endpoint_id,
-      codec_params.encoding,
+      :opus,
       codec_params.sample_rate,
       %{},
       id: track.id,
@@ -41,16 +44,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
     )
   end
 
+  def from_proto_codec_params(%CodecParameters{} = codec_parameters) do
+    codec_parameters
+    |> Map.from_struct()
+    |> Map.update!(:encoding, &from_proto_track_encoding/1)
+  end
+
   defp from_proto_track(%Notifications.Track{} = track) do
     track
     |> Map.from_struct()
     |> Map.update!(:type, &from_proto_track_type/1)
-  end
-
-  defp from_proto_codec_params(%CodecParameters{} = codec_parameters) do
-    codec_parameters
-    |> Map.from_struct()
-    |> Map.update!(:encoding, &from_proto_track_encoding/1)
   end
 
   defp from_proto_track_encoding(:TRACK_ENCODING_OPUS), do: :opus

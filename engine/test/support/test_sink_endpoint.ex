@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Support.FakeSinkEndpoint do
+defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint do
   @moduledoc false
 
   # Endpoint that subscribes on all published tracks and drops them.
@@ -7,8 +7,9 @@ defmodule Membrane.RTC.Engine.Support.FakeSinkEndpoint do
 
   require Membrane.Logger
 
-  alias Membrane.Fake.Sink
   alias Membrane.RTC.Engine
+
+  alias __MODULE__.Sink
 
   def_options rtc_engine: [
                 spec: pid(),
@@ -17,6 +18,12 @@ defmodule Membrane.RTC.Engine.Support.FakeSinkEndpoint do
               owner: [
                 spec: pid(),
                 description: "Pid of endpoint owner"
+              ],
+              handle_buffer: [
+                spec: (Buffer.t() -> any()),
+                description:
+                  "Function with arity 1, that will be called with all buffers handled by the sink endpoint. Result of this function is ignored.",
+                default: &Function.identity/1
               ]
 
   def_input_pad :input,
@@ -37,17 +44,16 @@ defmodule Membrane.RTC.Engine.Support.FakeSinkEndpoint do
 
   @impl true
   def handle_pad_added(Pad.ref(:input, track_id) = pad, _ctx, state) do
-    spec = [
+    spec =
       bin_input(pad)
-      |> child({:fake_sink, track_id}, Sink.Buffers)
-    ]
+      |> child({:test_sink, track_id}, %Sink{handle_buffer: state.handle_buffer})
 
     {[spec: spec], state}
   end
 
   @impl true
   def handle_pad_removed(Pad.ref(:input, track_id), _ctx, state) do
-    {[remove_children: {:fake_sink, track_id}], state}
+    {[remove_children: {:test_sink, track_id}], state}
   end
 
   @impl true

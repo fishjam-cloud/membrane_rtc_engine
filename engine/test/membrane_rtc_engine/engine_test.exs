@@ -8,7 +8,7 @@ defmodule Membrane.RTC.EngineTest do
   alias Membrane.RTC.Engine.{Endpoint, Message, Track}
   alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
 
-  alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, SinkEndpoint, TestEndpoint}
+  alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, TestSinkEndpoint, TestEndpoint}
 
   @crash_endpoint_id "crash-endpoint"
   @track_endpoint_id "track-endpoint"
@@ -270,7 +270,8 @@ defmodule Membrane.RTC.EngineTest do
       track: %Track{id: track_id},
       endpoint: %{id: endpoint_id}
     } do
-      :ok = Engine.add_endpoint(rtc_engine, %SinkEndpoint{owner: self(), rtc_engine: rtc_engine})
+      :ok =
+        Engine.add_endpoint(rtc_engine, %TestSinkEndpoint{owner: self(), rtc_engine: rtc_engine})
 
       assert_receive %EndpointAdded{}
 
@@ -418,7 +419,7 @@ defmodule Membrane.RTC.EngineTest do
       endpoint_id1 = :fake_endpoint1
 
       :ok =
-        Engine.add_endpoint(rtc_engine, %SinkEndpoint{rtc_engine: rtc_engine, owner: self()},
+        Engine.add_endpoint(rtc_engine, %TestSinkEndpoint{rtc_engine: rtc_engine, owner: self()},
           id: endpoint_id1
         )
 
@@ -431,7 +432,7 @@ defmodule Membrane.RTC.EngineTest do
       endpoint_id2 = :fake_endpoint2
 
       :ok =
-        Engine.add_endpoint(rtc_engine, %SinkEndpoint{rtc_engine: rtc_engine, owner: self()},
+        Engine.add_endpoint(rtc_engine, %TestSinkEndpoint{rtc_engine: rtc_engine, owner: self()},
           id: endpoint_id2
         )
 
@@ -442,7 +443,7 @@ defmodule Membrane.RTC.EngineTest do
       endpoint_id3 = :fake_endpoint3
 
       :ok =
-        Engine.add_endpoint(rtc_engine, %SinkEndpoint{rtc_engine: rtc_engine, owner: self()},
+        Engine.add_endpoint(rtc_engine, %TestSinkEndpoint{rtc_engine: rtc_engine, owner: self()},
           id: endpoint_id3
         )
 
