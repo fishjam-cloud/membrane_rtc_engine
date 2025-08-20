@@ -8,11 +8,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
   alias Membrane.RTC.Engine.Endpoint
   alias Membrane.RTC.Engine.Track
 
-  @type codec_parameters() :: %{
-          channels: 1,
-          encoding: :opus | :pcm16,
-          sample_rate: non_neg_integer()
-        }
+  alias Membrane.RTC.Engine.Endpoint.Agent
 
   @pcm_sample_rates [16_000, 24_000]
 
@@ -36,7 +32,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
   end
 
   @spec validate_codec_params(CodecParameters.t()) ::
-          {:ok, codec_parameters()} | {:error, :invalid_codec_params}
+          {:ok, Agent.codec_parameters()} | {:error, :invalid_codec_params}
   def validate_codec_params(%CodecParameters{} = codec_parameters) do
     params = from_proto_codec_params(codec_parameters)
 

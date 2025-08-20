@@ -29,6 +29,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   @type output_format() :: :pcm16
   @type output_sample_rate() :: 16_000 | 24_000
 
+  @type codec_parameters() :: %{
+          channels: 1,
+          encoding: :opus | :pcm16,
+          sample_rate: non_neg_integer()
+        }
+
   @type state() :: %{
           subscriber: Subscriber.t(),
           outputs: %{
