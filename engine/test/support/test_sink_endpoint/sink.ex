@@ -1,5 +1,10 @@
 defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint.Sink do
-  @moduledoc false
+  @moduledoc """
+  A custom Sink element for the TestSinkEndpoint, that sends
+  RequestTrackVariant message, once input track is connected,
+  and is can be provided with custom `handle_buffer` function,
+  that is called on each buffer.
+  """
   use Membrane.Sink
 
   def_input_pad :input,

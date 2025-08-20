@@ -17,7 +17,7 @@ defmodule Membrane.RTC.Engine.Endpoint.File do
   alias Membrane.ChildrenSpec
   alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.Endpoint.File.TrackConfig
-  alias Membrane.RTC.Engine.Support.StaticTrackSender
+  alias Membrane.RTC.Engine.StaticTrackSender
   alias Membrane.RTC.Engine.Track
   alias Membrane.RTP
   alias Membrane.RTP.PayloaderBin

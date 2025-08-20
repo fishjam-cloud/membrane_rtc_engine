@@ -8,13 +8,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
   alias Membrane.RTC.Engine.Endpoint
   alias Membrane.RTC.Engine.Track
 
+  @type codec_parameters() :: %{
+          channels: 1,
+          encoding: :opus | :pcm16,
+          sample_rate: non_neg_integer()
+        }
+
   @pcm_sample_rates [16_000, 24_000]
 
   @spec create_track(AddTrack.t(), Endpoint.id()) :: Track.t()
-  def create_track(
-        %AddTrack{track: %Notifications.Track{} = track, codec_params: params},
-        endpoint_id
-      ) do
+  def create_track(%AddTrack{track: track, codec_params: params}, endpoint_id) do
     track = from_proto_track(track)
     codec_params = from_proto_codec_params(params)
 
@@ -24,15 +27,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
       endpoint_id,
       :opus,
       codec_params.sample_rate,
-      %{},
+      %ExSDP.Attribute.FMTP{
+        pt: 111
+      },
       id: track.id,
-      metadata: Jason.decode!(track.metadata),
-      variants: [:high]
+      metadata: track.metadata
     )
   end
 
   @spec validate_codec_params(CodecParameters.t()) ::
-          {:ok, map()} | {:error, :invalid_codec_params}
+          {:ok, codec_parameters()} | {:error, :invalid_codec_params}
   def validate_codec_params(%CodecParameters{} = codec_parameters) do
     params = from_proto_codec_params(codec_parameters)
 
@@ -63,6 +67,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
     track
     |> Map.from_struct()
     |> Map.update!(:type, &from_proto_track_type/1)
+    |> Map.update!(:metadata, &Jason.decode!/1)
   end
 
   defp from_proto_track_encoding(:TRACK_ENCODING_OPUS), do: :opus

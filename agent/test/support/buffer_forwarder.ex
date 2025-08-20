@@ -1,5 +1,9 @@
 defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
-  @moduledoc false
+  @moduledoc """
+  A Membrane Sink, that takes a single incoming audio track,
+  and publishes all buffers to the agent endpoint,
+  mocking someone connected via webosocket.
+  """
 
   use Membrane.Sink
 

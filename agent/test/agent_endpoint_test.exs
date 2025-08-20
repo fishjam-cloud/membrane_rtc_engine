@@ -17,7 +17,6 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   alias Fishjam.AgentRequest.AddTrack.CodecParameters
   alias Fishjam.Notifications
 
-  alias Fishjam.AgentResponse
   alias Fishjam.AgentResponse.TrackData
 
   @fixtures_dir "./test/fixtures/"
@@ -77,19 +76,16 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          %AgentResponse{
-                            content:
-                              {:track_data,
-                               %TrackData{
-                                 peer_id: @agent_id,
-                                 track: %Notifications.Track{
-                                   id: ^mono_track_id,
-                                   type: :TRACK_TYPE_AUDIO,
-                                   metadata: "null"
-                                 },
-                                 data: _data
-                               }}
-                          }}
+                          {:track_data,
+                           %TrackData{
+                             peer_id: @agent_id,
+                             track: %Notifications.Track{
+                               id: ^mono_track_id,
+                               type: :TRACK_TYPE_AUDIO,
+                               metadata: "null"
+                             },
+                             data: _data
+                           }}}
                      },
                      1000
 
@@ -98,19 +94,16 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          %AgentResponse{
-                            content:
-                              {:track_data,
-                               %TrackData{
-                                 peer_id: @agent_id,
-                                 track: %Notifications.Track{
-                                   id: ^stereo_track_id,
-                                   type: :TRACK_TYPE_AUDIO,
-                                   metadata: "null"
-                                 },
-                                 data: _data
-                               }}
-                          }}
+                          {:track_data,
+                           %TrackData{
+                             peer_id: @agent_id,
+                             track: %Notifications.Track{
+                               id: ^stereo_track_id,
+                               type: :TRACK_TYPE_AUDIO,
+                               metadata: "null"
+                             },
+                             data: _data
+                           }}}
                      },
                      1000
     end
@@ -134,19 +127,16 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          %AgentResponse{
-                            content:
-                              {:track_data,
-                               %TrackData{
-                                 peer_id: @agent_id,
-                                 track: %Notifications.Track{
-                                   id: ^mono_track_id,
-                                   type: :TRACK_TYPE_AUDIO,
-                                   metadata: ^mono_metadata
-                                 },
-                                 data: _data
-                               }}
-                          }}
+                          {:track_data,
+                           %TrackData{
+                             peer_id: @agent_id,
+                             track: %Notifications.Track{
+                               id: ^mono_track_id,
+                               type: :TRACK_TYPE_AUDIO,
+                               metadata: ^mono_metadata
+                             },
+                             data: _data
+                           }}}
                      },
                      1000
     end
@@ -176,19 +166,16 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          %AgentResponse{
-                            content:
-                              {:track_data,
-                               %TrackData{
-                                 peer_id: @agent_id,
-                                 track: %Notifications.Track{
-                                   id: ^mono_track_id,
-                                   type: :TRACK_TYPE_AUDIO,
-                                   metadata: "null"
-                                 },
-                                 data: _data
-                               }}
-                          }}
+                          {:track_data,
+                           %TrackData{
+                             peer_id: @agent_id,
+                             track: %Notifications.Track{
+                               id: ^mono_track_id,
+                               type: :TRACK_TYPE_AUDIO,
+                               metadata: "null"
+                             },
+                             data: _data
+                           }}}
                      },
                      1000
 
@@ -321,6 +308,36 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                      1000
 
       assert message =~ "AddTrack request with invalid codec params"
+    end
+
+    test "Invalid track_id", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+
+      add_track = %AddTrack{
+        track: %Notifications.Track{
+          id: "defninitely-not-uuid",
+          type: :TRACK_TYPE_AUDIO,
+          metadata: ""
+        },
+        codec_params: %CodecParameters{
+          encoding: :TRACK_ENCODING_PCM16,
+          sample_rate: 24_000,
+          channels: 1
+        }
+      }
+
+      request = %AgentRequest{content: {:add_track, add_track}}
+
+      Engine.message_endpoint(engine, @agent_id, {:agent_notification, request})
+
+      assert_receive %Engine.Message.EndpointCrashed{
+                       endpoint_id: @agent_id,
+                       reason: {%RuntimeError{message: message}, _stack}
+                     },
+                     1000
+
+      assert message =~ "AddTrack request with invalid track_id"
     end
   end
 

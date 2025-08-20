@@ -2,27 +2,27 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   @moduledoc """
   An Endpoint responsible for allowing programmatic publishing and receiving tracks in a room.
 
-  Currently, the Agent Endpoint supports decoding audio track to raw 16-bit PCM
-  with 1 channel and 16kHz or 24kHz sample rate.
+  Currently, the Agent Endpoint supports:
+  * receiving audio tracks from room in raw 16-bit PCM with 1 channel and 16kHz or 24kHz sample rate
+  * publishing 1 channel audio tracks to room, in OPUS, or raw 16-bit PCM 16kHz or 24kHz sample rate
   """
 
   use Membrane.Bin
 
   require Membrane.Logger
 
+  alias Membrane.RawAudioParser
+  alias Membrane.RTP.PayloaderBin
+
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track, TrackReceiver}
-  alias __MODULE__.{TrackDataPublisher, TrackDataForwarder, TrackUtils}
+  alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track}
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
+  alias Membrane.RTC.Engine.StaticTrackSender
 
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
 
-  alias Membrane.RTP.PayloaderBin
-
-  alias Membrane.RTC.Engine.Support.StaticTrackSender
-
-  alias Membrane.RawAudioParser
+  alias __MODULE__.{TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
   @type encoding_t() :: String.t()
 
@@ -35,6 +35,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
             Endpoint.id() => %{
               format: output_format(),
               sample_rate: output_sample_rate()
+            }
+          },
+          inputs: %{
+            Track.id() => %{
+              track: Track.t(),
+              codec_parameters: TrackUtils.codec_parameters()
             }
           }
         }
@@ -134,15 +140,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   @impl true
   def handle_pad_added(Pad.ref(:output, {track_id, :high}) = pad, _ctx, state) do
-    {track, codec_params} = Map.fetch!(state.inputs, track_id)
+    %{track: track, codec_parameters: codec_params} = Map.fetch!(state.inputs, track_id)
 
-    payloader_bin = %PayloaderBin{
-      payloader: Membrane.RTP.Opus.Payloader,
-      ssrc: generate_ssrc(),
-      payload_type: track.payload_type,
-      clock_rate: track.clock_rate
-    }
-
+    payloader_bin = get_payloader(track)
     codec_specific_elements = get_codec_specific_elements(codec_params.encoding)
 
     spec =
@@ -274,17 +274,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     {[], state}
   end
 
-  defp handle_agent_request(
-         %AddTrack{track: track, codec_params: codec_params} = request,
-         ctx,
-         state
-       ) do
+  defp handle_agent_request(%AddTrack{} = request, ctx, state) do
+    %{track: track, codec_params: codec_params} = request
     {:endpoint, endpoint_id} = ctx.name
 
     with :ok <- validate_track_id(track.id, state),
          {:ok, parsed_codec_params} <- TrackUtils.validate_codec_params(codec_params) do
       new_track = TrackUtils.create_track(request, endpoint_id)
-      state = put_in(state, [:inputs, track.id], {new_track, parsed_codec_params})
+      track_info = %{track: new_track, codec_parameters: parsed_codec_params}
+
+      state = put_in(state, [:inputs, track.id], track_info)
 
       actions = [
         notify_child: {:track_data_forwarder, {:new_track, track.id, parsed_codec_params}},
@@ -303,7 +302,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
-    with {{track, _codec}, state} <- pop_in(state, [:inputs, track_id]) do
+    with {%{track: track}, state} <- pop_in(state, [:inputs, track_id]) do
       actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
 
       {actions, state}
@@ -332,6 +331,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   defp get_decoder(:opus), do: Membrane.Opus.Decoder
   defp get_decoder(_other), do: nil
 
+  defp get_payloader(track) do
+    %PayloaderBin{
+      payloader: Membrane.RTP.Opus.Payloader,
+      ssrc: generate_ssrc(),
+      payload_type: track.payload_type,
+      clock_rate: track.clock_rate
+    }
+  end
+
   defp get_codec_specific_elements(:pcm16) do
     &(child(&1, :parser, %RawAudioParser{overwrite_pts?: true})
       |> child(:encoder, Membrane.Opus.Encoder))
@@ -344,15 +352,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   defp get_track_data_msg(data, track, ctx) do
     {:endpoint, endpoint_id} = ctx.name
 
-    %AgentResponse{
-      content:
-        {:track_data,
-         %AgentResponse.TrackData{
-           peer_id: endpoint_id,
-           track: TrackUtils.to_proto_track(track),
-           data: data
-         }}
-    }
+    {:track_data,
+     %AgentResponse.TrackData{
+       peer_id: endpoint_id,
+       track: TrackUtils.to_proto_track(track),
+       data: data
+     }}
   end
 
   defp validate_track_id(track_id, %{subscriber: subscriber, inputs: inputs}) do

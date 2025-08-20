@@ -29,7 +29,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarder do
   @impl true
   def handle_parent_notification({:new_track, track_id, codec_params}, ctx, state) do
     format = get_stream_format(codec_params)
-
     pad = Pad.ref(:output, track_id)
 
     case Map.has_key?(ctx.pads, pad) do
