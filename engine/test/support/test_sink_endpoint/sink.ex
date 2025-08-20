@@ -1,4 +1,5 @@
 defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint.Sink do
+  @moduledoc false
   use Membrane.Sink
 
   def_input_pad :input,

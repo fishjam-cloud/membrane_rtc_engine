@@ -4,20 +4,28 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   import ExUnit.CaptureLog
   import Membrane.ChildrenSpec
 
+  alias Membrane.Testing
+
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Endpoint.Agent
-  alias Membrane.RTC.Engine.Endpoint.File
-  alias Membrane.RTC.Engine.Support.{TestSinkEndpoint, FakeSourceEndpoint}
+  alias Membrane.RTC.Engine.Endpoint.{Agent, File}
+  alias Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder
+  alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, TestSinkEndpoint}
   alias Membrane.RTC.Engine.Track
 
-  alias Membrane.Testing
-  alias Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder
+  alias Fishjam.AgentRequest
+  alias Fishjam.AgentRequest.AddTrack
+  alias Fishjam.AgentRequest.AddTrack.CodecParameters
+  alias Fishjam.Notifications
+
+  alias Fishjam.AgentResponse
+  alias Fishjam.AgentResponse.TrackData
 
   @fixtures_dir "./test/fixtures/"
   @opus_mono_path Path.join(@fixtures_dir, "mono.ogg")
   @opus_stereo_path Path.join(@fixtures_dir, "stereo.ogg")
   @raw_audio_file Path.join(@fixtures_dir, "pcm_mono_16k.raw")
   @raw_audio_sample_rate 16_000
+  @opus_sample_rate 48_000
 
   @agent_id "agent"
   @input_track_id "34a75983-7c45-49db-9e6a-3d776ec3a39d"
@@ -45,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
         Agent.subscribe(engine, "agent", :mono_sender, format: :pcm16, sample_rate: 16_000)
 
       :ok =
-        Agent.subscribe(engine, "agent", :stereo_sender,
+        Agent.subscribe(engine, @agent_id, :stereo_sender,
           format: :pcm16,
           sample_rate: 24_000
         )
@@ -53,14 +61,14 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: :mono_sender,
                        track_id: mono_track_id,
-                       track_metadata: mono_metadata
+                       track_metadata: nil
                      },
                      1000
 
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: :stereo_sender,
                        track_id: stereo_track_id,
-                       track_metadata: stereo_metadata
+                       track_metadata: nil
                      },
                      1000
 
@@ -68,8 +76,20 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_id: @agent_id,
                        endpoint_type: Agent,
                        message:
-                         {:track_data, :mono_sender, ^mono_track_id, :audio, ^mono_metadata,
-                          _data}
+                         {:track_data,
+                          %AgentResponse{
+                            content:
+                              {:track_data,
+                               %TrackData{
+                                 peer_id: @agent_id,
+                                 track: %Notifications.Track{
+                                   id: ^mono_track_id,
+                                   type: :TRACK_TYPE_AUDIO,
+                                   metadata: "null"
+                                 },
+                                 data: _data
+                               }}
+                          }}
                      },
                      1000
 
@@ -77,8 +97,20 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_id: @agent_id,
                        endpoint_type: Agent,
                        message:
-                         {:track_data, :stereo_sender, ^stereo_track_id, :audio, ^stereo_metadata,
-                          _data}
+                         {:track_data,
+                          %AgentResponse{
+                            content:
+                              {:track_data,
+                               %TrackData{
+                                 peer_id: @agent_id,
+                                 track: %Notifications.Track{
+                                   id: ^stereo_track_id,
+                                   type: :TRACK_TYPE_AUDIO,
+                                   metadata: "null"
+                                 },
+                                 data: _data
+                               }}
+                          }}
                      },
                      1000
     end
@@ -101,8 +133,20 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_id: @agent_id,
                        endpoint_type: Agent,
                        message:
-                         {:track_data, :mono_sender, ^mono_track_id, :audio, ^mono_metadata,
-                          _data}
+                         {:track_data,
+                          %AgentResponse{
+                            content:
+                              {:track_data,
+                               %TrackData{
+                                 peer_id: @agent_id,
+                                 track: %Notifications.Track{
+                                   id: ^mono_track_id,
+                                   type: :TRACK_TYPE_AUDIO,
+                                   metadata: ^mono_metadata
+                                 },
+                                 data: _data
+                               }}
+                          }}
                      },
                      1000
     end
@@ -123,7 +167,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: :mono_sender,
                        track_id: mono_track_id,
-                       track_metadata: mono_metadata
+                       track_metadata: nil
                      },
                      1000
 
@@ -131,8 +175,20 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_id: @agent_id,
                        endpoint_type: Agent,
                        message:
-                         {:track_data, :mono_sender, ^mono_track_id, :audio, ^mono_metadata,
-                          _data}
+                         {:track_data,
+                          %AgentResponse{
+                            content:
+                              {:track_data,
+                               %TrackData{
+                                 peer_id: @agent_id,
+                                 track: %Notifications.Track{
+                                   id: ^mono_track_id,
+                                   type: :TRACK_TYPE_AUDIO,
+                                   metadata: "null"
+                                 },
+                                 data: _data
+                               }}
+                          }}
                      },
                      1000
 
@@ -165,27 +221,106 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   end
 
   describe "Forwarding track data" do
-    test "Publishes added track to other endpoints", %{rtc_engine: engine} do
+    test "Creates correct engine track ", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
-      sink1 = create_sink_endpoint(:sink1, engine)
-      sink2 = create_sink_endpoint(:sink2, engine)
 
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
-      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
-      :ok = Engine.add_endpoint(engine, sink2, id: :sink2)
 
       start_raw_audio_pipeline(engine)
 
       assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id,
+        track_metadata: %{"name" => "It's a track", "source" => "macbook camera"},
+        track_type: :audio,
+        track_encoding: :opus
+      }
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
+    test "Publishes pcm16 track to other endpoints", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      sink1 = create_sink_endpoint("sink1", engine)
+      sink2 = create_sink_endpoint("sink2", engine)
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
+      :ok = Engine.add_endpoint(engine, sink2, id: "sink2")
+
+      start_raw_audio_pipeline(engine)
+
+      assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      assert count_sink_buffers("sink1") > 50
+      assert count_sink_buffers("sink2") > 50
+
+      assert_receive %Engine.Message.TrackRemoved{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
+    test "Publishes opus track to other endpoints", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      sink1 = create_sink_endpoint("sink1", engine)
+      sink2 = create_sink_endpoint("sink2", engine)
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
+      :ok = Engine.add_endpoint(engine, sink2, id: "sink2")
+
+      start_opus_audio_pipeline(engine)
+
+      assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      assert count_sink_buffers("sink1") > 50
+      assert count_sink_buffers("sink2") > 50
+
+      assert_receive %Engine.Message.TrackRemoved{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
+    test "Invalid codec params", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+
+      add_track = %AddTrack{
+        track: %Notifications.Track{
+          id: @input_track_id,
+          type: :TRACK_TYPE_AUDIO,
+          metadata: ""
+        },
+        codec_params: %CodecParameters{
+          encoding: :TRACK_ENCODING_PCM16,
+          sample_rate: 2137,
+          channels: 1
+        }
+      }
+
+      request = %AgentRequest{content: {:add_track, add_track}}
+
+      Engine.message_endpoint(engine, @agent_id, {:agent_notification, request})
+
+      assert_receive %Engine.Message.EndpointCrashed{
                        endpoint_id: @agent_id,
-                       track_id: @input_track_id
+                       reason: {%RuntimeError{message: message}, _stack}
                      },
                      1000
 
-      assert count_sink_buffers(:sink1) > 50
-      assert count_sink_buffers(:sink2) > 50
-
-      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+      assert message =~ "AddTrack request with invalid codec params"
     end
   end
 
@@ -241,6 +376,23 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
         |> child(:buffer_forwarder, %BufferForwarder{
           rtc_engine: engine,
           sample_rate: @raw_audio_sample_rate,
+          encoding: :pcm16,
+          track_id: @input_track_id
+        })
+      ]
+    )
+  end
+
+  defp start_opus_audio_pipeline(engine) do
+    Testing.Pipeline.start_link_supervised!(
+      spec: [
+        child(:file_source, %Membrane.File.Source{location: @opus_mono_path})
+        |> child(:ogg_demuxer, Membrane.Ogg.Demuxer)
+        |> child(:opus_parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
+        |> child(:buffer_forwarder, %BufferForwarder{
+          rtc_engine: engine,
+          sample_rate: @opus_sample_rate,
+          encoding: :opus,
           track_id: @input_track_id
         })
       ]

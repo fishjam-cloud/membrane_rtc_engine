@@ -17,9 +17,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
-  alias Fishjam.Notifications
 
-  # alias Membrane.RTP
   alias Membrane.RTP.PayloaderBin
 
   alias Membrane.RTC.Engine.Support.StaticTrackSender
@@ -145,19 +143,18 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       clock_rate: track.clock_rate
     }
 
-    encoder_fun = get_encoder_for(codec_params.encoding)
+    codec_specific_elements = get_codec_specific_elements(codec_params.encoding)
 
     spec =
-      get_child(:track_data_forwarder)
-      |> via_out(Pad.ref(:output, track_id))
-      |> child(:parser, %RawAudioParser{overwrite_pts?: true})
-      |> encoder_fun.()
-      |> child(:payloader, payloader_bin)
-      |> child(:track_sender, %StaticTrackSender{
-        track: track,
-        is_keyframe: fn _buf, _end -> true end
-      })
-      |> bin_output(pad)
+      {get_child(:track_data_forwarder)
+       |> via_out(Pad.ref(:output, track_id))
+       |> codec_specific_elements.()
+       |> child(:payloader, payloader_bin)
+       |> child(:track_sender, %StaticTrackSender{
+         track: track,
+         is_keyframe: fn _buf, _end -> true end
+       })
+       |> bin_output(pad), group: {:forwarding_group, track_id}}
 
     {[spec: spec], state}
   end
@@ -168,10 +165,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   @impl true
+  def handle_pad_removed(Pad.ref(:output, {track_id, :high}), _ctx, state) do
+    {[remove_children: {:forwarding_group, track_id}], state}
+  end
+
+  @impl true
   def handle_child_notification(
         {:track_data, track_id, data},
         :track_data_publisher,
-        _ctx,
+        ctx,
         %{subscriber: subscriber} = state
       ) do
     case Subscriber.get_track(subscriber, track_id) do
@@ -181,10 +183,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         )
 
       track ->
+        track_data = get_track_data_msg(data, track, ctx)
+
         {[
-           notify_parent:
-             {:forward_to_parent,
-              {:track_data, track.origin, track_id, track.type, track.metadata, data}}
+           notify_parent: {:forward_to_parent, {:track_data, track_data}}
          ], state}
     end
   end
@@ -279,27 +281,30 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
        ) do
     {:endpoint, endpoint_id} = ctx.name
 
-    with :ok <- validate_track_id(track.id, state) do
+    with :ok <- validate_track_id(track.id, state),
+         {:ok, parsed_codec_params} <- TrackUtils.validate_codec_params(codec_params) do
       new_track = TrackUtils.create_track(request, endpoint_id)
-      parsed_codec_params = TrackUtils.from_proto_codec_params(codec_params)
       state = put_in(state, [:inputs, track.id], {new_track, parsed_codec_params})
 
       actions = [
-        notify_child: {:track_data_forwarder, {:new_track, track.id, codec_params}},
+        notify_child: {:track_data_forwarder, {:new_track, track.id, parsed_codec_params}},
         notify_parent: {:publish, {:new_tracks, [new_track]}},
         notify_parent: {:track_ready, new_track.id, :high, :opus}
       ]
 
       {actions, state}
     else
-      _error ->
+      {:error, :invalid_track_id} ->
         raise("AddTrack request with invalid track_id #{inspect(track.id)}")
+
+      {:error, :invalid_codec_params} ->
+        raise("AddTrack request with invalid codec params #{inspect(codec_params)}")
     end
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
-    with {%Notifications.Track{}, state} <- pop_in(state, [:inputs, track_id]) do
-      actions = [notify_parent: {:publish, {:removed_tracks, [track_id]}}]
+    with {{track, _codec}, state} <- pop_in(state, [:inputs, track_id]) do
+      actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
 
       {actions, state}
     else
@@ -327,8 +332,28 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   defp get_decoder(:opus), do: Membrane.Opus.Decoder
   defp get_decoder(_other), do: nil
 
-  defp get_encoder_for(:s16le), do: &child(&1, :encoder, Membrane.Opus.Encoder)
-  defp get_encoder_for(:opus), do: & &1
+  defp get_codec_specific_elements(:pcm16) do
+    &(child(&1, :parser, %RawAudioParser{overwrite_pts?: true})
+      |> child(:encoder, Membrane.Opus.Encoder))
+  end
+
+  defp get_codec_specific_elements(:opus) do
+    &child(&1, :opus_parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
+  end
+
+  defp get_track_data_msg(data, track, ctx) do
+    {:endpoint, endpoint_id} = ctx.name
+
+    %AgentResponse{
+      content:
+        {:track_data,
+         %AgentResponse.TrackData{
+           peer_id: endpoint_id,
+           track: TrackUtils.to_proto_track(track),
+           data: data
+         }}
+    }
+  end
 
   defp validate_track_id(track_id, %{subscriber: subscriber, inputs: inputs}) do
     with {:ok, uuid} <- UUID.info(track_id),

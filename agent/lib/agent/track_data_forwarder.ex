@@ -2,7 +2,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarder do
   @moduledoc false
   use Membrane.Source
 
-  alias Membrane.RawAudio
+  alias Membrane.{Opus, RawAudio}
 
   def_output_pad :output,
     accepted_format: _any,
@@ -28,7 +28,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarder do
 
   @impl true
   def handle_parent_notification({:new_track, track_id, codec_params}, ctx, state) do
-    format = %RawAudio{channels: 1, sample_rate: codec_params.sample_rate, sample_format: :s16le}
+    format = get_stream_format(codec_params)
 
     pad = Pad.ref(:output, track_id)
 
@@ -49,5 +49,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarder do
       nil ->
         {[], state}
     end
+  end
+
+  defp get_stream_format(%{encoding: :pcm16, sample_rate: sample_rate}) do
+    %RawAudio{channels: 1, sample_rate: sample_rate, sample_format: :s16le}
+  end
+
+  defp get_stream_format(%{encoding: :opus}) do
+    %Opus{channels: 1, self_delimiting?: false}
   end
 end

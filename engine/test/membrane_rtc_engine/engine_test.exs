@@ -8,7 +8,7 @@ defmodule Membrane.RTC.EngineTest do
   alias Membrane.RTC.Engine.{Endpoint, Message, Track}
   alias Membrane.RTC.Engine.Message.{EndpointAdded, EndpointRemoved}
 
-  alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, TestSinkEndpoint, TestEndpoint}
+  alias Membrane.RTC.Engine.Support.{FakeSourceEndpoint, TestEndpoint, TestSinkEndpoint}
 
   @crash_endpoint_id "crash-endpoint"
   @track_endpoint_id "track-endpoint"

@@ -5,10 +5,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
 
   alias Membrane.RTC.Engine
 
-  alias Fishjam.Notifications.Track
   alias Fishjam.AgentRequest
-  alias Fishjam.AgentRequest.{AddTrack, TrackData}
+  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
   alias Fishjam.AgentRequest.AddTrack.CodecParameters
+  alias Fishjam.Notifications.Track
 
   @agent_id "agent"
 
@@ -20,6 +20,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
               ],
               sample_rate: [
                 spec: non_neg_integer()
+              ],
+              encoding: [
+                spec: [:opus | :pcm16]
               ]
 
   def_input_pad :input,
@@ -31,8 +34,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
   @sample_interval 1
 
   @impl true
-  def handle_init(_ctx, options) do
-    {[], Map.from_struct(options)}
+  def handle_init(_ctx, opts) do
+    state = opts |> Map.from_struct() |> Map.put(:eos?, false)
+    {[], state}
   end
 
   @impl true
@@ -40,11 +44,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
     track = %Track{
       id: state.track_id,
       type: :TRACK_TYPE_AUDIO,
-      metadata: "It's a track!"
+      metadata: Jason.encode!(%{name: "It's a track", source: "macbook camera"})
     }
 
     params = %CodecParameters{
-      encoding: :TRACK_ENCODING_PCM16,
+      encoding: to_proto_encoding(state.encoding),
       sample_rate: state.sample_rate,
       channels: 1
     }
@@ -54,7 +58,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
       codec_params: params
     }
 
-    message_agent(:add_track, add_track, state)
+    message_agent(:add_track, add_track, state.rtc_engine)
 
     Process.send_after(self(), :demand, @sample_interval)
 
@@ -69,9 +73,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
         track_id: state.track_id,
         data: buffer.payload
       },
-      state
+      state.rtc_engine
     )
 
+    {[], state}
+  end
+
+  @impl true
+  def handle_info(:demand, _ctx, %{eos?: true} = state) do
     {[], state}
   end
 
@@ -82,11 +91,21 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Test.BufferForwarder do
     {[demand: {:input, 1}], state}
   end
 
-  defp message_agent(name, message, state) do
+  @impl true
+  def handle_end_of_stream(_pad, _ctx, state) do
+    message_agent(:remove_track, %RemoveTrack{track_id: state.track_id}, state.rtc_engine)
+
+    {[], %{state | eos?: true}}
+  end
+
+  defp message_agent(event_name, message, engine) do
     request = %AgentRequest{
-      content: {name, message}
+      content: {event_name, message}
     }
 
-    Engine.message_endpoint(state.rtc_engine, @agent_id, {:agent_notification, request})
+    Engine.message_endpoint(engine, @agent_id, {:agent_notification, request})
   end
+
+  defp to_proto_encoding(:pcm16), do: :TRACK_ENCODING_PCM16
+  defp to_proto_encoding(:opus), do: :TRACK_ENCODING_OPUS
 end

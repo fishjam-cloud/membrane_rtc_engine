@@ -108,7 +108,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarderTest do
   end
 
   defp add_track(pipeline, track_id) do
-    codec_params = %{sample_rate: 24_000}
+    codec_params = %{encoding: :pcm16, sample_rate: 24_000}
     Testing.Pipeline.notify_child(pipeline, :forwarder, {:new_track, track_id, codec_params})
   end
 end
