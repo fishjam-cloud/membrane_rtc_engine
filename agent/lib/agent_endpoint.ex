@@ -285,8 +285,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     {:endpoint, endpoint_id} = ctx.name
 
     with :ok <- validate_track_id(track.id, state),
-         {:ok, parsed_codec_params} <- TrackUtils.validate_codec_params(codec_params) do
-      new_track = TrackUtils.create_track(request, endpoint_id)
+         {:ok, new_track, parsed_codec_params} <- TrackUtils.create_track(request, endpoint_id) do
       track_info = %{track: new_track, codec_parameters: parsed_codec_params}
 
       state = put_in(state, [:inputs, track.id], track_info)
@@ -301,6 +300,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     else
       {:error, :invalid_track_id} ->
         raise("AddTrack request with invalid track_id #{inspect(track.id)}")
+
+      {:error, :invalid_track_type} ->
+        raise("AddTrack request with invalid track type - only audio tracks are supported")
 
       {:error, :invalid_codec_params} ->
         raise("AddTrack request with invalid codec params #{inspect(codec_params)}")

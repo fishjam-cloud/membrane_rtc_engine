@@ -12,28 +12,35 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
 
   @pcm_sample_rates [16_000, 24_000]
 
-  @spec create_track(AddTrack.t(), Endpoint.id()) :: Track.t()
+  @spec create_track(AddTrack.t(), Endpoint.id()) ::
+          {:ok, Track.t(), Agent.codec_parameters()} | {:error, :reason}
   def create_track(%AddTrack{track: track, codec_params: params}, endpoint_id) do
     track = from_proto_track(track)
-    codec_params = from_proto_codec_params(params)
 
-    Track.new(
-      track.type,
-      Track.stream_id(),
-      endpoint_id,
-      :opus,
-      codec_params.sample_rate,
-      %ExSDP.Attribute.FMTP{
-        pt: 111
-      },
-      id: track.id,
-      metadata: track.metadata
-    )
+    with :audio <- track.type,
+         {:ok, codec_params} <- validate_codec_params(params) do
+      track =
+        Track.new(
+          track.type,
+          Track.stream_id(),
+          endpoint_id,
+          :opus,
+          codec_params.sample_rate,
+          %ExSDP.Attribute.FMTP{
+            pt: 111
+          },
+          id: track.id,
+          metadata: track.metadata
+        )
+
+      {:ok, track, codec_params}
+    else
+      :video -> {:error, :invalid_track_type}
+      error -> error
+    end
   end
 
-  @spec validate_codec_params(CodecParameters.t()) ::
-          {:ok, Agent.codec_parameters()} | {:error, :invalid_codec_params}
-  def validate_codec_params(%CodecParameters{} = codec_parameters) do
+  defp validate_codec_params(%CodecParameters{} = codec_parameters) do
     params = from_proto_codec_params(codec_parameters)
 
     cond do
@@ -49,7 +56,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
     %Notifications.Track{
       id: track.id,
       type: to_proto_track_type(track.type),
-      metadata: Jason.encode!(track.metadata)
+      metadata: encode_metadata(track.metadata)
     }
   end
 
@@ -63,7 +70,21 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
     track
     |> Map.from_struct()
     |> Map.update!(:type, &from_proto_track_type/1)
-    |> Map.update!(:metadata, &Jason.decode!/1)
+    |> Map.update!(:metadata, &decode_metadata/1)
+  end
+
+  defp decode_metadata(metadata) do
+    case Jason.decode(metadata) do
+      {:ok, data} -> data
+      {:error, _reason} -> metadata
+    end
+  end
+
+  defp encode_metadata(metadata) do
+    case Jason.encode(metadata) do
+      {:ok, data} -> data
+      {:error, _reason} -> metadata
+    end
   end
 
   defp from_proto_track_encoding(:TRACK_ENCODING_OPUS), do: :opus
