@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Support.StaticTrackSender do
+defmodule Membrane.RTC.Engine.StaticTrackSender do
   @moduledoc """
   This is a very simple version of
   `Membrane.RTC.Engine.Endpoint.WebRTC.TrackSender` element.

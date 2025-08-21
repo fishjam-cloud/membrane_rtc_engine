@@ -9,23 +9,21 @@ defmodule Membrane.RTC.Engine.Support.FakeSourceEndpoint do
   require Membrane.Logger
 
   alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.Support.{StaticTrackSender, TestSource}
+  alias Membrane.RTC.Engine.StaticTrackSender
+  alias Membrane.RTC.Engine.Support.TestSource
 
-  def_options(
-    rtc_engine: [
-      spec: pid(),
-      description: "Pid of parent Engine"
-    ],
-    track: [
-      spec: Engine.Track.t(),
-      description: "Track to publish"
-    ]
-  )
+  def_options rtc_engine: [
+                spec: pid(),
+                description: "Pid of parent Engine"
+              ],
+              track: [
+                spec: Engine.Track.t(),
+                description: "Track to publish"
+              ]
 
-  def_output_pad(:output,
+  def_output_pad :output,
     accepted_format: _any,
     availability: :on_request
-  )
 
   @impl true
   def handle_init(_ctx, opts) do
