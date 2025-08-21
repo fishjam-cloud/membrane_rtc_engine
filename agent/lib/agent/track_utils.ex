@@ -89,11 +89,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
 
   defp from_proto_track_encoding(:TRACK_ENCODING_OPUS), do: :opus
   defp from_proto_track_encoding(:TRACK_ENCODING_PCM16), do: :pcm16
-  defp from_proto_track_encoding(_encoding), do: nil
+  defp from_proto_track_encoding(:TRACK_ENCODING_UNSPECIFIED), do: :pcm16
 
   defp from_proto_track_type(:TRACK_TYPE_VIDEO), do: :video
   defp from_proto_track_type(:TRACK_TYPE_AUDIO), do: :audio
-  defp from_proto_track_type(_type), do: nil
+  defp from_proto_track_type(:TRACK_TYPE_UNSPECIFIED), do: :audio
 
   defp to_proto_track_type(:video), do: :TRACK_TYPE_VIDEO
   defp to_proto_track_type(:audio), do: :TRACK_TYPE_AUDIO
