@@ -314,6 +314,31 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       refute_receive %Engine.Message.EndpointCrashed{}, 1000
     end
 
+    test "Publishes opus 2-channel track", %{rtc_engine: engine} do
+      # TODO: this test passes, although 2-channel opus is not supported yet
+      agent_endpoint = create_agent_endpoint(engine)
+      sink1 = create_sink_endpoint("sink1", engine)
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
+
+      start_opus_audio_pipeline(engine, @opus_stereo_path)
+
+      assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      assert count_sink_buffers("sink1") > 50
+
+      assert_receive %Engine.Message.TrackRemoved{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
     test "Invalid codec params", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)

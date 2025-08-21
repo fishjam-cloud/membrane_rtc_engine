@@ -46,7 +46,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
           inputs: %{
             Track.id() => %{
               track: Track.t(),
-              codec_parameters: TrackUtils.codec_parameters()
+              codec_parameters: codec_parameters()
             }
           }
         }

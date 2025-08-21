@@ -13,7 +13,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackUtils do
   @pcm_sample_rates [16_000, 24_000]
 
   @spec create_track(AddTrack.t(), Endpoint.id()) ::
-          {:ok, Track.t(), Agent.codec_parameters()} | {:error, :reason}
+          {:ok, Track.t(), Agent.codec_parameters()} | {:error, atom()}
   def create_track(%AddTrack{track: track, codec_params: params}, endpoint_id) do
     track = from_proto_track(track)
 
