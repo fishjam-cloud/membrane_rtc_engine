@@ -192,7 +192,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         track_data = get_track_data_msg(data, track, ctx)
 
         {[
-           notify_parent: {:forward_to_parent, {:track_data, track_data}}
+           notify_parent: {:forward_to_parent, track_data}
          ], state}
     end
   end

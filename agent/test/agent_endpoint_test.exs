@@ -75,7 +75,6 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_id: @agent_id,
                        endpoint_type: Agent,
                        message:
-                         {:track_data,
                           {:track_data,
                            %TrackData{
                              peer_id: @agent_id,
@@ -85,7 +84,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                                metadata: "null"
                              },
                              data: _data
-                           }}}
+                           }}
                      },
                      1000
 
@@ -94,16 +93,15 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          {:track_data,
-                           %TrackData{
-                             peer_id: @agent_id,
-                             track: %Notifications.Track{
-                               id: ^stereo_track_id,
-                               type: :TRACK_TYPE_AUDIO,
-                               metadata: "null"
-                             },
-                             data: _data
-                           }}}
+                          %TrackData{
+                            peer_id: @agent_id,
+                            track: %Notifications.Track{
+                              id: ^stereo_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: _data
+                          }}
                      },
                      1000
     end
@@ -127,16 +125,15 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          {:track_data,
-                           %TrackData{
-                             peer_id: @agent_id,
-                             track: %Notifications.Track{
-                               id: ^mono_track_id,
-                               type: :TRACK_TYPE_AUDIO,
-                               metadata: ^mono_metadata
-                             },
-                             data: _data
-                           }}}
+                          %TrackData{
+                            peer_id: @agent_id,
+                            track: %Notifications.Track{
+                              id: ^mono_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: ^mono_metadata
+                            },
+                            data: _data
+                          }}
                      },
                      1000
     end
@@ -166,16 +163,15 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
                        endpoint_type: Agent,
                        message:
                          {:track_data,
-                          {:track_data,
-                           %TrackData{
-                             peer_id: @agent_id,
-                             track: %Notifications.Track{
-                               id: ^mono_track_id,
-                               type: :TRACK_TYPE_AUDIO,
-                               metadata: "null"
-                             },
-                             data: _data
-                           }}}
+                          %TrackData{
+                            peer_id: @agent_id,
+                            track: %Notifications.Track{
+                              id: ^mono_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: _data
+                          }}
                      },
                      1000
 
