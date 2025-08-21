@@ -179,7 +179,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   def handle_child_notification(
         {:track_data, track_id, data},
         :track_data_publisher,
-        ctx,
+        _ctx,
         %{subscriber: subscriber} = state
       ) do
     case Subscriber.get_track(subscriber, track_id) do
@@ -189,7 +189,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         )
 
       track ->
-        track_data = get_track_data_msg(data, track, ctx)
+        track_data = get_track_data_msg(data, track)
 
         {[
            notify_parent: {:forward_to_parent, track_data}
@@ -357,12 +357,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     &child(&1, :opus_parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
   end
 
-  defp get_track_data_msg(data, track, ctx) do
-    {:endpoint, endpoint_id} = ctx.name
-
+  defp get_track_data_msg(data, track) do
     {:track_data,
      %AgentResponse.TrackData{
-       peer_id: endpoint_id,
+       peer_id: track.origin,
        track: TrackUtils.to_proto_track(track),
        data: data
      }}
