@@ -1,6 +1,6 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @moduledoc """
-  An Endpoint responsible for communicatiing with WebRTC client.
+  An Endpoint responsible for communicating with WebRTC client.
   """
   use Membrane.Bin
 
@@ -56,6 +56,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: [Engine.Endpoint.id()],
                 default: [],
                 description: "List of endpoint IDs to ignore"
+              ],
+              subscribe_mode: [
+                spec: :auto | :manual,
+                default: :auto,
+                description: "Subscription mode"
               ]
 
   def_input_pad :input,
@@ -104,6 +109,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         track_id_to_bitrates: %{},
         negotiation?: false,
         queued_negotiation?: false,
+        subscribe_mode: opts.subscribe_mode,
+        known_tracks: %{},
+        subscribed_tracks: MapSet.new(),
+        subscribed_endpoints: MapSet.new(),
         removed_tracks: %{audio: 0, video: 0},
         event_serializer: get_event_serializer(opts.event_serialization)
       })
@@ -164,6 +173,56 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_pad_removed(Pad.ref(:output, {_track_id, _variant}), _ctx, state) do
+    {[], state}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe, endpoint, nil},
+        ctx,
+        %{subscribe_mode: :manual} = state
+      ) do
+    tracks_to_add =
+      state.known_tracks
+      |> Enum.filter(fn {_id, t} -> t.engine_track.origin == endpoint end)
+      |> Enum.map(fn {_id, t} -> t.engine_track end)
+
+    state = %{state | subscribed_endpoints: MapSet.put(state.subscribed_endpoints, endpoint)}
+
+    handle_parent_notification({:new_tracks, tracks_to_add}, ctx, state)
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe, endpoint, tracks},
+        ctx,
+        %{subscribe_mode: :manual} = state
+      ) do
+    subscribed_tracks =
+      tracks
+      |> Enum.filter(fn t -> Map.has_key?(state.known_tracks, t) end)
+
+    tracks_to_add = Enum.map(subscribed_tracks, &state.known_tracks[&1].engine_track)
+
+    state = %{
+      state
+      | subscribed_tracks: MapSet.union(state.subscribed_tracks, MapSet.new(subscribed_tracks))
+    }
+
+    handle_parent_notification({:new_tracks, tracks_to_add}, ctx, state)
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe, _endpoint, _tracks},
+        _ctx,
+        %{subscribe_mode: :auto} = state
+      ) do
+    Membrane.Logger.warning("""
+    Unexpected usage of method.
+    If you want to add tracks manually set `:subscribe_mode` option to `:manual`.
+    """)
+
     {[], state}
   end
 
@@ -281,10 +340,24 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> Enum.reject(&should_ignore?(&1, state))
       |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
-    outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
+    filtered_new_tracks =
+      case state.subscribe_mode do
+        :auto ->
+          new_tracks
 
-    tracks_added = get_new_tracks_actions(new_tracks, state)
-    {tracks_added, %{state | outbound_tracks: outbound_tracks}}
+        :manual ->
+          new_tracks
+          |> Enum.filter(fn {_it, t} ->
+            MapSet.member?(state.subscribed_tracks, t.engine_track.id)
+          end)
+          |> Map.new()
+      end
+
+    known_tracks = Map.merge(state.known_tracks, new_tracks)
+    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
+
+    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
+    {tracks_added, %{state | known_tracks: known_tracks, outbound_tracks: outbound_tracks}}
   end
 
   @impl true
@@ -296,15 +369,32 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
       |> Enum.reject(&should_ignore?(&1, state))
       |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
 
-    new_tracks =
+    subscribed_tracks =
+      case state.subscribe_mode do
+        :auto ->
+          new_tracks
+
+        :manual ->
+          new_tracks
+          |> Enum.filter(fn {id, t} ->
+            MapSet.member?(state.subscribed_endpoints, t.engine_track.origin) or
+              MapSet.member?(state.subscribed_tracks, id)
+          end)
+          |> Map.new()
+      end
+
+    filtered_new_tracks =
       state.outbound_tracks
       |> Map.filter(fn {_id, track} -> track.status == :pending end)
-      |> Map.merge(new_tracks)
+      |> Map.merge(subscribed_tracks)
       |> Map.new(fn {id, track} -> {id, %{track | status: :negotiating}} end)
 
-    state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
+    known_tracks = Map.merge(state.known_tracks, new_tracks)
+    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
 
-    tracks_added = get_new_tracks_actions(new_tracks, state)
+    state = %{state | known_tracks: known_tracks, outbound_tracks: outbound_tracks}
+
+    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
 
     case tracks_added do
       [] ->
@@ -321,7 +411,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     tracks = Enum.reject(tracks, &should_ignore?(&1, state))
     track_ids = Enum.map(tracks, & &1.id)
 
-    state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
+    state =
+      state
+      |> update_in([:outbound_tracks], &Map.drop(&1, track_ids))
+      |> update_in([:known_tracks], &Map.drop(&1, track_ids))
+      |> update_in([:subscribed_tracks], &MapSet.difference(&1, MapSet.new(track_ids)))
 
     audio_removed_tracks = state.removed_tracks.audio + Enum.count(tracks, &(&1.type == :audio))
     video_removed_tracks = state.removed_tracks.video + Enum.count(tracks, &(&1.type == :video))

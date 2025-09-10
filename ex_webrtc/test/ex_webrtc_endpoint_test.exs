@@ -29,30 +29,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
   @connect_event {:connect, %Connect{metadata_json: Jason.encode!("")}}
   @renegotiate_tracks_event {:renegotiate_tracks, %RenegotiateTracks{}}
   @ignored_endpoint_id "ignored_id"
+  @fake_endpoint_id "fake_endpoint_id"
 
   setup do
-    {:ok, pid} = Engine.start_link([], [])
-
-    Engine.register(pid, self())
-
-    endpoint = %Endpoint.ExWebRTC{
-      rtc_engine: pid,
-      event_serialization: :protobuf,
-      ignored_endpoints: [@ignored_endpoint_id]
-    }
-
-    Engine.add_endpoint(pid, endpoint, id: @endpoint_id)
-
-    :erlang.trace(:all, true, [:call])
-
-    :erlang.trace_pattern({Engine, :handle_endpoint_notification, 4}, true, [:local])
-
-    :erlang.trace_pattern({Endpoint.ExWebRTC, :handle_child_playing, 3}, true, [:local])
-    :erlang.trace_pattern({Endpoint.ExWebRTC, :handle_media_event, 4}, true, [:local])
-
-    on_exit(fn -> Engine.terminate(pid) end)
-
-    [rtc_engine: pid]
+    setup_with_subscribe_mode(:auto)
   end
 
   describe "media events:" do
@@ -118,7 +98,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
 
       track =
-        Track.new(:video, Track.stream_id(), "fake_endpoint_id", :H264, 90_000, nil,
+        Track.new(:video, Track.stream_id(), @fake_endpoint_id, :H264, 90_000, nil,
           id: UUID.uuid4()
         )
 
@@ -203,106 +183,234 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
 
       refute_receive %Message.EndpointMessage{message: {:media_event, _any}}
     end
+  end
 
-    defp received_track_removed?() do
-      case receive_media_event() do
-        {:tracks_removed, %Server.MediaEvent.TracksRemoved{}} -> true
-        {:candidate, %Fishjam.MediaEvents.Candidate{}} -> received_track_removed?()
-        _media_event -> false
-      end
+  describe("selective subscription") do
+    setup do
+      setup_with_subscribe_mode(:manual)
     end
 
-    # Creates `ExWebRTC.PeerConnection` with one video track and connects it to the `Endpoint.ExWebRTC`
-    defp connect_peer(rtc_engine) do
+    @tag :debug
+    test "succesfully receive trackadded after subscription", %{rtc_engine: rtc_engine} do
+      # global Endpoint added
+      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
+      # local manual Endpoint added
+      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
       send_media_event(rtc_engine, @connect_event)
       assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
 
-      send_media_event(rtc_engine, @renegotiate_tracks_event)
-      assert {:offer_data, %Server.MediaEvent.OfferData{}} = receive_media_event()
+      track =
+        Track.new(:video, Track.stream_id(), @fake_endpoint_id, :H264, 90_000, nil,
+          variants: [:low, :high]
+        )
 
-      {pc, offer} = spawn_peer_connection()
+      track_id = track.id
 
-      offer_event = sdp_offer_event(pc, offer)
-      send_media_event(rtc_engine, offer_event)
+      fake_endpoint = %FakeSourceEndpoint{
+        rtc_engine: rtc_engine,
+        track: track
+      }
 
-      assert {:sdp_answer, %Server.MediaEvent.SdpAnswer{sdp: answer}} = receive_media_event()
+      :ok = Engine.add_endpoint(rtc_engine, fake_endpoint, id: @fake_endpoint_id)
 
-      PeerConnection.set_remote_description(pc, %SessionDescription{type: :answer, sdp: answer})
+      assert_receive %Message.EndpointAdded{endpoint_id: @fake_endpoint_id}, 500
 
-      assert_receive {:ex_webrtc, ^pc, {:connection_state_change, :connected}}, 500
+      assert {:endpoint_added,
+              %Fishjam.MediaEvents.Server.MediaEvent.EndpointAdded{endpoint_id: @fake_endpoint_id}} =
+               receive_media_event()
 
-      # For `Endpoint.ExWebRTC` to mark track as ready it has to receive at least one rtp packet
-      PeerConnection.send_rtp(pc, track_id(pc), ExRTP.Packet.new(<<1, 2, 3>>))
+      :ok = Engine.message_endpoint(rtc_engine, @fake_endpoint_id, :start)
 
-      assert_receive {:trace, _pid, :call,
-                      {Engine, :handle_endpoint_notification, [{:track_ready, _, _, _}, _, _, _]}},
-                     500
+      # TrackAdded Message from Engine when FakeSourceEndpoint publishes tracks
+      assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
 
-      pc
+      :ok =
+        Engine.message_endpoint(
+          rtc_engine,
+          @endpoint_id,
+          {:subscribe, @fake_endpoint_id, [track_id]}
+        )
+
+      # TracksAdded MediaEvent from Endpoint.ExWebRTC manual endpoint after subscribing to track
+      assert {:tracks_added,
+              %Server.MediaEvent.TracksAdded{
+                endpoint_id: @fake_endpoint_id,
+                track_id_to_track: %{^track_id => _}
+              }} = receive_media_event()
     end
 
-    # Creates `ExWebRTC.PeerConnection` with one video track
-    defp spawn_peer_connection(opts \\ []) do
-      {:ok, pc} = PeerConnection.start_link()
+    @tag :debug
+    test "succesfully receive trackadded after subscription on endpoint", %{
+      rtc_engine: rtc_engine
+    } do
+      # global Endpoint added
+      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
+      # local manual Endpoint added
+      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
+      send_media_event(rtc_engine, @connect_event)
+      assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
 
-      if Keyword.get(opts, :outbound_video?, true) do
-        video_track = MediaStreamTrack.new(:video)
-        {:ok, _sender} = PeerConnection.add_track(pc, video_track)
-      end
+      track =
+        Track.new(:video, Track.stream_id(), @fake_endpoint_id, :H264, 90_000, nil,
+          variants: [:low, :high]
+        )
 
-      if Keyword.get(opts, :inbound_video?, false) do
-        {:ok, _transceiver} = PeerConnection.add_transceiver(pc, :video, direction: :recvonly)
-      end
+      track_id = track.id
 
-      {:ok, offer} = PeerConnection.create_offer(pc)
-      :ok = PeerConnection.set_local_description(pc, offer)
+      fake_endpoint = %FakeSourceEndpoint{
+        rtc_engine: rtc_engine,
+        track: track
+      }
 
-      # After the gathering state is complete, the SDP offer includes ICE candidates.
-      # This eliminates the need to send or receive ICE candidates through separate media events to establish a WebRTC connection.
-      assert_receive {:ex_webrtc, _pid, {:ice_gathering_state_change, :complete}}, 500
+      :ok = Engine.add_endpoint(rtc_engine, fake_endpoint, id: @fake_endpoint_id)
 
-      offer = PeerConnection.get_local_description(pc)
+      assert_receive %Message.EndpointAdded{endpoint_id: @fake_endpoint_id}, 500
 
-      {pc, offer}
+      assert {:endpoint_added,
+              %Fishjam.MediaEvents.Server.MediaEvent.EndpointAdded{endpoint_id: @fake_endpoint_id}} =
+               receive_media_event()
+
+      :ok = Engine.message_endpoint(rtc_engine, @fake_endpoint_id, :start)
+
+      # TrackAdded Message from Engine when FakeSourceEndpoint publishes tracks
+      assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
+
+      :ok =
+        Engine.message_endpoint(rtc_engine, @endpoint_id, {:subscribe, @fake_endpoint_id, nil})
+
+      # TracksAdded MediaEvent from Endpoint.ExWebRTC manual endpoint after subscribing to track
+      assert {:tracks_added,
+              %Server.MediaEvent.TracksAdded{
+                endpoint_id: @fake_endpoint_id,
+                track_id_to_track: %{^track_id => _}
+              }} = receive_media_event()
+    end
+  end
+
+  defp received_track_removed?() do
+    case receive_media_event() do
+      {:tracks_removed, %Server.MediaEvent.TracksRemoved{}} -> true
+      {:candidate, %Fishjam.MediaEvents.Candidate{}} -> received_track_removed?()
+      _media_event -> false
+    end
+  end
+
+  # Creates `ExWebRTC.PeerConnection` with one video track and connects it to the `Endpoint.ExWebRTC`
+  defp connect_peer(rtc_engine) do
+    send_media_event(rtc_engine, @connect_event)
+    assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
+
+    send_media_event(rtc_engine, @renegotiate_tracks_event)
+    assert {:offer_data, %Server.MediaEvent.OfferData{}} = receive_media_event()
+
+    {pc, offer} = spawn_peer_connection()
+
+    offer_event = sdp_offer_event(pc, offer)
+    send_media_event(rtc_engine, offer_event)
+
+    assert {:sdp_answer, %Server.MediaEvent.SdpAnswer{sdp: answer}} = receive_media_event()
+
+    PeerConnection.set_remote_description(pc, %SessionDescription{type: :answer, sdp: answer})
+
+    assert_receive {:ex_webrtc, ^pc, {:connection_state_change, :connected}}, 500
+
+    # For `Endpoint.ExWebRTC` to mark track as ready it has to receive at least one rtp packet
+    PeerConnection.send_rtp(pc, track_id(pc), ExRTP.Packet.new(<<1, 2, 3>>))
+
+    assert_receive {:trace, _pid, :call,
+                    {Engine, :handle_endpoint_notification, [{:track_ready, _, _, _}, _, _, _]}},
+                   500
+
+    pc
+  end
+
+  # Creates `ExWebRTC.PeerConnection` with one video track
+  defp spawn_peer_connection(opts \\ []) do
+    {:ok, pc} = PeerConnection.start_link()
+
+    if Keyword.get(opts, :outbound_video?, true) do
+      video_track = MediaStreamTrack.new(:video)
+      {:ok, _sender} = PeerConnection.add_track(pc, video_track)
     end
 
-    defp send_media_event(rtc_engine, event) do
-      media_event = to_media_event(event)
-      :ok = Engine.message_endpoint(rtc_engine, @endpoint_id, media_event)
+    if Keyword.get(opts, :inbound_video?, false) do
+      {:ok, _transceiver} = PeerConnection.add_transceiver(pc, :video, direction: :recvonly)
     end
 
-    defp receive_media_event() do
-      assert_receive %Message.EndpointMessage{message: {:media_event, media_event}}, 500
-      from_media_event(media_event)
-    end
+    {:ok, offer} = PeerConnection.create_offer(pc)
+    :ok = PeerConnection.set_local_description(pc, offer)
 
-    defp to_media_event(event),
-      do: {:media_event, Peer.MediaEvent.encode(%Peer.MediaEvent{content: event})}
+    # After the gathering state is complete, the SDP offer includes ICE candidates.
+    # This eliminates the need to send or receive ICE candidates through separate media events to establish a WebRTC connection.
+    assert_receive {:ex_webrtc, _pid, {:ice_gathering_state_change, :complete}}, 500
 
-    defp from_media_event(event) do
-      %Server.MediaEvent{content: event} = Server.MediaEvent.decode(event)
-      event
-    end
+    offer = PeerConnection.get_local_description(pc)
 
-    defp sdp_offer_event(pc, offer) do
-      track_id = track_id(pc)
+    {pc, offer}
+  end
 
-      {:sdp_offer,
-       %SdpOffer{
-         sdp: offer.sdp,
-         track_id_to_metadata_json: %{"#{track_id}" => Jason.encode!("")},
-         track_id_to_bitrates: %{
-           "#{track_id}" => %TrackBitrates{
-             variant_bitrates: [%VariantBitrate{variant: :VARIANT_HIGH, bitrate: 500_000}]
-           }
-         },
-         mid_to_track_id: %{"0" => "#{track_id}"}
-       }}
-    end
+  defp send_media_event(rtc_engine, event) do
+    media_event = to_media_event(event)
+    :ok = Engine.message_endpoint(rtc_engine, @endpoint_id, media_event)
+  end
 
-    defp track_id(pc) do
-      [%{sender: %{track: %{id: id}}}] = PeerConnection.get_transceivers(pc)
-      id
-    end
+  defp receive_media_event() do
+    assert_receive %Message.EndpointMessage{message: {:media_event, media_event}}, 500
+    from_media_event(media_event)
+  end
+
+  defp to_media_event(event),
+    do: {:media_event, Peer.MediaEvent.encode(%Peer.MediaEvent{content: event})}
+
+  defp from_media_event(event) do
+    %Server.MediaEvent{content: event} = Server.MediaEvent.decode(event)
+    event
+  end
+
+  defp sdp_offer_event(pc, offer) do
+    track_id = track_id(pc)
+
+    {:sdp_offer,
+     %SdpOffer{
+       sdp: offer.sdp,
+       track_id_to_metadata_json: %{"#{track_id}" => Jason.encode!("")},
+       track_id_to_bitrates: %{
+         "#{track_id}" => %TrackBitrates{
+           variant_bitrates: [%VariantBitrate{variant: :VARIANT_HIGH, bitrate: 500_000}]
+         }
+       },
+       mid_to_track_id: %{"0" => "#{track_id}"}
+     }}
+  end
+
+  defp track_id(pc) do
+    [%{sender: %{track: %{id: id}}}] = PeerConnection.get_transceivers(pc)
+    id
+  end
+
+  defp setup_with_subscribe_mode(subscribe_mode) do
+    {:ok, pid} = Engine.start_link([], [])
+
+    Engine.register(pid, self())
+
+    endpoint = %Endpoint.ExWebRTC{
+      rtc_engine: pid,
+      event_serialization: :protobuf,
+      ignored_endpoints: [@ignored_endpoint_id],
+      subscribe_mode: subscribe_mode
+    }
+
+    Engine.add_endpoint(pid, endpoint, id: @endpoint_id)
+
+    :erlang.trace(:all, true, [:call])
+
+    :erlang.trace_pattern({Engine, :handle_endpoint_notification, 4}, true, [:local])
+
+    :erlang.trace_pattern({Endpoint.ExWebRTC, :handle_child_playing, 3}, true, [:local])
+    :erlang.trace_pattern({Endpoint.ExWebRTC, :handle_media_event, 4}, true, [:local])
+
+    on_exit(fn -> Engine.terminate(pid) end)
+
+    [rtc_engine: pid]
   end
 end
