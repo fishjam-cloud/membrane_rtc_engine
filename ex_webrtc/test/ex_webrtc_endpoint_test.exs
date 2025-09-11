@@ -234,7 +234,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert {:tracks_added,
               %Server.MediaEvent.TracksAdded{
                 endpoint_id: @fake_endpoint_id,
-                track_id_to_track: %{^track_id => _}
+                track_id_to_track: %{^track_id => _track}
               }} = receive_media_event()
     end
 
@@ -280,7 +280,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert {:tracks_added,
               %Server.MediaEvent.TracksAdded{
                 endpoint_id: @fake_endpoint_id,
-                track_id_to_track: %{^track_id => _}
+                track_id_to_track: %{^track_id => _track}
               }} = receive_media_event()
     end
   end
