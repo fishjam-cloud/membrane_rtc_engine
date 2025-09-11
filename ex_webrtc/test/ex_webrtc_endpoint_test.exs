@@ -190,7 +190,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       setup_with_subscribe_mode(:manual)
     end
 
-    @tag :debug
     test "succesfully receive trackadded after subscription", %{rtc_engine: rtc_engine} do
       # global Endpoint added
       assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
@@ -228,7 +227,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
         Engine.message_endpoint(
           rtc_engine,
           @endpoint_id,
-          {:subscribe, @fake_endpoint_id, [track_id]}
+          {:subscribe_tracks, [track_id]}
         )
 
       # TracksAdded MediaEvent from Endpoint.ExWebRTC manual endpoint after subscribing to track
@@ -239,7 +238,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
               }} = receive_media_event()
     end
 
-    @tag :debug
     test "succesfully receive trackadded after subscription on endpoint", %{
       rtc_engine: rtc_engine
     } do
@@ -276,7 +274,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
 
       :ok =
-        Engine.message_endpoint(rtc_engine, @endpoint_id, {:subscribe, @fake_endpoint_id, nil})
+        Engine.message_endpoint(rtc_engine, @endpoint_id, {:subscribe_peer, @fake_endpoint_id})
 
       # TracksAdded MediaEvent from Endpoint.ExWebRTC manual endpoint after subscribing to track
       assert {:tracks_added,

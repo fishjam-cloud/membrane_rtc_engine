@@ -11,6 +11,7 @@
 * Update protos [#64](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/64)
 * Allow ignoring specified endpoints [#66](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/66)
 * Dependency to protobuf main branch [#68](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/68)
+* Add manual subscription [#71](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/71)
 * Remove CSRCs [#72](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/72)
 
 ## 0.1.0

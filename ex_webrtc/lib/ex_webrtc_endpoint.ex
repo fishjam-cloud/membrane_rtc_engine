@@ -178,7 +178,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
-        {:subscribe, endpoint, nil},
+        {:subscribe_peer, endpoint},
         ctx,
         %{subscribe_mode: :manual} = state
       ) do
@@ -194,7 +194,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
-        {:subscribe, endpoint, tracks},
+        {:subscribe_peer, _endpoint},
+        _ctx,
+        %{subscribe_mode: :auto} = state
+      ) do
+    Membrane.Logger.warning("""
+    Unexpected usage of method.
+    If you want to add tracks manually set `:subscribe_mode` option to `:manual`.
+    """)
+
+    {[], state}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe_tracks, tracks},
         ctx,
         %{subscribe_mode: :manual} = state
       ) do
@@ -214,7 +228,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
-        {:subscribe, _endpoint, _tracks},
+        {:subscribe_tracks, _tracks},
         _ctx,
         %{subscribe_mode: :auto} = state
       ) do
