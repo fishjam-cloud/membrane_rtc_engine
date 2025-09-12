@@ -51,6 +51,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
           }
         }
 
+  @opus_sample_rate 48_000
+
   def_options rtc_engine: [
                 spec: pid(),
                 description: "Pid of parent Engine"
@@ -344,7 +346,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       payloader: Membrane.RTP.Opus.Payloader,
       ssrc: generate_ssrc(),
       payload_type: track.payload_type,
-      clock_rate: track.clock_rate
+      clock_rate: @opus_sample_rate
     }
   end
 
