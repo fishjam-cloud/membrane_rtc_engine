@@ -10,35 +10,38 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
     {"Content-Type", "application/trickle-ice-sdpfrag"}
   ]
 
-  def_options endpoint_id: [
-                spec: String.t(),
-                description: "Pid of parent Engine"
-              ],
-              telemetry_label: [
-                spec: Membrane.TelemetryMetrics.label(),
-                default: [],
-                description: "Label passed to Membrane.TelemetryMetrics functions"
-              ],
-              broadcaster_url: [
-                spec: String.t(),
-                description: "Address under which broadcaster is spawned"
-              ],
-              broadcaster_token: [
-                spec: String.t(),
-                description: "Token allowing for streaming into broadcaster"
-              ],
-              whip_endpoint: [
-                spec: String.t(),
-                description: "WHIP endpoint path"
-              ],
-              video_codec: [
-                spec: :h264 | :vp8,
-                description: "Video codec of forwarded video track"
-              ]
+  def_options(
+    endpoint_id: [
+      spec: String.t(),
+      description: "Pid of parent Engine"
+    ],
+    telemetry_label: [
+      spec: Membrane.TelemetryMetrics.label(),
+      default: [],
+      description: "Label passed to Membrane.TelemetryMetrics functions"
+    ],
+    broadcaster_url: [
+      spec: String.t(),
+      description: "Address under which broadcaster is spawned"
+    ],
+    broadcaster_token: [
+      spec: String.t(),
+      description: "Token allowing for streaming into broadcaster"
+    ],
+    whip_endpoint: [
+      spec: String.t(),
+      description: "WHIP endpoint path"
+    ],
+    video_codec: [
+      spec: :h264 | :vp8,
+      description: "Video codec of forwarded video track"
+    ]
+  )
 
-  def_input_pad :input,
+  def_input_pad(:input,
     accepted_format: _any,
     availability: :on_request
+  )
 
   @impl true
   def handle_init(_ctx, opts) do
@@ -270,7 +273,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         sequence_number: rtp.sequence_number,
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
-        csrc: Map.get(rtp, :csrc, []),
         marker: rtp.marker,
         padding: Map.get(rtp, :padding_size, 0)
       )

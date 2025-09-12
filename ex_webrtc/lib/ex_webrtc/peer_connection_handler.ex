@@ -136,7 +136,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         sequence_number: rtp.sequence_number,
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
-        csrc: rtp.csrc,
         marker: rtp.marker,
         padding: rtp.padding_size
       )
@@ -383,7 +382,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         packet
         |> Map.from_struct()
         |> Map.take([
-          :csrc,
           :extensions,
           :marker,
           :padding_size,
