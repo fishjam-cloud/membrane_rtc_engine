@@ -137,7 +137,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
         marker: rtp.marker,
-        padding: rtp.padding_size
+        padding: Map.get(rtp, :padding_size, 0)
       )
 
     extensions = if is_list(rtp.extensions), do: rtp.extensions, else: []
