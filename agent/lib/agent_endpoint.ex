@@ -22,7 +22,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
 
-  alias __MODULE__.{TrackDataPublisher, TrackDataForwarder, TrackUtils}
+  alias __MODULE__.{Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
   @type encoding_t() :: String.t()
 
@@ -351,7 +351,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   defp get_codec_specific_elements(:pcm16) do
-    &(child(&1, :parser, %RawAudioParser{overwrite_pts?: true})
+    &(&1
+      |> child(:parser, %RawAudioParser{overwrite_pts?: true})
+      # |> child(:timestamper, Timestamper)
       |> child(:encoder, Membrane.Opus.Encoder))
   end
 
