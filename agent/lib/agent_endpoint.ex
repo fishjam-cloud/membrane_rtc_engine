@@ -157,7 +157,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       {get_child(:track_data_forwarder)
        |> via_out(Pad.ref(:output, track_id))
        |> codec_specific_elements.()
+       |> via_in(:input, toilet_capacity: 2000)
        |> child(:payloader, payloader_bin)
+       |> via_in(:input, toilet_capacity: 2000)
        |> child(:track_sender, %StaticTrackSender{
          track: track,
          is_keyframe: fn _buf, _end -> true end
