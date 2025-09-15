@@ -25,15 +25,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   @impl true
   def handle_buffer(_pad, buffer, ctx, state) do
     stream_format = get_in(ctx, [:pads, :output, :stream_format])
-    state = prevent_clipping(state)
+    state = update_late_pts(state)
     buffer = %Membrane.Buffer{buffer | pts: state.next_pts}
 
     {[buffer: {:output, buffer}], update_next_pts(buffer.payload, stream_format, state)}
   end
 
-  defp prevent_clipping(%{next_pts: next_pts, start_ts: start_ts} = state) do
+  defp update_late_pts(%{next_pts: next_pts, start_ts: start_ts} = state) do
     now_ts = Membrane.Time.os_time()
-    start_ts = if is_nil(start_ts), do: now_ts, else: start_ts
+    start_ts = start_ts || now_ts
     next_pts = max(next_pts, now_ts - start_ts)
 
     %{state | start_ts: start_ts, next_pts: next_pts}

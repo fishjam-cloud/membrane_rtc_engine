@@ -52,6 +52,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         }
 
   @opus_sample_rate 48_000
+  @toilet_capacity 1_000_000
 
   def_options rtc_engine: [
                 spec: pid(),
@@ -151,15 +152,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     %{track: track, codec_parameters: codec_params} = Map.fetch!(state.inputs, track_id)
 
     payloader_bin = get_payloader(track)
-    codec_specific_elements = get_codec_specific_elements(codec_params.encoding)
 
     spec =
       {get_child(:track_data_forwarder)
        |> via_out(Pad.ref(:output, track_id))
-       |> codec_specific_elements.()
-       |> via_in(:input, toilet_capacity: 2000)
+       |> get_parser(codec_params.encoding)
+       |> via_in(:input, target_queue_size: @toilet_capacity, toilet_capacity: @toilet_capacity)
+       |> child(:realtimer, Membrane.Realtimer)
+       |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
-       |> via_in(:input, toilet_capacity: 2000)
        |> child(:track_sender, %StaticTrackSender{
          track: track,
          is_keyframe: fn _buf, _end -> true end
@@ -352,16 +353,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     }
   end
 
-  defp get_codec_specific_elements(:pcm16) do
-    &(&1
-      |> child(:parser, %RawAudioParser{overwrite_pts?: true})
-      # |> child(:timestamper, Timestamper)
-      |> child(:encoder, Membrane.Opus.Encoder))
-  end
+  defp get_parser(pipeline, :pcm16),
+    do: pipeline |> child(:parser, RawAudioParser) |> child(:timestamper, Timestamper)
 
-  defp get_codec_specific_elements(:opus) do
-    &child(&1, :opus_parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
-  end
+  defp get_parser(pipeline, :opus),
+    do: child(pipeline, :parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
+
+  defp get_encoder(pipeline, :pcm16), do: child(pipeline, :encoder, Membrane.Opus.Encoder)
+  defp get_encoder(pipeline, :opus), do: pipeline
 
   defp get_track_data_msg(data, track) do
     {:track_data,
