@@ -11,7 +11,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
 
   @type t :: %__MODULE__{
           subscribe_mode: subscribe_mode(),
-          known_tracks: %{Track.id() => Membrane.RTC.Engine.Endpoint.ExWebRTC.Track.t()},
+          known_tracks: %{},
           subscribed_tracks: MapSet.t(Track.id()),
           subscribed_endpoints: MapSet.t(String.t())
         }
@@ -79,7 +79,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
   Updates known tracks and returns filtered tracks for subscription.
   """
   @spec handle_new_tracks(t(), [Track.t()]) ::
-          {%{Track.id() => Membrane.RTC.Engine.Endpoint.ExWebRTC.Track.t()}, t()}
+          {%{}, t()}
   def handle_new_tracks(manager, new_tracks) do
     alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Track, as: EndpointTrack
 
