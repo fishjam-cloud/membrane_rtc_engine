@@ -12,6 +12,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   use Membrane.Endpoint
 
   alias Membrane.RawAudio
+  alias Membrane.Opus
 
   @max_jitter_duration Membrane.Time.milliseconds(100)
 
@@ -40,7 +41,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
     state = maybe_reset_pts(state)
     buffer = %Membrane.Buffer{buffer | pts: state.next_pts}
 
-    {[buffer: {:output, buffer}], update_next_pts(buffer.payload, stream_format, state)}
+    {[buffer: {:output, buffer}], update_next_pts(buffer, stream_format, state)}
   end
 
   defp maybe_reset_pts(%{next_pts: next_pts, start_ts: start_ts} = state) do
@@ -59,11 +60,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   end
 
   defp update_next_pts(
-         payload,
+         buffer,
          stream_format,
          %{next_pts: next_pts} = state
-       ) do
-    duration = RawAudio.bytes_to_time(byte_size(payload), stream_format)
-    %{state | next_pts: next_pts + duration}
-  end
+       ),
+       do: %{state | next_pts: next_pts + get_duration(buffer, stream_format)}
+
+  defp get_duration(buffer, %RawAudio{} = stream_format),
+    do: RawAudio.bytes_to_time(byte_size(buffer.payload), stream_format)
+
+  defp get_duration(buffer, %Opus{}), do: buffer.metadata.duration
 end

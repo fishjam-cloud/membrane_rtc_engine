@@ -52,7 +52,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         }
 
   @opus_sample_rate 48_000
-  @toilet_capacity 1_000_000
+  @toilet_capacity 10_000
 
   def_options rtc_engine: [
                 spec: pid(),
@@ -157,6 +157,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       {get_child(:track_data_forwarder)
        |> via_out(Pad.ref(:output, track_id))
        |> get_parser(codec_params.encoding)
+       |> child(:timestamper, Timestamper)
        |> via_in(:input, target_queue_size: @toilet_capacity, toilet_capacity: @toilet_capacity)
        |> child(:realtimer, Membrane.Realtimer)
        |> get_encoder(codec_params.encoding)
@@ -353,11 +354,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     }
   end
 
-  defp get_parser(pipeline, :pcm16),
-    do: pipeline |> child(:parser, RawAudioParser) |> child(:timestamper, Timestamper)
-
-  defp get_parser(pipeline, :opus),
-    do: child(pipeline, :parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
+  defp get_parser(pipeline, :pcm16), do: child(pipeline, :parser, RawAudioParser)
+  defp get_parser(pipeline, :opus), do: child(pipeline, :parser, Membrane.Opus.Parser)
 
   defp get_encoder(pipeline, :pcm16), do: child(pipeline, :encoder, Membrane.Opus.Encoder)
   defp get_encoder(pipeline, :opus), do: pipeline
