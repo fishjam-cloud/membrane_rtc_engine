@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
     arrival_time = Membrane.Time.os_time() - start_ts
 
     if arrival_time > next_pts + @max_jitter_duration do
-      {[event: {:output, %Membrane.Realtimer.Events.Reset{}}], state}
+      {[event: {:output, %Membrane.Realtimer.Events.Reset{}}], %{state | next_pts: arrival_time}}
     else
       {[], state}
     end
