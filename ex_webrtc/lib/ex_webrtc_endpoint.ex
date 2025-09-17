@@ -52,11 +52,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: :json | :protobuf,
                 description: "Serialization method for encoding and decoding Media Events"
               ],
-              ignored_endpoints: [
-                spec: [Engine.Endpoint.id()],
-                default: [],
-                description: "List of endpoint IDs to ignore"
-              ],
               subscribe_mode: [
                 spec: :auto | :manual,
                 default: :auto,
@@ -218,7 +213,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         ctx,
         %{event_serializer: serializer} = state
       ) do
-    case Enum.reject(endpoints, &should_ignore?(&1, state)) do
+    case endpoints do
       [] ->
         {[], state}
 
@@ -250,13 +245,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint, state) do
-      {[], state}
-    else
-      action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
-      Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
-      {action, state}
-    end
+    action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
+    Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
+    {action, state}
   end
 
   @impl true
@@ -265,12 +256,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint_id, state) do
-      {[], state}
-    else
-      action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
-      {action, state}
-    end
+    action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
+    {action, state}
   end
 
   @impl true
@@ -279,16 +266,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(track, state) do
-      {[], state}
-    else
-      event =
-        track.origin
-        |> serializer.track_updated(track.id, track.metadata)
-        |> serializer.to_action()
+    event =
+      track.origin
+      |> serializer.track_updated(track.id, track.metadata)
+      |> serializer.to_action()
 
-      {event, state}
-    end
+    {event, state}
   end
 
   @impl true
@@ -309,19 +292,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint, state) do
-      {[], state}
-    else
-      event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
-      {event, state}
-    end
+    event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
+    {event, state}
   end
 
   @impl true
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: true} = state) do
     Membrane.Logger.debug("new parent queued tracks: #{log_tracks(new_tracks)}")
-
-    new_tracks = Enum.reject(new_tracks, &should_ignore?(&1, state))
 
     {filtered_new_tracks, subscription_manager} =
       SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
@@ -341,8 +318,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, state) do
     Membrane.Logger.debug("new parent tracks: #{log_tracks(new_tracks)}")
-
-    new_tracks = Enum.reject(new_tracks, &should_ignore?(&1, state))
 
     {subscribed_tracks, subscription_manager} =
       SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
@@ -375,7 +350,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification({:remove_tracks, tracks}, _ctx, state) do
-    tracks = Enum.reject(tracks, &should_ignore?(&1, state))
     track_ids = Enum.map(tracks, & &1.id)
 
     subscription_manager = SubscriptionManager.remove_tracks(state.subscription_manager, tracks)
@@ -418,15 +392,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_parent_notification(_msg, _ctx, state) do
     {[], state}
   end
-
-  defp should_ignore?(%Engine.Endpoint{id: endpoint_id}, state),
-    do: endpoint_id in state.ignored_endpoints
-
-  defp should_ignore?(%Engine.Track{origin: endpoint_id}, state),
-    do: endpoint_id in state.ignored_endpoints
-
-  defp should_ignore?(endpoint_id, state),
-    do: endpoint_id in state.ignored_endpoints
 
   defp log_tracks(tracks) do
     tracks
