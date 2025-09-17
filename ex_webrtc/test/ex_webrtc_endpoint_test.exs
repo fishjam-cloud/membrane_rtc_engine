@@ -185,11 +185,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     end
   end
 
-  describe("selective subscription") do
+  describe "selective subscription" do
     setup do
       setup_with_subscribe_mode(:manual)
     end
 
+    @tag :debug
     test "succesfully receive trackadded after subscription", %{rtc_engine: rtc_engine} do
       # global Endpoint added
       assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
@@ -238,6 +239,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
               }} = receive_media_event()
     end
 
+    @tag :debug
     test "succesfully receive trackadded after subscription on endpoint", %{
       rtc_engine: rtc_engine
     } do

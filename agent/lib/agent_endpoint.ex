@@ -37,12 +37,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   @type state() :: %{
           subscriber: Subscriber.t(),
-          outputs: %{
-            Endpoint.id() => %{
-              format: output_format(),
-              sample_rate: output_sample_rate()
-            }
-          },
           inputs: %{
             Track.id() => %{
               track: Track.t(),
@@ -56,6 +50,21 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   def_options rtc_engine: [
                 spec: pid(),
                 description: "Pid of parent Engine"
+              ],
+              subscribe_mode: [
+                spec: :auto | :manual,
+                default: :auto,
+                description: "Subscription mode"
+              ],
+              format: [
+                spec: output_format(),
+                default: :pcm16,
+                description: "Format of received audio tracks"
+              ],
+              sample_rate: [
+                spec: output_sample_rate(),
+                default: 16_000,
+                description: "Sample rate of received audio tracks"
               ]
 
   def_input_pad :input,
@@ -66,34 +75,23 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     accepted_format: _any,
     availability: :on_request
 
-  @doc """
-  Subscribe agent endpoint to tracks from given endpoint.
-  """
-  @spec subscribe(
-          engine :: pid(),
-          agent_id :: String.t(),
-          endpoint_id :: String.t(),
-          opts :: [format: output_format(), sample_rate: output_sample_rate()]
-        ) :: :ok
-  def subscribe(engine, agent_id, endpoint_id, opts) do
-    Engine.message_endpoint(engine, agent_id, {:subscribe, endpoint_id, opts})
-  end
-
   @impl true
   def handle_init(ctx, opts) do
     {:endpoint, endpoint_id} = ctx.name
 
     subscriber = %Subscriber{
       endpoint_id: endpoint_id,
-      subscribe_mode: :manual,
+      subscribe_mode: opts.subscribe_mode,
       rtc_engine: opts.rtc_engine,
       track_types: [:audio]
     }
 
     state = %{
       subscriber: subscriber,
+      format: opts.format,
+      sample_rate: opts.sample_rate,
+      rtc_engine: opts.rtc_engine,
       inputs: %{},
-      outputs: %{}
     }
 
     spec = [
@@ -108,11 +106,10 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   def handle_pad_added(
         Pad.ref(:input, track_id) = pad,
         _ctx,
-        %{subscriber: subscriber, outputs: outputs} = state
+        %{subscriber: subscriber, sample_rate: sample_rate} = state
       ) do
     with %Track{type: :audio, encoding: encoding} = track <-
            Subscriber.get_track(subscriber, track_id),
-         {:ok, output} <- Map.fetch(outputs, track.origin),
          depayloader when depayloader != nil <- Track.get_depayloader(track),
          decoder when decoder != nil <- get_decoder(encoding) do
       spec =
@@ -128,7 +125,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
            output_stream_format: %Membrane.RawAudio{
              channels: 1,
              sample_format: :s16le,
-             sample_rate: output.sample_rate
+             sample_rate: sample_rate
            }
          })
          |> via_in(pad)
@@ -250,28 +247,39 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   def handle_parent_notification(
         {:endpoint_removed, endpoint_id},
         _ctx,
-        %{subscriber: subscriber, outputs: outputs} = state
+        %{subscriber: subscriber} = state
       ) do
     subscriber = Subscriber.remove_endpoints(subscriber, [endpoint_id])
-    outputs = Map.delete(outputs, endpoint_id)
 
     Membrane.Logger.info("Removed subscription for endpoint #{inspect(endpoint_id)}")
 
-    {[], %{state | subscriber: subscriber, outputs: outputs}}
+    {[], %{state | subscriber: subscriber}}
   end
 
   @impl true
   def handle_parent_notification(
-        {:subscribe, endpoint_id, [format: format, sample_rate: sample_rate]},
+        {:subscribe_peer, endpoint_id},
         _ctx,
-        %{subscriber: subscriber, outputs: outputs} = state
+        %{subscriber: subscriber} = state
       ) do
     subscriber = Subscriber.add_endpoints([endpoint_id], subscriber)
-    outputs = Map.put(outputs, endpoint_id, %{format: format, sample_rate: sample_rate})
 
     Membrane.Logger.info("Subscribed to endpoint #{inspect(endpoint_id)}")
 
-    {[], %{state | subscriber: subscriber, outputs: outputs}}
+    {[], %{state | subscriber: subscriber}}
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe_tracks, track_ids},
+        _ctx,
+        %{subscriber: subscriber} = state
+      ) do
+    subscriber = Subscriber.add_tracks(subscriber, track_ids)
+
+    Membrane.Logger.info("Subscribed to endpoint #{inspect(endpoint_id)}")
+
+    {[], %{state | subscriber: subscriber}}
   end
 
   @impl true

@@ -49,4 +49,27 @@ defmodule Membrane.RTC.Engine.Subscriber.Manual do
 
     Subscriber.update_tracks(subscriptions_state, new_subscribed_tracks)
   end
+
+  @impl true
+  def add_tracks(track_ids, subscriptions_state) do
+
+    valid_tracks =
+      subscriptions_state.rtc_engine
+      |> Engine.get_tracks()
+      |> Enum.filter(fn track ->
+        track.id in track_ids and
+        track.type in subscriptions_state.track_types and
+        not MapSet.member?(subscriptions_state.endpoints, track.origin) and
+        not is_map_key(subscriptions_state.tracks, track.id)
+      end)
+
+    new_subscribed_tracks =
+      Subscriber.subscribe_for_tracks(
+        valid_tracks,
+        subscriptions_state.endpoint_id,
+        subscriptions_state.rtc_engine
+      )
+
+    Subscriber.update_tracks(subscriptions_state, new_subscribed_tracks)
+  end
 end

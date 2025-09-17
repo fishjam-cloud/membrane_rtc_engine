@@ -13,8 +13,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
           subscribe_mode: subscribe_mode(),
           known_tracks: %{},
           subscribed_tracks: MapSet.t(Track.id()),
-          subscribed_endpoints: MapSet.t(String.t())
+          subscribed_endpoints: MapSet.t(Endpoint.id())
         }
+  @enforce_keys [:subscribe_mode]
 
   defstruct subscribe_mode: :auto,
             known_tracks: %{},
@@ -59,7 +60,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
   def subscribe_tracks(%{subscribe_mode: :manual} = manager, track_ids) do
     subscribed_tracks =
       track_ids
-      |> Enum.filter(fn t -> Map.has_key?(manager.known_tracks, t) end)
+      |> Enum.filter(&Map.has_key?(manager.known_tracks, &1))
 
     tracks_to_add = Enum.map(subscribed_tracks, &manager.known_tracks[&1].engine_track)
 
@@ -78,8 +79,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
   @doc """
   Updates known tracks and returns filtered tracks for subscription.
   """
-  @spec handle_new_tracks(t(), [Track.t()]) ::
-          {%{}, t()}
+  @spec handle_new_tracks(t(), [Track.t()]) :: {map(), t()}
   def handle_new_tracks(manager, new_tracks) do
     alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Track, as: EndpointTrack
 
