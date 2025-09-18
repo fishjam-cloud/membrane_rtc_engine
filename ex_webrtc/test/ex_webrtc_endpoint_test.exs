@@ -127,7 +127,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert {:offer_data, %OfferData{tracks_types: %OfferData.TrackTypes{audio: 0, video: 1}}} =
                receive_media_event()
     end
-
   end
 
   describe "selective subscription" do
