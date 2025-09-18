@@ -51,14 +51,9 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
       :ok = Engine.add_endpoint(engine, stereo_endpoint, id: stereo_endpoint_id)
 
-      :ok =
-        Agent.subscribe(engine, "agent", mono_endpoint_id, format: :pcm16, sample_rate: 16_000)
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, mono_endpoint_id})
 
-      :ok =
-        Agent.subscribe(engine, @agent_id, stereo_endpoint_id,
-          format: :pcm16,
-          sample_rate: 24_000
-        )
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, stereo_endpoint_id})
 
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: ^mono_endpoint_id,
@@ -156,11 +151,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
       :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
 
-      :ok =
-        Agent.subscribe(engine, "agent", mono_endpoint_id,
-          format: :pcm16,
-          sample_rate: 16_000
-        )
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, mono_endpoint_id})
 
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: ^mono_endpoint_id,
@@ -207,10 +198,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       Engine.message_endpoint(engine, :test_endpoint, :start)
 
       assert not (capture_log([level: :debug], fn ->
-                    Agent.subscribe(engine, "agent", :test_endpoint,
-                      format: :pcm16,
-                      sample_rate: 24_000
-                    )
+                    Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, :test_endpoint})
 
                     Process.sleep(1_000)
                   end) =~ "Subscription fulfilled by agent on track: #{track.id}")
@@ -435,8 +423,13 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     end
   end
 
-  defp create_agent_endpoint(engine) do
-    %Agent{rtc_engine: engine}
+  defp create_agent_endpoint(engine, subscribe_mode \\ :manual) do
+    %Agent{
+      rtc_engine: engine,
+      subscribe_mode: subscribe_mode,
+      format: :pcm16,
+      sample_rate: 16_000
+    }
   end
 
   defp create_sink_endpoint(name, engine) do

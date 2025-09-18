@@ -14,10 +14,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Membrane.RawAudioParser
   alias Membrane.RTP.PayloaderBin
 
-  alias Membrane.RTC.Engine
-  alias Membrane.RTC.Engine.{Endpoint, Subscriber, Track}
   alias Membrane.RTC.Engine.Endpoint.ExWebRTC.TrackReceiver
   alias Membrane.RTC.Engine.StaticTrackSender
+  alias Membrane.RTC.Engine.{Subscriber, Track}
 
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
@@ -91,7 +90,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       format: opts.format,
       sample_rate: opts.sample_rate,
       rtc_engine: opts.rtc_engine,
-      inputs: %{},
+      inputs: %{}
     }
 
     spec = [
@@ -277,7 +276,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       ) do
     subscriber = Subscriber.add_tracks(subscriber, track_ids)
 
-    Membrane.Logger.info("Subscribed to endpoint #{inspect(endpoint_id)}")
+    Membrane.Logger.info("Subscribed to tracks #{inspect(track_ids)}")
 
     {[], %{state | subscriber: subscriber}}
   end

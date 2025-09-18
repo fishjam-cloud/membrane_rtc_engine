@@ -28,7 +28,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
   @endpoint_id "endpoint_id"
   @connect_event {:connect, %Connect{metadata_json: Jason.encode!("")}}
   @renegotiate_tracks_event {:renegotiate_tracks, %RenegotiateTracks{}}
-  @ignored_endpoint_id "ignored_id"
   @fake_endpoint_id "fake_endpoint_id"
 
   setup do
@@ -129,60 +128,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
                receive_media_event()
     end
 
-    test "omit ignored endpoints", %{rtc_engine: engine} do
-      track =
-        Track.new(:video, Track.stream_id(), :test_endpoint, :H264, 90_000, nil,
-          variants: [:low, :high]
-        )
-
-      track_id = track.id
-
-      ignored_source = %FakeSourceEndpoint{
-        rtc_engine: engine,
-        track: track
-      }
-
-      :ok = Engine.add_endpoint(engine, ignored_source, id: @ignored_endpoint_id)
-      assert_receive %Message.EndpointAdded{endpoint_id: @ignored_endpoint_id}, 500
-      :ok = Engine.message_endpoint(engine, @ignored_endpoint_id, :start)
-      assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
-
-      :ok =
-        Engine.message_endpoint(
-          engine,
-          @ignored_endpoint_id,
-          {:update_endpoint_metadata, %{}}
-        )
-
-      :ok =
-        Engine.message_endpoint(
-          engine,
-          @ignored_endpoint_id,
-          {:update_track_metadata, track_id, %{}}
-        )
-
-      :ok =
-        Engine.message_endpoint(
-          engine,
-          @ignored_endpoint_id,
-          {:disable_track_variant, track_id, :low}
-        )
-
-      :ok =
-        Engine.message_endpoint(
-          engine,
-          @ignored_endpoint_id,
-          {:enable_track_variant, track_id, :low}
-        )
-
-      assert_receive %Message.EndpointMetadataUpdated{endpoint_id: @ignored_endpoint_id}, 500
-      assert_receive %Message.TrackMetadataUpdated{track_id: ^track_id}
-
-      :ok = Engine.remove_endpoint(engine, @ignored_endpoint_id)
-      assert_receive %Message.EndpointRemoved{endpoint_id: @ignored_endpoint_id}, 500
-
-      refute_receive %Message.EndpointMessage{message: {:media_event, _any}}
-    end
   end
 
   describe "selective subscription" do
@@ -190,7 +135,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       setup_with_subscribe_mode(:manual)
     end
 
-    @tag :debug
     test "succesfully receive trackadded after subscription", %{rtc_engine: rtc_engine} do
       # global Endpoint added
       assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
@@ -239,7 +183,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
               }} = receive_media_event()
     end
 
-    @tag :debug
     test "succesfully receive trackadded after subscription on endpoint", %{
       rtc_engine: rtc_engine
     } do
@@ -396,7 +339,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     endpoint = %Endpoint.ExWebRTC{
       rtc_engine: pid,
       event_serialization: :protobuf,
-      ignored_endpoints: [@ignored_endpoint_id],
       subscribe_mode: subscribe_mode
     }
 
