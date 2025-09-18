@@ -5,7 +5,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
 
   use Bunch.Access
 
-  alias Membrane.RTC.Engine.Track
+  alias Membrane.RTC.Engine.{Endpoint, Track}
 
   @type subscribe_mode :: :auto | :manual
 
