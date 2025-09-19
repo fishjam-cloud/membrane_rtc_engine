@@ -17,11 +17,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   @max_jitter_duration Membrane.Time.milliseconds(100)
 
   def_input_pad :input,
-    accepted_format: RawAudio,
+    accepted_format: format when format in [RawAudio, Opus],
     availability: :always
 
   def_output_pad :output,
-    accepted_format: RawAudio,
+    accepted_format: format when format in [RawAudio, Opus],
     availability: :always,
     flow_control: :push
 
