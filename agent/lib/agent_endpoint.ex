@@ -275,7 +275,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         _ctx,
         %{subscriber: subscriber} = state
       ) do
-    subscriber = Subscriber.add_tracks(subscriber, track_ids)
+    subscriber = Subscriber.add_tracks(track_ids, subscriber)
 
     Membrane.Logger.info("Subscribed to tracks #{inspect(track_ids)}")
 

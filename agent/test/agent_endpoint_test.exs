@@ -110,6 +110,138 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       assert byte_size(data) > 100
     end
 
+    test "Agent adds all tracks when auto subscribe_mode is set", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine, :auto)
+      mono_endpoint = create_file_endpoint(engine, @opus_mono_path)
+      mono_endpoint_id = "mono_endpoint"
+      stereo_endpoint = create_file_endpoint(engine, @opus_stereo_path)
+      stereo_endpoint_id = "stereo_endpoint"
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
+      :ok = Engine.add_endpoint(engine, stereo_endpoint, id: stereo_endpoint_id)
+
+      assert_receive %Engine.Message.TrackAdded{
+                       endpoint_id: ^mono_endpoint_id,
+                       track_id: mono_track_id,
+                       track_metadata: nil
+                     },
+                     1000
+
+      assert_receive %Engine.Message.TrackAdded{
+                       endpoint_id: ^stereo_endpoint_id,
+                       track_id: stereo_track_id,
+                       track_metadata: nil
+                     },
+                     1000
+
+      assert_receive %Engine.Message.EndpointMessage{
+                       endpoint_id: @agent_id,
+                       endpoint_type: Agent,
+                       message:
+                         {:track_data,
+                          %TrackData{
+                            peer_id: ^mono_endpoint_id,
+                            track: %Notifications.Track{
+                              id: ^mono_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: data
+                          }}
+                     },
+                     1000
+
+      assert is_binary(data)
+      assert byte_size(data) > 100
+
+      assert_receive %Engine.Message.EndpointMessage{
+                       endpoint_id: @agent_id,
+                       endpoint_type: Agent,
+                       message:
+                         {:track_data,
+                          %TrackData{
+                            peer_id: ^stereo_endpoint_id,
+                            track: %Notifications.Track{
+                              id: ^stereo_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: data
+                          }}
+                     },
+                     1000
+
+      assert is_binary(data)
+      assert byte_size(data) > 100
+    end
+
+    @tag :debug
+    test "Agent is able to subscribe to selected track", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      mono_endpoint = create_file_endpoint(engine, @opus_mono_path)
+      mono_endpoint_id = "mono_endpoint"
+      stereo_endpoint = create_file_endpoint(engine, @opus_stereo_path)
+      stereo_endpoint_id = "stereo_endpoint"
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
+      :ok = Engine.add_endpoint(engine, stereo_endpoint, id: stereo_endpoint_id)
+
+      assert_receive %Engine.Message.TrackAdded{
+                       endpoint_id: ^mono_endpoint_id,
+                       track_id: mono_track_id,
+                       track_metadata: nil
+                     },
+                     1000
+
+      assert_receive %Engine.Message.TrackAdded{
+                       endpoint_id: ^stereo_endpoint_id,
+                       track_id: stereo_track_id,
+                       track_metadata: nil
+                     },
+                     1000
+
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_tracks, [mono_track_id]})
+
+      assert_receive %Engine.Message.EndpointMessage{
+                       endpoint_id: @agent_id,
+                       endpoint_type: Agent,
+                       message:
+                         {:track_data,
+                          %TrackData{
+                            peer_id: ^mono_endpoint_id,
+                            track: %Notifications.Track{
+                              id: ^mono_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: data
+                          }}
+                     },
+                     1000
+
+      assert is_binary(data)
+      assert byte_size(data) > 100
+
+      refute_receive %Engine.Message.EndpointMessage{
+                       endpoint_id: @agent_id,
+                       endpoint_type: Agent,
+                       message:
+                         {:track_data,
+                          %TrackData{
+                            peer_id: ^stereo_endpoint_id,
+                            track: %Notifications.Track{
+                              id: ^stereo_track_id,
+                              type: :TRACK_TYPE_AUDIO,
+                              metadata: "null"
+                            },
+                            data: _data
+                          }}
+                     },
+                     1000
+    end
+
     test "Agent ignores tracks of unsubscribed endpoints", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
       mono_endpoint = create_file_endpoint(engine, @opus_mono_path)
@@ -431,8 +563,8 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     %Agent{
       rtc_engine: engine,
       subscribe_mode: subscribe_mode,
-      format: :pcm16,
-      sample_rate: 16_000
+      output_format: :pcm16,
+      output_sample_rate: 16_000
     }
   end
 
