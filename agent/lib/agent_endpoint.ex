@@ -20,7 +20,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Membrane.RTC.Engine.StaticTrackSender
 
   alias Fishjam.{AgentRequest, AgentResponse}
-  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData, InterruptTrack}
+  alias Fishjam.AgentRequest.{AddTrack, InterruptTrack, RemoveTrack, TrackData}
 
   alias __MODULE__.{AudioBuffer, Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
