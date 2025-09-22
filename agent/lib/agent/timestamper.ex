@@ -36,11 +36,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   end
 
   @impl true
-  def handle_end_of_stream(:input, _ctx, state) do
-    {[end_of_stream: :output], state}
-  end
-
-  @impl true
   def handle_buffer(_pad, buffer, ctx, state) do
     stream_format = get_in(ctx, [:pads, :output, :stream_format])
 
