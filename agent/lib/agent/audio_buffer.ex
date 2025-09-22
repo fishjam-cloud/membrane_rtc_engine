@@ -63,6 +63,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   end
 
   @impl true
+  def handle_parent_notification(:clear_queue, _ctx, state) do
+    {[], clear_queue(state)}
+  end
+
+  @impl true
   def handle_demand(Pad.ref(:output), size, :buffers, _ctx, state) do
     state
     |> Map.update!(:demand, &(&1 + size))
@@ -103,5 +108,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   defp conclude_handle_demand(state, actions) do
     {Enum.reverse(actions), state}
+  end
+
+  defp clear_queue(state) do
+    %{state | queue: Qex.new(), queue_duration: 0}
   end
 end

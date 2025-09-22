@@ -20,7 +20,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Membrane.RTC.Engine.StaticTrackSender
 
   alias Fishjam.{AgentRequest, AgentResponse}
-  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
+  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData, InterruptTrack}
 
   alias __MODULE__.{AudioBuffer, Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
@@ -161,6 +161,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
        |> child(:realtimer, Membrane.Realtimer)
        |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
+       |> child(:interruption_handler, InterruptionHandler)
        |> child(:track_sender, %StaticTrackSender{
          track: track,
          is_keyframe: fn _buf, _end -> true end
@@ -326,6 +327,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       {:error, :invalid_codec_params} ->
         raise("AddTrack request with invalid codec params #{inspect(codec_params)}")
     end
+  end
+
+  # TODO: Send notification to per-track audio buffer
+  defp handle_agent_request(%InterruptTrack{track_id: track_id}, _ctx, state) do
+    {[notify_child: {:audio_buffer, :clear_queue}], state}
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
