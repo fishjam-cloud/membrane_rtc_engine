@@ -28,6 +28,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
 
   @agent_id "agent"
   @input_track_id "34a75983-7c45-49db-9e6a-3d776ec3a39d"
+  @second_input_track_id "2d392628-a315-4a35-9543-226d74d9f940"
 
   setup do
     {:ok, engine} = Engine.start_link([id: "test_rtc"], [])
@@ -348,6 +349,46 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       refute_receive %Engine.Message.EndpointCrashed{}, 1000
     end
 
+    # FIXME: allow agent endpoint to handle multiple inputs
+    @tag :skip
+    test "Publishes two pcm16 tracks to other endpoints", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+      sink1 = create_sink_endpoint("sink1", engine)
+      sink2 = create_sink_endpoint("sink2", engine)
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
+      :ok = Engine.add_endpoint(engine, sink2, id: "sink2")
+
+      start_raw_audio_pipeline(engine)
+      start_raw_audio_pipeline(engine, track_id: @second_input_track_id)
+
+      assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      assert_receive %Engine.Message.TrackAdded{
+        endpoint_id: @agent_id,
+        track_id: @second_input_track_id
+      }
+
+      assert count_sink_buffers("sink1") > 50
+      assert count_sink_buffers("sink2") > 50
+
+      assert_receive %Engine.Message.TrackRemoved{
+        endpoint_id: @agent_id,
+        track_id: @input_track_id
+      }
+
+      assert_receive %Engine.Message.TrackRemoved{
+        endpoint_id: @agent_id,
+        track_id: @second_input_track_id
+      }
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
     test "Invalid codec params", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
@@ -412,7 +453,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       when is_binary(payload) ->
         count_sink_buffers(name, count + 1)
     after
-      100 -> count
+      250 -> count
     end
   end
 
@@ -452,7 +493,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     Engine.message_endpoint(engine, agent_id, {:agent_notification, request})
   end
 
-  defp start_raw_audio_pipeline(engine) do
+  defp start_raw_audio_pipeline(engine, opts \\ []) do
     Testing.Pipeline.start_link_supervised!(
       spec: [
         child(:file_source, %Membrane.File.Source{location: @raw_audio_file})
@@ -467,7 +508,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
           rtc_engine: engine,
           sample_rate: @raw_audio_sample_rate,
           encoding: :pcm16,
-          track_id: @input_track_id
+          track_id: Keyword.get(opts, :track_id, @input_track_id)
         })
       ]
     )

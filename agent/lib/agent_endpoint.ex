@@ -22,7 +22,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
 
-  alias __MODULE__.{Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
+  alias __MODULE__.{AudioBuffer, Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
   @type encoding_t() :: String.t()
 
@@ -52,7 +52,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
         }
 
   @opus_sample_rate 48_000
-  @toilet_capacity 10_000
 
   def_options rtc_engine: [
                 spec: pid(),
@@ -158,7 +157,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
        |> via_out(Pad.ref(:output, track_id))
        |> get_parser(codec_params.encoding)
        |> child(:timestamper, Timestamper)
-       |> via_in(:input, target_queue_size: @toilet_capacity, toilet_capacity: @toilet_capacity)
+       |> child(:audio_buffer, AudioBuffer)
        |> child(:realtimer, Membrane.Realtimer)
        |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
@@ -286,6 +285,20 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     {[], state}
   end
 
+  @impl true
+  def handle_element_end_of_stream(:track_sender, Pad.ref(:input), _ctx, state) do
+    track = state.inputs |> Map.values() |> List.first() |> Map.fetch!(:track)
+
+    actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
+
+    {actions, state}
+  end
+
+  @impl true
+  def handle_element_end_of_stream(_element, _pad, _ctx, state) do
+    {[], state}
+  end
+
   defp handle_agent_request(%AddTrack{} = request, ctx, state) do
     %{track: track, codec_params: codec_params} = request
     {:endpoint, endpoint_id} = ctx.name
@@ -316,10 +329,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
-    with {%{track: track}, state} <- pop_in(state, [:inputs, track_id]) do
-      actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
-
-      {actions, state}
+    with %{track: _track} <- get_in(state, [:inputs, track_id]) do
+      {[notify_child: {:track_data_forwarder, {:remove_track, track_id}}], state}
     else
       {nil, state} ->
         Membrane.Logger.error("Requested removing non-existent track #{inspect(track_id)}")
