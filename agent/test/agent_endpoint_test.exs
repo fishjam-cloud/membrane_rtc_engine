@@ -198,7 +198,11 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       Engine.message_endpoint(engine, :test_endpoint, :start)
 
       assert not (capture_log([level: :debug], fn ->
-                    Engine.message_endpoint(engine, @agent_id, {:subscribe_endpoint, :test_endpoint})
+                    Engine.message_endpoint(
+                      engine,
+                      @agent_id,
+                      {:subscribe_endpoint, :test_endpoint}
+                    )
 
                     Process.sleep(1_000)
                   end) =~ "Subscription fulfilled by agent on track: #{track.id}")

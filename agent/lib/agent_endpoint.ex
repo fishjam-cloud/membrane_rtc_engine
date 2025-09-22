@@ -63,7 +63,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
               output_sample_rate: [
                 spec: output_sample_rate(),
                 default: 16_000,
-                description: "Sample rate with which received audio tracks should be sent to agent"
+                description:
+                  "Sample rate with which received audio tracks should be sent to agent"
               ]
 
   def_input_pad :input,
