@@ -22,7 +22,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   alias Fishjam.{AgentRequest, AgentResponse}
   alias Fishjam.AgentRequest.{AddTrack, RemoveTrack, TrackData}
 
-  alias __MODULE__.{TrackDataPublisher, TrackDataForwarder, TrackUtils}
+  alias __MODULE__.{AudioBuffer, Timestamper, TrackDataPublisher, TrackDataForwarder, TrackUtils}
 
   @type encoding_t() :: String.t()
 
@@ -50,6 +50,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
             }
           }
         }
+
+  @opus_sample_rate 48_000
 
   def_options rtc_engine: [
                 spec: pid(),
@@ -149,12 +151,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     %{track: track, codec_parameters: codec_params} = Map.fetch!(state.inputs, track_id)
 
     payloader_bin = get_payloader(track)
-    codec_specific_elements = get_codec_specific_elements(codec_params.encoding)
 
     spec =
       {get_child(:track_data_forwarder)
        |> via_out(Pad.ref(:output, track_id))
-       |> codec_specific_elements.()
+       |> get_parser(codec_params.encoding)
+       |> child(:timestamper, Timestamper)
+       |> child(:audio_buffer, AudioBuffer)
+       |> child(:realtimer, Membrane.Realtimer)
+       |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
        |> child(:track_sender, %StaticTrackSender{
          track: track,
@@ -280,6 +285,20 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     {[], state}
   end
 
+  @impl true
+  def handle_element_end_of_stream(:track_sender, Pad.ref(:input), _ctx, state) do
+    track = state.inputs |> Map.values() |> List.first() |> Map.fetch!(:track)
+
+    actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
+
+    {actions, state}
+  end
+
+  @impl true
+  def handle_element_end_of_stream(_element, _pad, _ctx, state) do
+    {[], state}
+  end
+
   defp handle_agent_request(%AddTrack{} = request, ctx, state) do
     %{track: track, codec_params: codec_params} = request
     {:endpoint, endpoint_id} = ctx.name
@@ -310,10 +329,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
-    with {%{track: track}, state} <- pop_in(state, [:inputs, track_id]) do
-      actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
-
-      {actions, state}
+    with %{track: _track} <- get_in(state, [:inputs, track_id]) do
+      {[notify_child: {:track_data_forwarder, {:remove_track, track_id}}], state}
     else
       {nil, state} ->
         Membrane.Logger.error("Requested removing non-existent track #{inspect(track_id)}")
@@ -344,18 +361,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
       payloader: Membrane.RTP.Opus.Payloader,
       ssrc: generate_ssrc(),
       payload_type: track.payload_type,
-      clock_rate: track.clock_rate
+      clock_rate: @opus_sample_rate
     }
   end
 
-  defp get_codec_specific_elements(:pcm16) do
-    &(child(&1, :parser, %RawAudioParser{overwrite_pts?: true})
-      |> child(:encoder, Membrane.Opus.Encoder))
-  end
+  defp get_parser(pipeline, :pcm16), do: child(pipeline, :parser, RawAudioParser)
+  defp get_parser(pipeline, :opus), do: child(pipeline, :parser, Membrane.Opus.Parser)
 
-  defp get_codec_specific_elements(:opus) do
-    &child(&1, :opus_parser, %Membrane.Opus.Parser{generate_best_effort_timestamps?: true})
-  end
+  defp get_encoder(pipeline, :pcm16), do: child(pipeline, :encoder, Membrane.Opus.Encoder)
+  defp get_encoder(pipeline, :opus), do: pipeline
 
   defp get_track_data_msg(data, track) do
     {:track_data,

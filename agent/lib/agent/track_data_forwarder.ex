@@ -50,6 +50,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarder do
     end
   end
 
+  @impl true
+  def handle_parent_notification({:remove_track, track_id}, _ctx, state) do
+    {[end_of_stream: Pad.ref(:output, track_id)], state}
+  end
+
   defp get_stream_format(%{encoding: :pcm16, sample_rate: sample_rate}) do
     %RawAudio{channels: 1, sample_rate: sample_rate, sample_format: :s16le}
   end

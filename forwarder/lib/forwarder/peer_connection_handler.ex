@@ -270,7 +270,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.PeerConnectionHandler do
         sequence_number: rtp.sequence_number,
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
-        csrc: Map.get(rtp, :csrc, []),
         marker: rtp.marker,
         padding: Map.get(rtp, :padding_size, 0)
       )

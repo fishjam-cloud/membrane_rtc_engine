@@ -12,32 +12,28 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
   alias ExWebRTC.{MediaStreamTrack, PeerConnection, RTPReceiver, RTPTransceiver}
 
-  def_options(
-    endpoint_id: [
-      spec: String.t(),
-      description: "ID of the parent endpoint"
-    ],
-    video_codec: [
-      spec: EndpointExWebRTC.video_codec() | nil,
-      description: "Chosen video codec or nil to disable video"
-    ],
-    telemetry_label: [
-      spec: Keyword.t(),
-      default: [],
-      description: "Label passed to Membrane.TelemetryMetrics functions"
-    ]
-  )
+  def_options endpoint_id: [
+                spec: String.t(),
+                description: "ID of the parent endpoint"
+              ],
+              video_codec: [
+                spec: EndpointExWebRTC.video_codec() | nil,
+                description: "Chosen video codec or nil to disable video"
+              ],
+              telemetry_label: [
+                spec: Keyword.t(),
+                default: [],
+                description: "Label passed to Membrane.TelemetryMetrics functions"
+              ]
 
-  def_input_pad(:input,
+  def_input_pad :input,
     accepted_format: _any,
     availability: :on_request
-  )
 
-  def_output_pad(:output,
+  def_output_pad :output,
     accepted_format: _any,
     availability: :on_request,
     flow_control: :push
-  )
 
   @video_codecs [
     H264: %ExWebRTC.RTPCodecParameters{
@@ -136,9 +132,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         sequence_number: rtp.sequence_number,
         timestamp: rtp.timestamp,
         ssrc: rtp.ssrc,
-        csrc: rtp.csrc,
         marker: rtp.marker,
-        padding: rtp.padding_size
+        padding: Map.get(rtp, :padding_size, 0)
       )
 
     extensions = if is_list(rtp.extensions), do: rtp.extensions, else: []
@@ -383,7 +378,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
         packet
         |> Map.from_struct()
         |> Map.take([
-          :csrc,
           :extensions,
           :marker,
           :padding_size,
