@@ -104,7 +104,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         track_id_to_bitrates: %{},
         negotiation?: false,
         queued_negotiation?: false,
-        subscription_manager: SubscriptionManager.new(opts.subscribe_mode),
+        subscription_manager: SubscriptionManager.new(opts.rtc_engine, opts.subscribe_mode),
         removed_tracks: %{audio: 0, video: 0},
         event_serializer: get_event_serializer(opts.event_serialization)
       })
@@ -171,21 +171,21 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
-        {:subscribe_peer, endpoint},
+        {:subscribe_endpoint, endpoint},
         _ctx,
         state
       ) do
     {tracks_to_add, subscription_manager} =
-      SubscriptionManager.subscribe_peer(state.subscription_manager, endpoint)
+      SubscriptionManager.subscribe_endpoint(state.subscription_manager, endpoint)
 
-    case tracks_to_add do
-      [] ->
-        {[], %{state | subscription_manager: subscription_manager}}
+    Membrane.Logger.debug(
+      "Endpoint: #{inspect(endpoint)} subscription requested, subscribing to tracks: #{inspect(tracks_to_add)}"
+    )
 
-      tracks_to_add ->
-        state = %{state | subscription_manager: subscription_manager}
-        handle_new_tracks_addition(tracks_to_add, state)
-    end
+    handle_new_tracks_addition(tracks_to_add, %{
+      state
+      | subscription_manager: subscription_manager
+    })
   end
 
   @impl true
@@ -197,14 +197,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
     {tracks_to_add, subscription_manager} =
       SubscriptionManager.subscribe_tracks(state.subscription_manager, tracks)
 
-    case tracks_to_add do
-      [] ->
-        {[], %{state | subscription_manager: subscription_manager}}
+    Membrane.Logger.debug(
+      "Tracks #{inspect(tracks)} subscription requested, subscribing to tracks: #{inspect(tracks_to_add)}"
+    )
 
-      tracks_to_add ->
-        state = %{state | subscription_manager: subscription_manager}
-        handle_new_tracks_addition(tracks_to_add, state)
-    end
+    handle_new_tracks_addition(tracks_to_add, %{
+      state
+      | subscription_manager: subscription_manager
+    })
   end
 
   @impl true
@@ -299,11 +299,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: true} = state) do
     Membrane.Logger.debug("new parent queued tracks: #{log_tracks(new_tracks)}")
-    handle_new_tracks_during_negotiation(new_tracks, state)
+    handle_new_tracks_addition(new_tracks, state)
   end
 
   @impl true
-  def handle_parent_notification({:new_tracks, new_tracks}, _ctx, state) do
+  def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: false} = state) do
     Membrane.Logger.debug("new parent tracks: #{log_tracks(new_tracks)}")
     handle_new_tracks_addition(new_tracks, state)
   end
@@ -732,7 +732,25 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   defp get_event_serializer(:protobuf), do: MediaEvent
   defp get_event_serializer(:json), do: MediaEventJson
 
-  defp handle_new_tracks_addition(new_tracks, state) do
+  defp handle_new_tracks_addition([], state), do: {[], state}
+
+  defp handle_new_tracks_addition(new_tracks, %{negotiation?: true} = state) do
+    {filtered_new_tracks, subscription_manager} =
+      SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
+
+    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
+
+    state = %{
+      state
+      | subscription_manager: subscription_manager,
+        outbound_tracks: outbound_tracks
+    }
+
+    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
+    {tracks_added, state}
+  end
+
+  defp handle_new_tracks_addition(new_tracks, %{negotiation?: false} = state) do
     {subscribed_tracks, subscription_manager} =
       SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
 
@@ -760,21 +778,5 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         offer_data = get_offer_data(state)
         {tracks_added ++ offer_data, %{state | negotiation?: true}}
     end
-  end
-
-  defp handle_new_tracks_during_negotiation(new_tracks, state) do
-    {filtered_new_tracks, subscription_manager} =
-      SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
-
-    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
-
-    state = %{
-      state
-      | subscription_manager: subscription_manager,
-        outbound_tracks: outbound_tracks
-    }
-
-    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
-    {tracks_added, state}
   end
 end

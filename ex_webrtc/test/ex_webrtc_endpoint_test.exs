@@ -218,7 +218,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       assert_receive %Message.TrackAdded{track_id: ^track_id}, 500
 
       :ok =
-        Engine.message_endpoint(rtc_engine, @endpoint_id, {:subscribe_peer, @fake_endpoint_id})
+        Engine.message_endpoint(
+          rtc_engine,
+          @endpoint_id,
+          {:subscribe_endpoint, @fake_endpoint_id}
+        )
 
       # TracksAdded MediaEvent from Endpoint.ExWebRTC manual endpoint after subscribing to track
       assert {:tracks_added,

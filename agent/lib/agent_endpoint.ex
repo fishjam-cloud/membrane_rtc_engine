@@ -55,15 +55,15 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
                 default: :auto,
                 description: "Subscription mode"
               ],
-              format: [
+              output_format: [
                 spec: output_format(),
                 default: :pcm16,
-                description: "Format of received audio tracks"
+                description: "Format in which received audio tracks should be sent to agent"
               ],
-              sample_rate: [
+              output_sample_rate: [
                 spec: output_sample_rate(),
                 default: 16_000,
-                description: "Sample rate of received audio tracks"
+                description: "Sample rate with which received audio tracks should be sent to agent"
               ]
 
   def_input_pad :input,
@@ -87,8 +87,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
     state = %{
       subscriber: subscriber,
-      format: opts.format,
-      sample_rate: opts.sample_rate,
+      output_format: opts.output_format,
+      output_sample_rate: opts.output_sample_rate,
       rtc_engine: opts.rtc_engine,
       inputs: %{}
     }
@@ -105,7 +105,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   def handle_pad_added(
         Pad.ref(:input, track_id) = pad,
         _ctx,
-        %{subscriber: subscriber, sample_rate: sample_rate} = state
+        %{subscriber: subscriber, output_sample_rate: output_sample_rate} = state
       ) do
     with %Track{type: :audio, encoding: encoding} = track <-
            Subscriber.get_track(subscriber, track_id),
@@ -124,7 +124,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
            output_stream_format: %Membrane.RawAudio{
              channels: 1,
              sample_format: :s16le,
-             sample_rate: sample_rate
+             sample_rate: output_sample_rate
            }
          })
          |> via_in(pad)
@@ -257,7 +257,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   @impl true
   def handle_parent_notification(
-        {:subscribe_peer, endpoint_id},
+        {:subscribe_endpoint, endpoint_id},
         _ctx,
         %{subscriber: subscriber} = state
       ) do

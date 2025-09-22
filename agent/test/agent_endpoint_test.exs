@@ -51,9 +51,9 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
       :ok = Engine.add_endpoint(engine, stereo_endpoint, id: stereo_endpoint_id)
 
-      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, mono_endpoint_id})
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_endpoint, mono_endpoint_id})
 
-      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, stereo_endpoint_id})
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_endpoint, stereo_endpoint_id})
 
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: ^mono_endpoint_id,
@@ -151,7 +151,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
       :ok = Engine.add_endpoint(engine, mono_endpoint, id: mono_endpoint_id)
 
-      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, mono_endpoint_id})
+      :ok = Engine.message_endpoint(engine, @agent_id, {:subscribe_endpoint, mono_endpoint_id})
 
       assert_receive %Engine.Message.TrackAdded{
                        endpoint_id: ^mono_endpoint_id,
@@ -198,7 +198,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       Engine.message_endpoint(engine, :test_endpoint, :start)
 
       assert not (capture_log([level: :debug], fn ->
-                    Engine.message_endpoint(engine, @agent_id, {:subscribe_peer, :test_endpoint})
+                    Engine.message_endpoint(engine, @agent_id, {:subscribe_endpoint, :test_endpoint})
 
                     Process.sleep(1_000)
                   end) =~ "Subscription fulfilled by agent on track: #{track.id}")

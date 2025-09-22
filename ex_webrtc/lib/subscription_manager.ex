@@ -5,41 +5,42 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
 
   use Bunch.Access
 
+  alias Membrane.RTC.Engine
   alias Membrane.RTC.Engine.{Endpoint, Track}
+  alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Track, as: EndpointTrack
 
   @type subscribe_mode :: :auto | :manual
 
   @type t :: %__MODULE__{
+          rtc_engine: Endpoint.id(),
           subscribe_mode: subscribe_mode(),
-          known_tracks: %{},
           subscribed_tracks: MapSet.t(Track.id()),
           subscribed_endpoints: MapSet.t(Endpoint.id())
         }
-  @enforce_keys [:subscribe_mode]
+  @enforce_keys [:rtc_engine, :subscribe_mode]
 
-  defstruct subscribe_mode: :auto,
-            known_tracks: %{},
-            subscribed_tracks: MapSet.new(),
-            subscribed_endpoints: MapSet.new()
+  defstruct @enforce_keys ++ [subscribed_tracks: MapSet.new(), subscribed_endpoints: MapSet.new()]
 
   @doc """
   Creates a new subscription manager.
   """
-  @spec new(subscribe_mode()) :: t()
-  def new(subscribe_mode) do
-    %__MODULE__{subscribe_mode: subscribe_mode}
+  @spec new(Endpoint.id(), subscribe_mode()) :: t()
+  def new(rtc_engine, subscribe_mode) do
+    %__MODULE__{rtc_engine: rtc_engine, subscribe_mode: subscribe_mode}
   end
 
   @doc """
   Handles peer subscription in manual mode.
   """
-  @spec subscribe_peer(t(), String.t()) :: {[Track.t()], t()}
-  def subscribe_peer(%{subscribe_mode: :manual} = manager, endpoint_id) do
+  @spec subscribe_endpoint(t(), String.t()) :: {[Track.t()], t()}
+  def subscribe_endpoint(
+        %{rtc_engine: rtc_engine, subscribe_mode: :manual} = manager,
+        endpoint_id
+      ) do
     tracks_to_add =
-      manager.known_tracks
-      |> Map.values()
-      |> Enum.filter(fn %{engine_track: t} -> t.origin == endpoint_id end)
-      |> Enum.map(& &1.engine_track)
+      rtc_engine
+      |> Engine.get_tracks()
+      |> Enum.filter(fn t -> t.origin == endpoint_id end)
 
     manager = %{
       manager
@@ -49,7 +50,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
     {tracks_to_add, manager}
   end
 
-  def subscribe_peer(%{subscribe_mode: :auto} = manager, _endpoint_id) do
+  def subscribe_endpoint(%{subscribe_mode: :auto} = manager, _endpoint_id) do
     {[], manager}
   end
 
@@ -57,12 +58,13 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
   Handles track subscription in manual mode.
   """
   @spec subscribe_tracks(t(), [Track.id()]) :: {[Track.t()], t()}
-  def subscribe_tracks(%{subscribe_mode: :manual} = manager, track_ids) do
-    subscribed_tracks =
-      track_ids
-      |> Enum.filter(&Map.has_key?(manager.known_tracks, &1))
+  def subscribe_tracks(%{rtc_engine: rtc_engine, subscribe_mode: :manual} = manager, track_ids) do
+    tracks_to_add =
+      rtc_engine
+      |> Engine.get_tracks()
+      |> Enum.filter(&Enum.member?(track_ids, &1.id))
 
-    tracks_to_add = Enum.map(subscribed_tracks, &manager.known_tracks[&1].engine_track)
+    subscribed_tracks = Enum.map(tracks_to_add, fn t -> t.id end)
 
     manager = %{
       manager
@@ -81,14 +83,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
   """
   @spec handle_new_tracks(t(), [Track.t()]) :: {map(), t()}
   def handle_new_tracks(manager, new_tracks) do
-    alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Track, as: EndpointTrack
-
     new_tracks_map =
-      new_tracks
-      |> Map.new(&{&1.id, %EndpointTrack{status: :pending, engine_track: &1}})
+      Map.new(new_tracks, &{&1.id, %EndpointTrack{status: :pending, engine_track: &1}})
 
     filtered_tracks = filter_subscribed_new_tracks(manager, new_tracks_map)
-    manager = %{manager | known_tracks: Map.merge(manager.known_tracks, new_tracks_map)}
 
     {filtered_tracks, manager}
   end
@@ -101,15 +99,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.SubscriptionManager do
     track_ids = Enum.map(tracks, & &1.id)
 
     manager
-    |> update_in([:known_tracks], &Map.drop(&1, track_ids))
     |> update_in([:subscribed_tracks], &MapSet.difference(&1, MapSet.new(track_ids)))
   end
 
   defp filter_subscribed_new_tracks(%{subscribe_mode: :auto}, new_tracks), do: new_tracks
 
   defp filter_subscribed_new_tracks(%{subscribe_mode: :manual} = manager, new_tracks) do
-    alias Membrane.RTC.Engine.Endpoint.ExWebRTC.Track, as: EndpointTrack
-
     new_tracks
     |> Enum.filter(fn {id, %EndpointTrack{engine_track: t}} ->
       MapSet.member?(manager.subscribed_endpoints, t.origin) or
