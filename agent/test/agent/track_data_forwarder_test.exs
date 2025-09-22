@@ -80,14 +80,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.TrackDataForwarderTest do
     assert received_buffers?(pipeline, :sink1)
   end
 
-  defp start_pipeline() do
-    Testing.Pipeline.start_link_supervised!(
-      spec: [
-        child(:forwarder, TrackDataForwarder)
-      ]
-    )
-  end
-
   defp received_buffers?(pipeline, sink_name) do
     assert_sink_buffer(pipeline, sink_name, %Buffer{payload: <<content>>})
     received_buffers?(pipeline, sink_name, content + 1)

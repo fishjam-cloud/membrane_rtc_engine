@@ -4,7 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   as they come in bursts from the TTS model.
   """
 
-  use Membrane.Endpoint
+  use Membrane.Filter
 
   require Membrane.Logger
 
