@@ -11,17 +11,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
 
   use Membrane.Endpoint
 
-  alias Membrane.RawAudio
   alias Membrane.Opus
+  alias Membrane.RawAudio
 
   @max_jitter_duration Membrane.Time.milliseconds(100)
 
   def_input_pad :input,
-    accepted_format: RawAudio,
+    accepted_format: any_of(RawAudio, Opus),
     availability: :always
 
   def_output_pad :output,
-    accepted_format: RawAudio,
+    accepted_format: any_of(RawAudio, Opus),
     availability: :always,
     flow_control: :push
 
@@ -36,13 +36,20 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   end
 
   @impl true
+  def handle_end_of_stream(:input, _ctx, state) do
+    {[end_of_stream: :output], state}
+  end
+
+  @impl true
   def handle_buffer(_pad, buffer, ctx, state) do
     stream_format = get_in(ctx, [:pads, :output, :stream_format])
 
     {actions, state} = maybe_reset_pts(state)
-    buffer = %Membrane.Buffer{buffer | pts: state.next_pts}
 
-    {actions ++ [buffer: {:output, buffer}], update_next_pts(buffer, stream_format, state)}
+    buffer =
+      %Membrane.Buffer{buffer | pts: state.next_pts} |> update_buffer_duration(stream_format)
+
+    {actions ++ [buffer: {:output, buffer}], update_next_pts(buffer, state)}
   end
 
   defp maybe_reset_pts(%{start_ts: nil} = state) do
@@ -61,13 +68,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
 
   defp update_next_pts(
          buffer,
-         stream_format,
          %{next_pts: next_pts} = state
        ),
-       do: %{state | next_pts: next_pts + get_duration(buffer, stream_format)}
+       do: %{state | next_pts: next_pts + buffer.metadata.duration}
 
-  defp get_duration(buffer, %RawAudio{} = stream_format),
-    do: RawAudio.bytes_to_time(byte_size(buffer.payload), stream_format)
+  defp update_buffer_duration(buffer, %RawAudio{} = stream_format) do
+    size = RawAudio.bytes_to_time(byte_size(buffer.payload), stream_format)
 
-  defp get_duration(buffer, %Opus{}), do: buffer.metadata.duration
+    %{buffer | metadata: Map.put(buffer.metadata, :duration, size)}
+  end
+
+  defp update_buffer_duration(buffer, %Opus{}) do
+    buffer
+  end
 end

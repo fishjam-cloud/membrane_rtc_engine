@@ -59,6 +59,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
       {:membrane_rtp_opus_plugin, "~> 0.10.0"},
       {:membrane_rtp_format, "~> 0.10.0"},
       {:membrane_ffmpeg_swresample_plugin, "~> 0.20.0"},
+      {:qex, "~> 0.5"},
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
