@@ -9,7 +9,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   Otherwise its start timestamp is the end timestamp of the previous buffer.
   """
 
-  use Membrane.Endpoint
+  use Membrane.Filter
 
   alias Membrane.Opus
   alias Membrane.RawAudio
@@ -18,21 +18,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
 
   def_input_pad :input,
     accepted_format: any_of(RawAudio, Opus),
+    flow_control: :auto,
     availability: :always
 
   def_output_pad :output,
     accepted_format: any_of(RawAudio, Opus),
     availability: :always,
-    flow_control: :push
+    flow_control: :auto
 
   @impl true
   def handle_init(_ctx, _opts) do
     {[], %{next_pts: 0, start_timestamp: nil, stream_format: nil}}
-  end
-
-  @impl true
-  def handle_stream_format(:input, stream_format, _context, state) do
-    {[stream_format: {:output, stream_format}], state}
   end
 
   @impl true

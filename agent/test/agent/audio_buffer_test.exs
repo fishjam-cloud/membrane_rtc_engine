@@ -2,21 +2,22 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
   use ExUnit.Case, async: true
 
   import Membrane.ChildrenSpec
+  import Membrane.Testing.Assertions
 
   alias Membrane.Buffer
   alias Membrane.Testing
+  alias Membrane.Time
 
   alias Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer
 
-  @buffer_duration Membrane.Time.milliseconds(10)
-  @fake_buffer_duration Membrane.Time.milliseconds(100)
+  @buffer_duration Time.milliseconds(10)
+  @fake_buffer_duration Time.milliseconds(50)
+  @audio_buffer_queue_length trunc(Time.seconds(10) / @fake_buffer_duration)
 
   test "sends all buffers" do
     payload = [1, 2, 3, 4] |> Enum.map(&<<&1>>)
 
     start_pipeline(payload)
-
-    Process.sleep(250)
 
     for data <- payload do
       assert_receive_buffer(data)
@@ -33,17 +34,40 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     end
   end
 
+  test "sends eos after buffers" do
+    # Membrane Core automatically makes initial demand for 100 buffers
+    # In this test we check if after the initial 100 buffers demanded,
+    # The sink doesn't immediately receive the end_of_stream
+    # The EOS should be received after the last 10 buffers
+    payload = 1..110 |> Enum.to_list() |> Enum.map(&<<&1>>)
+
+    pipeline = start_pipeline(payload, sink: %Testing.Sink{autodemand: false})
+
+    refute_sink_buffer(pipeline, :sink, _buffer)
+    refute_child_terminated(pipeline, :sink)
+
+    Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 100})
+
+    refute_receive {Testing.Pipeline, ^pipeline,
+                    {:handle_element_end_of_stream, {:sink, :input}}},
+                   2000
+
+    Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 110})
+
+    assert_end_of_stream(pipeline, :sink)
+  end
+
   test "drops buffers if over the limit" do
-    payload = 1..200 |> Enum.map(&<<&1>>)
+    payload = 1..(2 * @audio_buffer_queue_length) |> Enum.map(&<<&1>>)
 
     start_pipeline(payload, realtimer?: true)
 
-    for data <- Enum.take(payload, 100) do
+    for data <- Enum.take(payload, @audio_buffer_queue_length) do
       assert_receive_buffer(data)
     end
 
     count = count_sink_buffers()
-    assert count < 100
+    assert count < @audio_buffer_queue_length
   end
 
   defp assert_receive_buffer(data) do
@@ -78,10 +102,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
         child(:source, source)
         |> child(:buffer, AudioBuffer)
         |> realtimer.()
-        |> child(:sink, %Membrane.Debug.Sink{
-          handle_buffer: &send(test_process_pid, {:sink_buffer, &1}),
-          handle_end_of_stream: fn -> send(test_process_pid, :end_of_stream) end
-        })
+        |> child(
+          :sink,
+          Keyword.get(opts, :sink, %Membrane.Debug.Sink{
+            handle_buffer: &send(test_process_pid, {:sink_buffer, &1}),
+            handle_end_of_stream: fn -> send(test_process_pid, :end_of_stream) end
+          })
+        )
       ]
     )
   end
@@ -113,7 +140,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
       }
 
       maybe_eos =
-        if length(state.buffers) == 0, do: [end_of_stream: :output], else: []
+        if Enum.empty?(state.buffers), do: [end_of_stream: :output], else: []
 
       {buffers ++ maybe_eos, state}
     end

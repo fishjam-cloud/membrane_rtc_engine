@@ -23,6 +23,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
     demand_unit: :buffers,
     flow_control: :manual
 
+  @type queue_element :: Membrane.Buffer.t() | :end_of_stream
+
   @impl true
   def handle_init(_ctx, _opts) do
     {[],
@@ -40,7 +42,9 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   @impl true
   def handle_end_of_stream(:input, _ctx, state) do
-    {[end_of_stream: :output], state}
+    state
+    |> Map.update!(:queue, &Qex.push(&1, :end_of_stream))
+    |> do_handle_demand()
   end
 
   @impl true
@@ -75,25 +79,29 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
     if Enum.empty?(state.queue) do
       conclude_handle_demand(state, buffers)
     else
-      {buffer, queue} = Qex.pop!(state.queue)
+      {element, queue} = Qex.pop!(state.queue)
 
       state =
         state
         |> Map.put(:queue, queue)
         |> Map.put(:demand, demand - 1)
-        |> Map.update!(:queue_duration, &(&1 - buffer.metadata.duration))
+        |> Map.update!(:queue_duration, &(&1 - get_element_duration(element)))
 
-      do_handle_demand(state, [buffer | buffers])
+      do_handle_demand(state, [to_action(element) | buffers])
     end
   end
 
-  defp conclude_handle_demand(state, []) do
-    {[], state}
-  end
+  @spec get_element_duration(queue_element()) :: integer()
+  defp get_element_duration(:end_of_stream), do: 0
 
-  defp conclude_handle_demand(state, buffers) do
-    actions = [buffer: {Pad.ref(:output), Enum.reverse(buffers)}]
+  defp get_element_duration(buffer), do: buffer.metadata.duration
 
-    {actions, state}
+  @spec to_action(queue_element()) :: Membrane.Action.t()
+  defp to_action(:end_of_stream), do: {:end_of_stream, :output}
+
+  defp to_action(buffer), do: {:buffer, {Pad.ref(:output), buffer}}
+
+  defp conclude_handle_demand(state, actions) do
+    {Enum.reverse(actions), state}
   end
 end
