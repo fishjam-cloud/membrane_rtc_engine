@@ -96,7 +96,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   defp get_element_duration(buffer), do: buffer.metadata.duration
 
-  @spec to_action(queue_element()) :: Membrane.Action.t()
+  @spec to_action(queue_element()) :: Membrane.Element.Action.t()
   defp to_action(:end_of_stream), do: {:end_of_stream, :output}
 
   defp to_action(buffer), do: {:buffer, {Pad.ref(:output), buffer}}
