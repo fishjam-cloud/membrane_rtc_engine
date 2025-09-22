@@ -161,7 +161,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
        |> child(:realtimer, Membrane.Realtimer)
        |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
-       |> child(:interruption_handler, InterruptionHandler)
        |> child(:track_sender, %StaticTrackSender{
          track: track,
          is_keyframe: fn _buf, _end -> true end
@@ -330,7 +329,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   # TODO: Send notification to per-track audio buffer
-  defp handle_agent_request(%InterruptTrack{track_id: track_id}, _ctx, state) do
+  defp handle_agent_request(%InterruptTrack{track_id: _track_id}, _ctx, state) do
     {[notify_child: {:audio_buffer, :clear_queue}], state}
   end
 

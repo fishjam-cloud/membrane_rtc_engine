@@ -111,6 +111,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   end
 
   defp clear_queue(state) do
-    %{state | queue: Qex.new(), queue_duration: 0}
+    queue = state.queue |> Enum.filter(&(&1 == :end_of_stream)) |> Qex.new()
+
+    %{state | queue: queue, queue_duration: 0}
   end
 end
