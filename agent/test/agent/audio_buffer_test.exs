@@ -4,6 +4,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
   import Membrane.ChildrenSpec
   import Membrane.Testing.Assertions
 
+  alias Membrane.RTC.Engine.Endpoint.Agent.Timestamper
   alias Membrane.Buffer
   alias Membrane.Testing
   alias Membrane.Time
@@ -86,7 +87,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     assert_end_of_stream(pipeline, :sink)
   end
 
-  test "clear_queue event prevents queued buffers from being sent" do
+  test "clear event prevents queued buffers from being sent" do
     payload = 1..50 |> Enum.map(&<<&1>>)
 
     # Membrane Core preemptively makes demands up to sink_queue_size
@@ -97,7 +98,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     refute_sink_buffer(pipeline, :sink, _any)
 
     # Because Membrane Core makes the demands preemptively, we clear before the demand
-    Testing.Pipeline.notify_child(pipeline, :buffer, :clear_queue)
+    Testing.Pipeline.notify_child(pipeline, :timestamper, :interrupt_track)
     Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 30})
 
     for data <- payload |> Enum.take(30) do
@@ -135,6 +136,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     Testing.Pipeline.start_link_supervised!(
       spec: [
         child(:source, source)
+        |> child(:timestamper, Timestamper)
         |> child(:buffer, audio_buffer)
         |> extra_elements(opts)
         |> via_in(:input, target_queue_size: Keyword.get(opts, :sink_queue_size))
