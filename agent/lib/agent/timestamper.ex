@@ -28,7 +28,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
 
   @impl true
   def handle_init(_ctx, _opts) do
-    {[], %{next_pts: 0, start_timestamp: nil, stream_format: nil}}
+    {[], %{next_pts: nil, start_timestamp: nil, stream_format: nil}}
   end
 
   @impl true
@@ -43,14 +43,19 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
     {actions ++ [buffer: {:output, buffer}], update_next_pts(buffer, state)}
   end
 
+  @impl true
+  def handle_parent_notification(:interrupt, _ctx, state) do
+    {[event: {:output, :clear_queue}], %{state | next_pts: nil}}
+  end
+
   defp maybe_reset_pts(%{start_timestamp: nil} = state) do
-    {[], %{state | start_timestamp: Membrane.Time.os_time()}}
+    {[], %{state | start_timestamp: Membrane.Time.os_time(), next_pts: 0}}
   end
 
   defp maybe_reset_pts(%{next_pts: next_pts, start_timestamp: start_timestamp} = state) do
     arrival_time = Membrane.Time.os_time() - start_timestamp
 
-    if arrival_time > next_pts + @max_jitter_duration do
+    if next_pts == nil or arrival_time > next_pts + @max_jitter_duration do
       {[event: {:output, %Membrane.Realtimer.Events.Reset{}}], %{state | next_pts: arrival_time}}
     else
       {[], state}

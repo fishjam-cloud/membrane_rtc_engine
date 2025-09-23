@@ -73,9 +73,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
 
     pipeline =
       start_pipeline(payload,
-        realtimer?: true,
+        sink: %Testing.Sink{autodemand: false},
         max_buffered_duration: 2 * @audio_buffer_queue_length * @fake_buffer_duration
       )
+
+    Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 2 * @audio_buffer_queue_length})
 
     for data <- payload do
       assert_sink_buffer(pipeline, :sink, %Buffer{payload: ^data})
