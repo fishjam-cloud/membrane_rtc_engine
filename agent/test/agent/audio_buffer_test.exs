@@ -88,7 +88,6 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
 
   test "clear event prevents queued buffers from being sent" do
     payload = 1..50 |> Enum.map(&<<&1>>)
-    f = &Kernel.SpecialForms."<<>>"/1
 
     # Membrane Core preemptively makes demands up to sink_queue_size
     # We set it to 30 to prevent preemptively making too many demands
@@ -97,9 +96,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
 
     refute_sink_buffer(pipeline, :sink, _any)
 
-    # Because Membrane Core makes the demands preemptively, we clear before the demand
-    Testing.Pipeline.notify_child(pipeline, :timestamper, :interrupt_track)
     Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 30})
+    Testing.Pipeline.notify_child(pipeline, :timestamper, :interrupt_track)
 
     for data <- payload |> Enum.take(30) do
       assert_sink_buffer(pipeline, :sink, %Buffer{payload: ^data})
