@@ -78,6 +78,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   end
 
   @impl true
+  def handle_event(_pad, event, _ctx, state) do
+    {[forward: event], state}
+  end
+
+  @impl true
   def handle_demand(Pad.ref(:output), size, :buffers, _ctx, state) do
     state
     |> Map.update!(:demand, &(&1 + size))
