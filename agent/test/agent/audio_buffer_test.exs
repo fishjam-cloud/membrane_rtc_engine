@@ -4,12 +4,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
   import Membrane.ChildrenSpec
   import Membrane.Testing.Assertions
 
-  alias Membrane.RTC.Engine.Endpoint.Agent.Timestamper
   alias Membrane.Buffer
   alias Membrane.Testing
   alias Membrane.Time
 
-  alias Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer
+  alias Membrane.RTC.Engine.Endpoint.Agent.{AudioBuffer, Timestamper}
 
   @buffer_duration Time.milliseconds(10)
   @fake_buffer_duration Time.milliseconds(50)
@@ -89,6 +88,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
 
   test "clear event prevents queued buffers from being sent" do
     payload = 1..50 |> Enum.map(&<<&1>>)
+    f = &Kernel.SpecialForms."<<>>"/1
 
     # Membrane Core preemptively makes demands up to sink_queue_size
     # We set it to 30 to prevent preemptively making too many demands
