@@ -158,6 +158,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
        |> get_parser(codec_params.encoding)
        |> child(:timestamper, Timestamper)
        |> child(:audio_buffer, AudioBuffer)
+       # Queue size 1 to minimize interruption delay, which is target_queue_size * 60ms
+       |> via_in(:input, target_queue_size: 1)
        |> child(:realtimer, Membrane.Realtimer)
        |> get_encoder(codec_params.encoding)
        |> child(:payloader, payloader_bin)
