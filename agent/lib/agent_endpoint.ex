@@ -332,7 +332,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
 
   # TODO: Send notification to per-track audio buffer
   defp handle_agent_request(%InterruptTrack{track_id: _track_id}, _ctx, state) do
-    {[notify_child: {:timestamper, :interrupt}], state}
+    {[notify_child: {:timestamper, :interrupt_track}], state}
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do

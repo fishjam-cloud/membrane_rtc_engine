@@ -11,6 +11,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   alias Membrane.Opus
   alias Membrane.RawAudio
 
+  alias Membrane.RTC.Engine.Endpoint.Agent.ClearEvent
+
   @default_max_buffered_duration Membrane.Time.seconds(10)
 
   def_options max_buffered_duration: [
@@ -71,7 +73,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   end
 
   @impl true
-  def handle_parent_notification(:clear_queue, _ctx, state) do
+  def handle_event(:input, %ClearEvent{}, _ctx, state) do
     {[], clear_queue(state)}
   end
 

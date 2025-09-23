@@ -14,6 +14,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   alias Membrane.Opus
   alias Membrane.RawAudio
 
+  alias Membrane.RTC.Engine.Endpoint.Agent.ClearEvent
+
   @max_jitter_duration Membrane.Time.milliseconds(100)
 
   def_input_pad :input,
@@ -44,8 +46,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.Timestamper do
   end
 
   @impl true
-  def handle_parent_notification(:interrupt, _ctx, state) do
-    {[event: {:output, :clear_queue}], %{state | next_pts: nil}}
+  def handle_parent_notification(:interrupt_track, _ctx, state) do
+    {[event: {:output, %ClearEvent{}}], %{state | next_pts: nil}}
   end
 
   defp maybe_reset_pts(%{start_timestamp: nil} = state) do
