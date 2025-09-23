@@ -68,6 +68,22 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     assert count < @audio_buffer_queue_length
   end
 
+  test "doesn't drop buffers if max duration increased" do
+    payload = 1..(2 * @audio_buffer_queue_length) |> Enum.map(&<<&1>>)
+
+    pipeline =
+      start_pipeline(payload,
+        realtimer?: true,
+        max_buffered_duration: 2 * @audio_buffer_queue_length * @fake_buffer_duration
+      )
+
+    for data <- payload do
+      assert_sink_buffer(pipeline, :sink, %Buffer{payload: ^data})
+    end
+
+    assert_end_of_stream(pipeline, :sink)
+  end
+
   test "clear_queue event prevents queued buffers from being sent" do
     payload = 1..50 |> Enum.map(&<<&1>>)
 
@@ -108,10 +124,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
       stream_format: %Membrane.RawAudio{channels: 1, sample_rate: 16_000, sample_format: :s16le}
     }
 
+    audio_buffer =
+      case Keyword.fetch(opts, :max_buffered_duration) do
+        {:ok, duration} -> %AudioBuffer{max_buffered_duration: duration}
+        :error -> AudioBuffer
+      end
+
     Testing.Pipeline.start_link_supervised!(
       spec: [
         child(:source, source)
-        |> child(:buffer, AudioBuffer)
+        |> child(:buffer, audio_buffer)
         |> extra_elements(opts)
         |> via_in(:input, target_queue_size: Keyword.get(opts, :sink_queue_size))
         |> child(

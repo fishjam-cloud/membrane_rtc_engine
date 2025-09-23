@@ -11,7 +11,14 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   alias Membrane.Opus
   alias Membrane.RawAudio
 
-  @max_buffered_duration Membrane.Time.seconds(10)
+  @default_max_buffered_duration Membrane.Time.seconds(10)
+
+  def_options max_buffered_duration: [
+                spec: Membrane.Time.t(),
+                description:
+                  "Maximum duration of audio that can be buffered. Extra audio is dropped.",
+                default: @default_max_buffered_duration
+              ]
 
   def_input_pad :input,
     accepted_format: any_of(RawAudio, Opus),
@@ -26,12 +33,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   @type queue_element :: Membrane.Buffer.t() | :end_of_stream
 
   @impl true
-  def handle_init(_ctx, _opts) do
+  def handle_init(_ctx, opts) do
     {[],
      %{
        queue: Qex.new(),
        queue_duration: 0,
-       demand: 0
+       demand: 0,
+       max_queue_duration: opts.max_buffered_duration
      }}
   end
 
@@ -49,7 +57,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   @impl true
   def handle_buffer(_pad, buffer, _ctx, state) do
-    if state.queue_duration + buffer.metadata.duration <= @max_buffered_duration do
+    if state.queue_duration + buffer.metadata.duration <= state.max_queue_duration do
       state =
         state
         |> Map.update!(:queue, &Qex.push(&1, buffer))
