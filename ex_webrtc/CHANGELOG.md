@@ -12,6 +12,7 @@
 * Allow ignoring specified endpoints [#66](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/66)
 * Dependency to protobuf main branch [#68](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/68)
 * Remove CSRCs [#72](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/72)
+* Add manual subscription [#71](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/71)
 
 ## 0.1.0
 * Initial release [#406](https://github.com/fishjam-dev/membrane_rtc_engine/pull/406)

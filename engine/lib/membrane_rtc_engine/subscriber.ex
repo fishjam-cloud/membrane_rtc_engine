@@ -58,6 +58,13 @@ defmodule Membrane.RTC.Engine.Subscriber do
   @callback add_endpoints(endpoints :: [Endpoint.id()], subscriptions_state :: t()) :: t()
 
   @doc """
+  Callback invoked when endpoint decided that it want to subscribe on specific tracks.
+  It should return an updated struct and it will try to subscribe on these tracks.
+  This function is useless in `:auto` subscribe_mode.
+  """
+  @callback add_tracks(track_ids :: [Track.id()], subscriptions_state :: t()) :: t()
+
+  @doc """
   Try to subscribe on tracks.
 
   It returns a list of valid tracks that were successfully subscribed
@@ -154,6 +161,19 @@ defmodule Membrane.RTC.Engine.Subscriber do
 
   def add_endpoints(endpoints, %{subscribe_mode: :manual} = subscriptions_state) do
     Manual.add_endpoints(endpoints, subscriptions_state)
+  end
+
+  @doc """
+  Provide new track for subscriber. It makes only sense to use this method when subscriber is in mode `:manual`.
+  """
+  @spec add_tracks(track_ids :: [Track.id()], subscriptions_state :: t()) :: t()
+  def add_tracks(track_ids, %{subscribe_mode: :auto} = subscriptions_state) do
+    Automatic.add_tracks(track_ids, subscriptions_state)
+  end
+
+  @spec add_tracks(track_ids :: [Track.id()], subscriptions_state :: t()) :: t()
+  def add_tracks(track_ids, %{subscribe_mode: :manual} = subscriptions_state) do
+    Manual.add_tracks(track_ids, subscriptions_state)
   end
 
   @doc """
