@@ -176,7 +176,6 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       assert byte_size(data) > 100
     end
 
-    @tag :debug
     test "Agent is able to subscribe to selected track", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
       mono_endpoint = create_file_endpoint(engine, @opus_mono_path)

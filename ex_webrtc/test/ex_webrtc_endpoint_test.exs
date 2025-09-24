@@ -30,11 +30,11 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
   @renegotiate_tracks_event {:renegotiate_tracks, %RenegotiateTracks{}}
   @fake_endpoint_id "fake_endpoint_id"
 
-  setup do
-    setup_with_subscribe_mode(:auto)
-  end
-
   describe "media events:" do
+    setup do
+      setup_with_subscribe_mode(:auto)
+    end
+
     # The `unmute_track` event is used to accelerate the unmuting of tracks that have been muted for an extended period.
     # Each time a track is unmuted on the client side, the client SDK sends an unmute event.
     # Due to this, testing it in the `ex_webrtc` browser integration tests is challenging, thus we test it here.
@@ -134,10 +134,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
       setup_with_subscribe_mode(:manual)
     end
 
+    @tag :debug
     test "succesfully receive trackadded after subscription", %{rtc_engine: rtc_engine} do
-      # global Endpoint added
-      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
-      # local manual Endpoint added
       assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
       send_media_event(rtc_engine, @connect_event)
       assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
@@ -185,9 +183,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTCTest do
     test "succesfully receive trackadded after subscription on endpoint", %{
       rtc_engine: rtc_engine
     } do
-      # global Endpoint added
-      assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
-      # local manual Endpoint added
       assert_receive %Message.EndpointAdded{endpoint_id: @endpoint_id}, 500
       send_media_event(rtc_engine, @connect_event)
       assert {:connected, %Server.MediaEvent.Connected{}} = receive_media_event()
