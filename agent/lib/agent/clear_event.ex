@@ -1,4 +1,4 @@
-defmodule Membrane.RTC.Engine.Endpoint.Agent.ClearEvent do
+defmodule Membrane.RTC.Engine.Endpoint.Agent.InterruptEvent do
   @moduledoc false
 
   @derive Membrane.EventProtocol
