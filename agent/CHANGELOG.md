@@ -7,3 +7,4 @@
 - Fix message format sent to FJ [#70](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/70)
 - Add realtimer to audio input [#72](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/72)
 - Allow selective subscription [#71](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/71)
+- Add interruptions to agent endpoint [#74](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/74)

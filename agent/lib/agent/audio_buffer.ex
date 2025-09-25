@@ -11,7 +11,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   alias Membrane.Opus
   alias Membrane.RawAudio
 
-  @max_buffered_duration Membrane.Time.seconds(10)
+  alias Membrane.RTC.Engine.Endpoint.Agent.InterruptEvent
+
+  @default_max_buffered_duration Membrane.Time.seconds(10)
+
+  def_options max_buffered_duration: [
+                spec: Membrane.Time.t(),
+                description:
+                  "Maximum duration of audio that can be buffered. Extra audio is dropped.",
+                default: @default_max_buffered_duration
+              ]
 
   def_input_pad :input,
     accepted_format: any_of(RawAudio, Opus),
@@ -26,12 +35,13 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
   @type queue_element :: Membrane.Buffer.t() | :end_of_stream
 
   @impl true
-  def handle_init(_ctx, _opts) do
+  def handle_init(_ctx, opts) do
     {[],
      %{
        queue: Qex.new(),
        queue_duration: 0,
-       demand: 0
+       demand: 0,
+       max_queue_duration: opts.max_buffered_duration
      }}
   end
 
@@ -49,7 +59,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   @impl true
   def handle_buffer(_pad, buffer, _ctx, state) do
-    if state.queue_duration + buffer.metadata.duration <= @max_buffered_duration do
+    if state.queue_duration + buffer.metadata.duration <= state.max_queue_duration do
       state =
         state
         |> Map.update!(:queue, &Qex.push(&1, buffer))
@@ -60,6 +70,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
       Membrane.Logger.warning("Audio Buffer dropping buffer - queue too long")
       {[], state}
     end
+  end
+
+  @impl true
+  def handle_event(:input, %InterruptEvent{}, _ctx, state) do
+    {[], clear_queue(state)}
+  end
+
+  @impl true
+  def handle_event(_pad, event, _ctx, state) do
+    {[forward: event], state}
   end
 
   @impl true
@@ -103,5 +123,11 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBuffer do
 
   defp conclude_handle_demand(state, actions) do
     {Enum.reverse(actions), state}
+  end
+
+  defp clear_queue(state) do
+    queue = state.queue |> Enum.filter(&(&1 == :end_of_stream)) |> Qex.new()
+
+    %{state | queue: queue, queue_duration: 0}
   end
 end
