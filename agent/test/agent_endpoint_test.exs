@@ -13,7 +13,7 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
   alias Membrane.RTC.Engine.Track
 
   alias Fishjam.AgentRequest
-  alias Fishjam.AgentRequest.AddTrack
+  alias Fishjam.AgentRequest.{AddTrack, RemoveTrack}
   alias Fishjam.AgentRequest.AddTrack.CodecParameters
   alias Fishjam.Notifications
 
@@ -472,6 +472,15 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       refute_receive %Engine.Message.EndpointCrashed{}, 1000
     end
 
+    test "Remove track for non-existing track", %{rtc_engine: engine} do
+      agent_endpoint = create_agent_endpoint(engine)
+
+      :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
+      send_remove_track_request(engine, track_id: UUID.uuid4())
+
+      refute_receive %Engine.Message.EndpointCrashed{}, 1000
+    end
+
     # FIXME: allow agent endpoint to handle multiple inputs
     @tag :skip
     test "Publishes two pcm16 tracks to other endpoints", %{rtc_engine: engine} do
@@ -616,6 +625,17 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     }
 
     request = %AgentRequest{content: {:add_track, add_track}}
+
+    agent_id = Keyword.get(opts, :agent_id, @agent_id)
+    Engine.message_endpoint(engine, agent_id, {:agent_notification, request})
+  end
+
+  defp send_remove_track_request(engine, opts) do
+    add_track = %RemoveTrack{
+      track_id: Keyword.fetch!(opts, :track_id)
+    }
+
+    request = %AgentRequest{content: {:remove_track, add_track}}
 
     agent_id = Keyword.get(opts, :agent_id, @agent_id)
     Engine.message_endpoint(engine, agent_id, {:agent_notification, request})
