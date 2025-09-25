@@ -29,4 +29,14 @@ defmodule Membrane.RTC.Engine.Subscriber.Automatic do
 
     subscriptions_state
   end
+
+  @impl true
+  def add_tracks(_tracks, subscriptions_state) do
+    Membrane.Logger.warning("""
+    Unexepected usage of method.
+    If you want to add tracks manually set `:subscribe_mode` option to `:manual`.
+    """)
+
+    subscriptions_state
+  end
 end

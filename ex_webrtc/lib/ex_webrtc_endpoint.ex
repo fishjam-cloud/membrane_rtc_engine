@@ -1,13 +1,13 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @moduledoc """
-  An Endpoint responsible for communicatiing with WebRTC client.
+  An Endpoint responsible for communicating with WebRTC client.
   """
   use Membrane.Bin
 
   require Membrane.Logger
   require Membrane.TelemetryMetrics
 
-  alias __MODULE__.PeerConnectionHandler
+  alias __MODULE__.{PeerConnectionHandler, SubscriptionManager}
 
   alias Membrane.RTC.Engine
 
@@ -52,10 +52,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
                 spec: :json | :protobuf,
                 description: "Serialization method for encoding and decoding Media Events"
               ],
-              ignored_endpoints: [
-                spec: [Engine.Endpoint.id()],
-                default: [],
-                description: "List of endpoint IDs to ignore"
+              subscribe_mode: [
+                spec: :auto | :manual,
+                default: :auto,
+                description: "Subscription mode"
               ]
 
   def_input_pad :input,
@@ -104,10 +104,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         track_id_to_bitrates: %{},
         negotiation?: false,
         queued_negotiation?: false,
+        subscription_manager: SubscriptionManager.new(opts.rtc_engine, opts.subscribe_mode),
         removed_tracks: %{audio: 0, video: 0},
         event_serializer: get_event_serializer(opts.event_serialization)
       })
       |> Map.delete(:event_serialization)
+      |> Map.delete(:subscribe_mode)
 
     spec = [
       child(:connection_handler, %PeerConnectionHandler{
@@ -169,11 +171,49 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   @impl true
   def handle_parent_notification(
+        {:subscribe_endpoint, endpoint},
+        _ctx,
+        state
+      ) do
+    {tracks_to_add, subscription_manager} =
+      SubscriptionManager.subscribe_endpoint(state.subscription_manager, endpoint)
+
+    Membrane.Logger.debug(
+      "Endpoint: #{inspect(endpoint)} subscription requested, subscribing to tracks: #{inspect(tracks_to_add)}"
+    )
+
+    handle_new_tracks_addition(tracks_to_add, %{
+      state
+      | subscription_manager: subscription_manager
+    })
+  end
+
+  @impl true
+  def handle_parent_notification(
+        {:subscribe_tracks, tracks},
+        _ctx,
+        state
+      ) do
+    {tracks_to_add, subscription_manager} =
+      SubscriptionManager.subscribe_tracks(state.subscription_manager, tracks)
+
+    Membrane.Logger.debug(
+      "Tracks #{inspect(tracks)} subscription requested, subscribing to tracks: #{inspect(tracks_to_add)}"
+    )
+
+    handle_new_tracks_addition(tracks_to_add, %{
+      state
+      | subscription_manager: subscription_manager
+    })
+  end
+
+  @impl true
+  def handle_parent_notification(
         {:ready, endpoints},
         ctx,
         %{event_serializer: serializer} = state
       ) do
-    case Enum.reject(endpoints, &should_ignore?(&1, state)) do
+    case endpoints do
       [] ->
         {[], state}
 
@@ -205,13 +245,9 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint, state) do
-      {[], state}
-    else
-      action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
-      Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
-      {action, state}
-    end
+    action = endpoint |> serializer.endpoint_added() |> serializer.to_action()
+    Membrane.Logger.debug("endpoint added: #{inspect(endpoint)}")
+    {action, state}
   end
 
   @impl true
@@ -220,12 +256,8 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint_id, state) do
-      {[], state}
-    else
-      action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
-      {action, state}
-    end
+    action = endpoint_id |> serializer.endpoint_removed() |> serializer.to_action()
+    {action, state}
   end
 
   @impl true
@@ -234,16 +266,12 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(track, state) do
-      {[], state}
-    else
-      event =
-        track.origin
-        |> serializer.track_updated(track.id, track.metadata)
-        |> serializer.to_action()
+    event =
+      track.origin
+      |> serializer.track_updated(track.id, track.metadata)
+      |> serializer.to_action()
 
-      {event, state}
-    end
+    {event, state}
   end
 
   @impl true
@@ -264,64 +292,32 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         _ctx,
         %{event_serializer: serializer} = state
       ) do
-    if should_ignore?(endpoint, state) do
-      {[], state}
-    else
-      event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
-      {event, state}
-    end
+    event = endpoint |> serializer.endpoint_updated() |> serializer.to_action()
+    {event, state}
   end
 
   @impl true
   def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: true} = state) do
     Membrane.Logger.debug("new parent queued tracks: #{log_tracks(new_tracks)}")
-
-    new_tracks =
-      new_tracks
-      |> Enum.reject(&should_ignore?(&1, state))
-      |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
-
-    outbound_tracks = Map.merge(state.outbound_tracks, new_tracks)
-
-    tracks_added = get_new_tracks_actions(new_tracks, state)
-    {tracks_added, %{state | outbound_tracks: outbound_tracks}}
+    handle_new_tracks_addition(new_tracks, state)
   end
 
   @impl true
-  def handle_parent_notification({:new_tracks, new_tracks}, _ctx, state) do
+  def handle_parent_notification({:new_tracks, new_tracks}, _ctx, %{negotiation?: false} = state) do
     Membrane.Logger.debug("new parent tracks: #{log_tracks(new_tracks)}")
-
-    new_tracks =
-      new_tracks
-      |> Enum.reject(&should_ignore?(&1, state))
-      |> Map.new(&{&1.id, %Track{status: :pending, engine_track: &1}})
-
-    new_tracks =
-      state.outbound_tracks
-      |> Map.filter(fn {_id, track} -> track.status == :pending end)
-      |> Map.merge(new_tracks)
-      |> Map.new(fn {id, track} -> {id, %{track | status: :negotiating}} end)
-
-    state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
-
-    tracks_added = get_new_tracks_actions(new_tracks, state)
-
-    case tracks_added do
-      [] ->
-        {[], state}
-
-      tracks_added ->
-        offer_data = get_offer_data(state)
-        {tracks_added ++ offer_data, %{state | negotiation?: true}}
-    end
+    handle_new_tracks_addition(new_tracks, state)
   end
 
   @impl true
   def handle_parent_notification({:remove_tracks, tracks}, _ctx, state) do
-    tracks = Enum.reject(tracks, &should_ignore?(&1, state))
     track_ids = Enum.map(tracks, & &1.id)
 
-    state = update_in(state.outbound_tracks, &Map.drop(&1, track_ids))
+    subscription_manager = SubscriptionManager.remove_tracks(state.subscription_manager, tracks)
+
+    state =
+      state
+      |> update_in([:outbound_tracks], &Map.drop(&1, track_ids))
+      |> Map.put(:subscription_manager, subscription_manager)
 
     audio_removed_tracks = state.removed_tracks.audio + Enum.count(tracks, &(&1.type == :audio))
     video_removed_tracks = state.removed_tracks.video + Enum.count(tracks, &(&1.type == :video))
@@ -356,15 +352,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   def handle_parent_notification(_msg, _ctx, state) do
     {[], state}
   end
-
-  defp should_ignore?(%Engine.Endpoint{id: endpoint_id}, state),
-    do: endpoint_id in state.ignored_endpoints
-
-  defp should_ignore?(%Engine.Track{origin: endpoint_id}, state),
-    do: endpoint_id in state.ignored_endpoints
-
-  defp should_ignore?(endpoint_id, state),
-    do: endpoint_id in state.ignored_endpoints
 
   defp log_tracks(tracks) do
     tracks
@@ -744,4 +731,52 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
   defp get_event_serializer(:protobuf), do: MediaEvent
   defp get_event_serializer(:json), do: MediaEventJson
+
+  defp handle_new_tracks_addition([], state), do: {[], state}
+
+  defp handle_new_tracks_addition(new_tracks, %{negotiation?: true} = state) do
+    {filtered_new_tracks, subscription_manager} =
+      SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
+
+    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
+
+    state = %{
+      state
+      | subscription_manager: subscription_manager,
+        outbound_tracks: outbound_tracks
+    }
+
+    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
+    {tracks_added, state}
+  end
+
+  defp handle_new_tracks_addition(new_tracks, %{negotiation?: false} = state) do
+    {subscribed_tracks, subscription_manager} =
+      SubscriptionManager.handle_new_tracks(state.subscription_manager, new_tracks)
+
+    filtered_new_tracks =
+      state.outbound_tracks
+      |> Map.filter(fn {_id, track} -> track.status == :pending end)
+      |> Map.merge(subscribed_tracks)
+      |> Map.new(fn {id, track} -> {id, %{track | status: :negotiating}} end)
+
+    outbound_tracks = Map.merge(state.outbound_tracks, filtered_new_tracks)
+
+    state = %{
+      state
+      | subscription_manager: subscription_manager,
+        outbound_tracks: outbound_tracks
+    }
+
+    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
+
+    case tracks_added do
+      [] ->
+        {[], state}
+
+      tracks_added ->
+        offer_data = get_offer_data(state)
+        {tracks_added ++ offer_data, %{state | negotiation?: true}}
+    end
+  end
 end
