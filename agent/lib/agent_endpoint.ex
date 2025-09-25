@@ -347,7 +347,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     with %{track: _track} <- get_in(state, [:inputs, track_id]) do
       {[notify_child: {:track_data_forwarder, {:remove_track, track_id}}], state}
     else
-      {nil, state} ->
+      nil ->
         Membrane.Logger.error("Requested removing non-existent track #{inspect(track_id)}")
         {[], state}
     end
