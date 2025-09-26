@@ -9,3 +9,4 @@
 - Allow selective subscription [#71](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/71)
 - Add interruptions to agent endpoint [#74](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/74)
 - Fix crash on invalid removeTrack event [#75](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/75)
+- Fix multiple outgoing tracks not working properly [#76](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/76)

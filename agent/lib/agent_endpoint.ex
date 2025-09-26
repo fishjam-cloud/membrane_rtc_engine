@@ -152,15 +152,17 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     spec =
       {get_child(:track_data_forwarder)
        |> via_out(Pad.ref(:output, track_id))
-       |> get_parser(codec_params.encoding)
-       |> child(:timestamper, Timestamper)
-       |> child(:audio_buffer, %AudioBuffer{max_buffered_duration: Membrane.Time.minutes(10)})
+       |> get_parser(track_id, codec_params.encoding)
+       |> child({:timestamper, track_id}, Timestamper)
+       |> child({:audio_buffer, track_id}, %AudioBuffer{
+         max_buffered_duration: Membrane.Time.minutes(10)
+       })
        # Queue size 1 to minimize interruption delay, which is target_queue_size * 60ms
        |> via_in(:input, target_queue_size: 1)
-       |> child(:realtimer, Membrane.Realtimer)
-       |> get_encoder(codec_params.encoding)
-       |> child(:payloader, payloader_bin)
-       |> child(:track_sender, %StaticTrackSender{
+       |> child({:realtimer, track_id}, Membrane.Realtimer)
+       |> get_encoder(track_id, codec_params.encoding)
+       |> child({:payloader, track_id}, payloader_bin)
+       |> child({:track_sender, track_id}, %StaticTrackSender{
          track: track,
          is_keyframe: fn _buf, _end -> true end
        })
@@ -296,9 +298,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
   end
 
   @impl true
-  def handle_element_end_of_stream(:track_sender, Pad.ref(:input), _ctx, state) do
-    track = state.inputs |> Map.values() |> List.first() |> Map.fetch!(:track)
-
+  def handle_element_end_of_stream({:track_sender, track_id}, Pad.ref(:input), _ctx, state) do
+    track = Map.fetch!(state.inputs, track_id).track
     actions = [notify_parent: {:publish, {:removed_tracks, [track]}}]
 
     {actions, state}
@@ -338,9 +339,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     end
   end
 
-  # TODO: Send notification to per-track audio buffer
-  defp handle_agent_request(%InterruptTrack{track_id: _track_id}, _ctx, state) do
-    {[notify_child: {:timestamper, :interrupt_track}], state}
+  defp handle_agent_request(%InterruptTrack{track_id: track_id}, _ctx, state) do
+    {[notify_child: {{:timestamper, track_id}, :interrupt_track}], state}
   end
 
   defp handle_agent_request(%RemoveTrack{track_id: track_id}, _ctx, state) do
@@ -380,11 +380,16 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent do
     }
   end
 
-  defp get_parser(pipeline, :pcm16), do: child(pipeline, :parser, RawAudioParser)
-  defp get_parser(pipeline, :opus), do: child(pipeline, :parser, Membrane.Opus.Parser)
+  defp get_parser(pipeline, track_id, :pcm16),
+    do: child(pipeline, {:parser, track_id}, RawAudioParser)
 
-  defp get_encoder(pipeline, :pcm16), do: child(pipeline, :encoder, Membrane.Opus.Encoder)
-  defp get_encoder(pipeline, :opus), do: pipeline
+  defp get_parser(pipeline, track_id, :opus),
+    do: child(pipeline, {:parser, track_id}, Membrane.Opus.Parser)
+
+  defp get_encoder(pipeline, track_id, :pcm16),
+    do: child(pipeline, {:encoder, track_id}, Membrane.Opus.Encoder)
+
+  defp get_encoder(pipeline, _track_id, :opus), do: pipeline
 
   defp get_track_data_msg(data, track) do
     {:track_data,

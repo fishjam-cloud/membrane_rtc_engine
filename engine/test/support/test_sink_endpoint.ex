@@ -19,6 +19,12 @@ defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint do
                 spec: pid(),
                 description: "Pid of endpoint owner"
               ],
+              subscribeMode: [
+                spec: :auto | :manual,
+                default: :auto,
+                description:
+                  "Whether endpoint should subscribe automatically to all tracks or manually"
+              ],
               handle_buffer: [
                 spec: (Buffer.t() -> any()),
                 description:
@@ -57,7 +63,7 @@ defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint do
   end
 
   @impl true
-  def handle_parent_notification({:new_tracks, tracks}, ctx, state) do
+  def handle_parent_notification({:new_tracks, tracks}, ctx, %{subscribeMode: :auto} = state) do
     {:endpoint, endpoint_id} = ctx.name
 
     new_subscribing_tracks =
@@ -67,6 +73,14 @@ defmodule Membrane.RTC.Engine.Support.TestSinkEndpoint do
       end)
 
     state = update_in(state.subscribing_tracks, &Map.merge(&1, new_subscribing_tracks))
+
+    {[], state}
+  end
+
+  @impl true
+  def handle_parent_notification({:subscribe, track_id}, ctx, state) do
+    {:endpoint, endpoint_id} = ctx.name
+    Engine.subscribe(state.rtc_engine, endpoint_id, track_id)
 
     {[], state}
   end

@@ -481,12 +481,10 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
       refute_receive %Engine.Message.EndpointCrashed{}, 1000
     end
 
-    # FIXME: allow agent endpoint to handle multiple inputs
-    @tag :skip
     test "Publishes two pcm16 tracks to other endpoints", %{rtc_engine: engine} do
       agent_endpoint = create_agent_endpoint(engine)
-      sink1 = create_sink_endpoint("sink1", engine)
-      sink2 = create_sink_endpoint("sink2", engine)
+      sink1 = create_sink_endpoint("sink1", engine, subscribeMode: :manual)
+      sink2 = create_sink_endpoint("sink2", engine, subscribeMode: :manual)
 
       :ok = Engine.add_endpoint(engine, agent_endpoint, id: @agent_id)
       :ok = Engine.add_endpoint(engine, sink1, id: "sink1")
@@ -500,10 +498,14 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
         track_id: @input_track_id
       }
 
+      Engine.message_endpoint(engine, "sink1", {:subscribe, @input_track_id})
+
       assert_receive %Engine.Message.TrackAdded{
         endpoint_id: @agent_id,
         track_id: @second_input_track_id
       }
+
+      Engine.message_endpoint(engine, "sink2", {:subscribe, @second_input_track_id})
 
       assert count_sink_buffers("sink1") > 50
       assert count_sink_buffers("sink2") > 50
@@ -576,12 +578,15 @@ defmodule Membrane.RTC.Engine.Endpoint.AgentEndpointTest do
     }
   end
 
-  defp create_sink_endpoint(name, engine) do
+  defp create_sink_endpoint(name, engine, opts \\ []) do
     test_process_pid = self()
 
     handle_buffer = &send(test_process_pid, {:sink_buffer, name, &1})
 
-    %TestSinkEndpoint{rtc_engine: engine, owner: self(), handle_buffer: handle_buffer}
+    struct!(
+      TestSinkEndpoint,
+      [rtc_engine: engine, owner: self(), handle_buffer: handle_buffer] ++ opts
+    )
   end
 
   defp count_sink_buffers(name, count \\ 0) do
