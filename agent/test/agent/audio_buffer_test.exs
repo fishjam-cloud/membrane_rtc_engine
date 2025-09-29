@@ -94,10 +94,18 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
     pipeline =
       start_pipeline(payload, sink: %Testing.Sink{autodemand: false}, sink_queue_size: 30)
 
+    buffer_pid = Testing.Pipeline.get_child_pid!(pipeline, :buffer)
+    trace_received_messages(buffer_pid)
+
+    assert_receive {:trace, ^buffer_pid, :receive,
+                    {Membrane.Core.Message, :buffer, [%Membrane.Buffer{payload: <<50>>}],
+                     [for_pad: :input]}},
+                   1000
+
     refute_sink_buffer(pipeline, :sink, _any)
 
-    Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 30})
     Testing.Pipeline.notify_child(pipeline, :timestamper, :interrupt_track)
+    Testing.Pipeline.notify_child(pipeline, :sink, {:make_demand, 30})
 
     for data <- payload |> Enum.take(30) do
       assert_sink_buffer(pipeline, :sink, %Buffer{payload: ^data})
@@ -185,5 +193,12 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.AudioBufferTest do
 
       {buffers ++ maybe_eos, state}
     end
+  end
+
+  defp trace_received_messages(pid) do
+    :erlang.trace(pid, true, [:receive])
+    trace_session = :trace.session_create(:demand_trace, self(), [])
+    on_exit(fn -> :trace.session_destroy(trace_session) end)
+    :trace.process(trace_session, pid, true, [:receive, :send])
   end
 end
