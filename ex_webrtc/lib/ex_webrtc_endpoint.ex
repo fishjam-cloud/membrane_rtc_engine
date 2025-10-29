@@ -91,7 +91,6 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_init(ctx, opts) do
     {:endpoint, endpoint_id} = ctx.name
-    Logger.metadata(endpoint_id: endpoint_id)
 
     opts = Map.update!(opts, :telemetry_label, &(&1 ++ [endpoint_id: endpoint_id]))
 
@@ -746,8 +745,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
         outbound_tracks: outbound_tracks
     }
 
-    tracks_added = get_new_tracks_actions(filtered_new_tracks, state)
-    {tracks_added, state}
+    {[], state}
   end
 
   defp handle_new_tracks_addition(new_tracks, %{negotiation?: false} = state) do

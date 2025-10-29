@@ -433,7 +433,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
     {new_track_ids, _transceivers} =
       new_outbound_tracks
-      |> Enum.flat_map_reduce(
+      |> Enum.map_reduce(
         outbound_transceivers,
         fn {_track_id, engine_track}, outbound_transceivers ->
           add_track(state, engine_track, outbound_transceivers)
@@ -468,7 +468,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
       Membrane.Logger.info("track #{inspect(track)} added on transceiver #{transceiver.id}")
 
-      {[{engine_track.id, track.id, transceiver.mid}], outbound_transceivers}
+      {{engine_track.id, track.id, transceiver.mid}, outbound_transceivers}
     else
       log_transceivers =
         state.pc
@@ -500,11 +500,14 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
 
       # TODO: Reduce verbosity of this log once the cause
       # of the bug is determined
-      Membrane.Logger.error(
-        "Couldn't find transceiver for track #{inspect(log_track)}. Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}. Outbound transceivers: #{inspect(log_outbound_transceivers)} Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}"
-      )
+      Membrane.Logger.error("""
+      Failed to find transceiver for track #{inspect(log_track)}.
+      Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}.
+      Outbound transceivers: #{inspect(log_outbound_transceivers)}
+      Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}
+      """)
 
-      {[], outbound_transceivers}
+      raise "Signaling error, no transceiver for outbound track #{inspect(engine_track.id)}"
     end
   end
 
