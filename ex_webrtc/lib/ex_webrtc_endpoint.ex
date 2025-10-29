@@ -563,8 +563,10 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
 
       state = update_in(state.outbound_tracks, &Map.merge(&1, new_tracks))
 
+      tracks_added = get_new_tracks_actions(new_tracks, state)
       offer_data = get_offer_data(state)
-      {offer_data, %{state | negotiation?: true, queued_negotiation?: false}}
+
+      {tracks_added ++ offer_data, %{state | negotiation?: true, queued_negotiation?: false}}
     end
   end
 
