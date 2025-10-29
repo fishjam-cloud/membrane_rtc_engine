@@ -254,7 +254,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
   end
 
   test "raise when transceiver cannot be found", %{pc: pc} do
-    pipeline = start_pipeline_unsupervided()
+    pipeline = start_pipeline_unsupervised()
     track_id = UUID.uuid4()
     mid_to_track_id = %{"0" => track_id}
     track_id_to_metadata = %{track_id => @track_metadata}
@@ -283,7 +283,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandlerTest do
     Pipeline.start_link_supervised!(spec: get_pc_handler(options))
   end
 
-  defp start_pipeline_unsupervided(options \\ [video_codec: :VP8]) do
+  defp start_pipeline_unsupervised(options \\ [video_codec: :VP8]) do
     {:ok, _supervisor, pipeline} = Pipeline.start(spec: get_pc_handler(options))
     pipeline
   end

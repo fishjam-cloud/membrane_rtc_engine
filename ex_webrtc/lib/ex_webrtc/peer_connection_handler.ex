@@ -503,7 +503,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.PeerConnectionHandler do
       Membrane.Logger.error("""
       Failed to find transceiver for track #{inspect(log_track)}.
       Transceivers: #{inspect(log_transceivers, printable_limit: :infinity, limit: :infinity)}.
-      Outbound transceivers: #{inspect(log_outbound_transceivers)}
+      Outbound transceivers: #{inspect(log_outbound_transceivers, printable_limit: :infinity, limit: :infinity)}
       Last offer: #{inspect(state.last_sdp_offer, printable_limit: :infinity, limit: :infinity)}
       """)
 
