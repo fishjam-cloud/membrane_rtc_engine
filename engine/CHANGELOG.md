@@ -6,8 +6,6 @@
 * Allow `Subscriber` to filter based on track types [#65](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/65)
 * TestSinkEndpoint requests track variant when track added [#68](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/68)
 * Enable `Subscriber` to subscribe to specific tracks [#71](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/71)
-* Update logger metadata [#78](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/78)
-
 
 ## 0.24.0
 * Add ex_webrtc integration test [#409](https://github.com/fishjam-dev/membrane_rtc_engine/pull/409)

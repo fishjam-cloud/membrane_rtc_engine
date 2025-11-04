@@ -465,7 +465,7 @@ defmodule Membrane.RTC.Engine do
 
   @impl true
   def handle_init(_ctx, options) do
-    Logger.metadata(room_id: options[:id])
+    Logger.metadata(rtc_engine: options[:id])
 
     display_manager =
       if options[:display_manager?] do
@@ -1140,7 +1140,7 @@ defmodule Membrane.RTC.Engine do
       node: opts[:node],
       group: {endpoint_id, endpoint_module},
       crash_group_mode: :temporary,
-      log_metadata: [room_id: state.id, peer_id: endpoint_id]
+      log_metadata: [rtc_engine: state.id]
     }
 
     display_manager_message =

@@ -91,6 +91,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC do
   @impl true
   def handle_init(ctx, opts) do
     {:endpoint, endpoint_id} = ctx.name
+    Logger.metadata(endpoint_id: endpoint_id)
 
     opts = Map.update!(opts, :telemetry_label, &(&1 ++ [endpoint_id: endpoint_id]))
 
