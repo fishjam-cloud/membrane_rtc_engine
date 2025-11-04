@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-dev
+## 0.2.0
 * Update README [#51](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/51)
 * Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 * Fix freeze after unmuting video track [#56](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/56)

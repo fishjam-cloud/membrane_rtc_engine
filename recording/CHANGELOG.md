@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0-dev
+## 0.4.0
 * Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 * Update membrane core [#55](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/55)
 

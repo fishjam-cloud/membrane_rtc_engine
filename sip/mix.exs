@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
   use Mix.Project
 
-  @version "0.6.0-dev"
+  @version "0.6.0"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/sip"
   @source_ref "sip-v#{@version}"
@@ -51,8 +51,8 @@ defmodule Membrane.RTC.Engine.Endpoint.SIP.MixProject do
   defp deps do
     [
       # Engine deps
-      {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
+      {:membrane_rtc_engine, "~> 0.25.0"},
+      {:membrane_rtc_engine_ex_webrtc, "~> 0.2.0"},
 
       # Regular deps
       {:membrane_core, "~> 1.2.3"},
