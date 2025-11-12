@@ -2,6 +2,11 @@
 
 Customizable Real-time Communication Engine/SFU library focused on WebRTC.
 
+> [!NOTE]  
+> This project has been archived and will no longer be maintained or updated.
+> 
+> If your business depends on Membrane RTC Engine or you are interested in custom feature development, please reach out to us at: `projects@swmansion.com`.
+
 ## Usage
 
 For usage examples, please refer to:
