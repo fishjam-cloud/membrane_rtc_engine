@@ -50,8 +50,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
     [
       {:membrane_rtc_engine, "~> 0.25.0"},
       {:membrane_core, "~> 1.2.3"},
-      {:ex_webrtc,
-       github: "elixir-webrtc/ex_webrtc", commit: "9cdd430936ed9653d0fd3512bd9e0d25ab49bea6"},
+      {:ex_webrtc, "~> 0.15.0"},
       {:membrane_rtp_plugin, "~> 0.30.0"},
       {:membrane_rtp_format, "~> 0.10.0"},
       {:membrane_rtp_vp8_plugin, "~> 0.9.0"},
@@ -59,7 +58,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
       {:ex_sdp, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:elixir_uuid, "~> 1.2"},
-      {:fishjam_protos, github: "fishjam-cloud/protos", sparse: "fishjam_protos"},
+      {:fishjam_protos, "~> 0.4.0"},
 
       # Dev and test
       {:credo, "~> 1.6", only: :dev, runtime: false},
