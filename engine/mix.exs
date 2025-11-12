@@ -53,7 +53,7 @@ defmodule Membrane.RTC.Engine.MixProject do
 
   defp deps do
     [
-      {:membrane_core, "~> 1.2.3", override: true},
+      {:membrane_core, "~> 1.2.3"},
       {:membrane_rtp_plugin, "~> 0.30.0"},
       {:membrane_rtp_format, "~> 0.10.0"},
       {:elixir_uuid, "~> 1.2"},
