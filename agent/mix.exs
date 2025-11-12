@@ -63,7 +63,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:fishjam_protos, github: "fishjam-cloud/protos", sparse: "fishjam_protos"},
+      {:fishjam_protos, "~> 0.4.0"},
 
       # Test deps,
       {:membrane_rtc_engine_file, path: "../file", only: :test},
