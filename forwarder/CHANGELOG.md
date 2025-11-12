@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0-dev
+## 0.2.0
 * Send only one video codec when negotiating [#52](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/52)
 * Update ex_webrtc [#53](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/53)
 * Fix forwarder linking to the same pad twice [#54](https://github.com/fishjam-cloud/membrane_rtc_engine/pull/54)

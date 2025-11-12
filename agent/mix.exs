@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
   use Mix.Project
 
-  @version "0.1.0-dev"
+  @version "0.1.0"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/agent"
   @source_ref "agent-v#{@version}"
@@ -49,8 +49,8 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
   defp deps do
     [
       # Engine deps
-      {:membrane_rtc_engine, path: "../engine"},
-      {:membrane_rtc_engine_ex_webrtc, path: "../ex_webrtc"},
+      {:membrane_rtc_engine, "~> 0.25.0"},
+      {:membrane_rtc_engine_ex_webrtc, "~> 0.2.0"},
 
       # Regular deps
       {:membrane_core, "~> 1.2.3"},
@@ -63,7 +63,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Agent.MixProject do
       {:credo, "~> 1.6", only: :dev, runtime: false},
       {:ex_doc, "~> 0.29", only: :dev, runtime: false},
       {:dialyxir, "~> 1.1", only: :dev, runtime: false},
-      {:fishjam_protos, github: "fishjam-cloud/protos", sparse: "fishjam_protos"},
+      {:fishjam_protos, "~> 0.4.0"},
 
       # Test deps,
       {:membrane_rtc_engine_file, path: "../file", only: :test},

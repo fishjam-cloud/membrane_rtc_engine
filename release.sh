@@ -17,7 +17,7 @@ EOF
 REPOS="engine ex_webrtc"
 for elixir_repo in */mix.exs; do
     repo="${elixir_repo%/mix.exs}"
-    [[ "$repo" =~ engine|ex_webrtc|integration_test ]] || REPOS+=" $repo"
+    [[ "$repo" =~ engine|ex_webrtc|agent|integration_test ]] || REPOS+=" $repo"
 done
 
 # How many stages the release consists of (how many times does this script have to be run)

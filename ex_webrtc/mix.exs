@@ -1,7 +1,7 @@
 defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
   use Mix.Project
 
-  @version "0.2.0-dev"
+  @version "0.2.0"
   @engine_github_url "https://github.com/fishjam-cloud/membrane_rtc_engine"
   @github_url "#{@engine_github_url}/tree/master/ex_webrtc"
   @source_ref "exwebrtc-v#{@version}"
@@ -48,7 +48,7 @@ defmodule Membrane.RTC.Engine.Endpoint.ExWebRTC.MixProject do
 
   defp deps do
     [
-      {:membrane_rtc_engine, path: "../engine"},
+      {:membrane_rtc_engine, "~> 0.25.0"},
       {:membrane_core, "~> 1.2.3"},
       {:ex_webrtc, "~> 0.15.0"},
       {:membrane_rtp_plugin, "~> 0.30.0"},

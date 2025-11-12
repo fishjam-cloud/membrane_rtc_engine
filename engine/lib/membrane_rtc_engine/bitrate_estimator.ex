@@ -1,8 +1,8 @@
 defmodule Membrane.RTC.Engine.BitrateEstimator do
   @moduledoc false
 
-  alias Membrane.RTC.Engine.Track.BitrateEstimation
   alias Membrane.{Buffer, Time}
+  alias Membrane.RTC.Engine.Track.BitrateEstimation
 
   @enforce_keys [:last_estimation_time]
   defstruct @enforce_keys ++
