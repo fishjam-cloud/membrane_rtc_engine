@@ -51,8 +51,7 @@ defmodule Membrane.RTC.Engine.Endpoint.Forwarder.MixProject do
       {:membrane_core, "~> 1.2.3"},
       {:membrane_rtc_engine, "~> 0.25.0"},
       {:membrane_rtc_engine_ex_webrtc, "~> 0.2.0"},
-      {:ex_webrtc,
-       github: "elixir-webrtc/ex_webrtc", commit: "9cdd430936ed9653d0fd3512bd9e0d25ab49bea6"},
+      {:ex_webrtc, "~> 0.15.0"},
       {:httpoison, "~> 2.0"},
       {:jason, "~> 1.2"},
 
